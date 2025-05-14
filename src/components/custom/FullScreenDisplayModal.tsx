@@ -54,7 +54,7 @@ export default function FullScreenDisplayModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <DialogContent className="max-w-[95vw] md:max-w-[90vw] lg:max-w-[85vw] max-h-[95vh] md:max-h-[90vh] flex flex-col p-3 sm:p-4 overflow-hidden"> {/*overflow-hidden*/}
+            <DialogContent className="max-w-[95vw] md:max-w-[90vw] lg:max-w-[85vw] max-h-[95vh] md:max-h-[90vh] flex flex-col p-2 sm:p-3 overflow-hidden"> {/*overflow-hidden*/}
                 {/* Accessible Title: ใส่ Title เสมอเพื่อ Accessibility */}
                 {/* ถ้าไม่แสดง Header ของ Modal เอง ให้ซ่อน Title นี้ด้วย VisuallyHidden */}
                 {!showDefaultHeaderAndControls && (
@@ -66,18 +66,18 @@ export default function FullScreenDisplayModal({
                 {/* ส่วน Header และ Controls ของ Modal (ถ้าแสดง) */}
                 {showDefaultHeaderAndControls && (
                     <>
-                        <DialogHeader className="flex-shrink-0 pb-2">
+                        <DialogHeader className="flex-shrink-0 pb-1">
                             <DialogTitle>{modalTitle}</DialogTitle>
                             {headerInfo && (
                                 <DialogDescription asChild>
-                                    <div className="mt-1 p-2 bg-slate-50 rounded text-xs border border-slate-200">
+                                    <div className="mt-1 p-1 bg-slate-50 rounded text-xs border border-slate-200">
                                         {headerInfo}
                                     </div>
                                 </DialogDescription>
                             )}
                         </DialogHeader>
 
-                        <div className="flex flex-wrap justify-start items-center gap-2 my-2 flex-shrink-0 px-1">
+                        <div className="flex flex-wrap justify-start items-center gap-1 my-1 flex-shrink-0 px-1">
                             <ToggleGroup
                                 type="single"
                                 size="sm"
@@ -116,23 +116,23 @@ export default function FullScreenDisplayModal({
                 )}
 
                 {/* Tabs Container - This div should allow Tabs to grow and manage its own height */}
-                <div className="flex-grow min-h-0 flex-col overflow-hidden"> {/* overflow-hidden is key here overflow-hidden*/}
+                <div className="flex flex-col flex-grow min-h-0 overflow-hidden"> {/* overflow-hidden is key here overflow-hidden*/}
                     <Tabs defaultValue={defaultActiveTab} className="w-full h-full flex flex-col overflow-hidden">
-                        <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
+                        <TabsList className="h-7 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground grid w-full grid-cols-2 flex-shrink-0">
                             <TabsTrigger value="table">ตาราง</TabsTrigger>
                             <TabsTrigger value="graph">กราฟ</TabsTrigger>
                         </TabsList>
 
                         {/* Table Content - This will scroll if its content (tableContent) is taller */}
-                        <div className="flex-grow min-h-0 overflow-hidden mt-2"></div>
-                        <TabsContent value="table" className="mt-2 flex-grow min-h-0 overflow-hidden">
+                        {/*<div className="flex-grow min-h-0 overflow-hidden mt-2"></div> */}
+                        <TabsContent value="table" className="mt-2 flex-1 min-h-[150px] overflow-hidden">
                             <div className="h-full overflow-auto">
                                 {tableContent}
                             </div>
                         </TabsContent>
 
                         {/* Chart Content - This will scroll if its content (chartContent) is taller */}
-                        <TabsContent value="graph" className="mt-2 flex-grow min-h-0 overflow-hidden">
+                        <TabsContent value="graph" className="mt-2 flex-1 min-h-[300] overflow-hidden">
                             <div className="h-full overflow-auto">
                                 {chartContent}
                             </div>
@@ -140,7 +140,7 @@ export default function FullScreenDisplayModal({
                     </Tabs>
                 </div>
 
-                <DialogFooter className="mt-3 pt-3 border-t border-slate-200 flex-shrink-0">
+                <DialogFooter className="mt-2 pt-2 border-t border-slate-200 flex-shrink-0">
                     <Button type="button" variant="outline" onClick={onClose}>
                         ปิด
                     </Button>

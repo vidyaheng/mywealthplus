@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 // หมายเหตุ: หน้านี้จะ map กับ route "/lifeplan" ใน App.tsx
 export default function LifePlanPage() {

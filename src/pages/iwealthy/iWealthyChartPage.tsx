@@ -1,6 +1,6 @@
 // src/pages/iwealthy/IWealthyChartPage.tsx
 
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useAppOutletContext } from '../../App'; // ตรวจสอบ path
 import Graph, { ChartData } from '../../components/GraphComponent'; // ตรวจสอบ path
 import { useNavigate, useLocation } from 'react-router-dom';

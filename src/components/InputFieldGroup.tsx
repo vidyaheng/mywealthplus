@@ -1,6 +1,6 @@
 // src/components/InputFieldGroup.tsx (ฉบับเต็ม รองรับ ref, onBlur, compact)
 
-import React, { forwardRef, useCallback, useState, useEffect } from 'react';
+import React, { forwardRef, useCallback } from 'react';
 // ใช้ NumericFormat สำหรับการใส่ comma และ input ตัวเลข
 import { NumericFormat, type OnValueChange, type NumberFormatValues } from 'react-number-format';
 // Import Component จาก Shadcn/ui (ถ้าใช้)

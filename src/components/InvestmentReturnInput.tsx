@@ -20,7 +20,7 @@ interface InvestmentReturnInputProps {
 // ค่าคงที่ (Constants)
 const MIN_VALUE_DEFAULT = 0;
 const MAX_VALUE_DEFAULT = 10;
-const INPUT_STEP_DEFAULT = 0.01;
+//const INPUT_STEP_DEFAULT = 0.01;
 const SNAP_THRESHOLD_DEFAULT = 0.05; // For general snapping to .0 or .5
 const SLIDER_STEP_DEFAULT = 0.01;    // Default step for the slider
 const DISPLAY_PRECISION_DEFAULT = 2;
@@ -32,7 +32,7 @@ export default function InvestmentReturnInput({
     min = MIN_VALUE_DEFAULT,
     max = MAX_VALUE_DEFAULT,
     step = SLIDER_STEP_DEFAULT, // This is the actual slider step
-    inputStep = INPUT_STEP_DEFAULT,
+    //inputStep = INPUT_STEP_DEFAULT,
     displayPrecision = DISPLAY_PRECISION_DEFAULT,
     showInputField = true,
     sliderOnlyCompact = false,
@@ -202,7 +202,7 @@ export default function InvestmentReturnInput({
                             value={inputValue}
                             onChange={handleInputChange}
                             onBlur={handleInputBlur}
-                            className="w-[50px] sm:w-[60px] h-7 bg-blue-50 text-md sm:text-lg text-blue-700 font-semibold border-b-2 border-gray-600 focus:border-blue-600 text-center outline-none transition-colors focus:bg-blue-100"
+                            className="w-[50px] sm:w-[60px] h-7 mb-4 bg-blue-50 text-md sm:text-lg text-blue-700 font-semibold border-b-2 border-gray-600 focus:border-blue-600 text-center outline-none transition-colors focus:bg-blue-100"
                         />
                         <span className="text-xs sm:text-sm text-gray-700">%</span>
                     </div>

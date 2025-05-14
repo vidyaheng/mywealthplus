@@ -2,7 +2,7 @@
 
 // --- ส่วนที่ 0: Imports ---
 import React, { useState, useMemo, useEffect, useCallback, createContext, useContext } from 'react';
-import { BrowserRouter as RouterContainer, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter as RouterContainer, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import TopButtons from "./components/TopButtons";
 import InvestmentReturnInput from './components/InvestmentReturnInput';
