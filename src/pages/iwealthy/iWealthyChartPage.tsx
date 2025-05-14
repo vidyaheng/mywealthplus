@@ -153,11 +153,12 @@ const IWealthyChartPage = () => {
                     onPercentChange={handleSliderPercentChange}
                     assumedReturnRate={currentAssumedReturnRatePercent}
                     onReturnRateChange={handleModalReturnRateChange}
+                    isFullScreenView={true}
                     onRecalculate={handleCalculate}
                 />
             </div>
             {/* Graph container: กำหนดความสูงตายตัว (หรือจะใช้ flex-grow ถ้าระบบ Layout ของ Modal แม่นยำ) */}
-            <div className="flex-grow min-h-0 p-1"> {/* หรือความสูงอื่นๆ ที่ต้องการ */}
+            <div className="flex-1 w-full relative mt-1"> {/* ให้กราฟใช้พื้นที่ที่เหลือ */}
                 <Graph
                     data={chartData}
                     setHoveredData={setHoveredGraphData}
@@ -167,6 +168,9 @@ const IWealthyChartPage = () => {
                     showPremiumCumulative={showPremiumCumulative}
                     onAgeChange={handleGraphAgeChange}
                 />
+                <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                    <p className="text-gray-400 text-sm">[Placeholder สำหรับ MyActualGraphComponent]</p>
+                </div>
             </div>
         </div>
     );
