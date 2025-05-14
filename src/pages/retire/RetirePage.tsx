@@ -1,5 +1,5 @@
 // src/pages/retire/RetirePage.tsx
-import React from 'react';
+
 
 // เปลี่ยนชื่อ function เป็น RetirePage
 export default function RetirePage() {
