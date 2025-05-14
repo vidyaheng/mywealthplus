@@ -54,7 +54,7 @@ export default function FullScreenDisplayModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <DialogContent className="max-w-[95vw] md:max-w-[90vw] lg:max-w-[85vw] max-h-[95vh] md:max-h-[90vh] flex flex-col p-2 sm:p-3 overflow-hidden"> {/*overflow-hidden*/}
+            <DialogContent className="max-w-[95vw] md:max-w-[90vw] lg:max-w-[85vw] max-h-[95vh] md:max-h-[90vh] flex flex-col p-1 sm:p-2 overflow-hidden"> {/*overflow-hidden*/}
                 {/* Accessible Title: ใส่ Title เสมอเพื่อ Accessibility */}
                 {/* ถ้าไม่แสดง Header ของ Modal เอง ให้ซ่อน Title นี้ด้วย VisuallyHidden */}
                 {!showDefaultHeaderAndControls && (
@@ -125,22 +125,22 @@ export default function FullScreenDisplayModal({
 
                         {/* Table Content - This will scroll if its content (tableContent) is taller */}
                         {/*<div className="flex-grow min-h-0 overflow-hidden mt-2"></div> */}
-                        <TabsContent value="table" className="mt-2 flex-1 min-h-[150px] overflow-hidden">
-                            <div className="h-full overflow-auto">
+                        <TabsContent value="table" className="mt-1 flex-1 min-h-0 overflow-auto">
+                            {/*<div className="h-full overflow-auto">*/}
                                 {tableContent}
-                            </div>
+                            {/*</div>*/}
                         </TabsContent>
 
                         {/* Chart Content - This will scroll if its content (chartContent) is taller */}
-                        <TabsContent value="graph" className="mt-2 flex-1 min-h-[300] overflow-hidden">
-                            <div className="h-full overflow-auto">
+                        <TabsContent value="graph" className="mt-1 flex-1 min-h-0 overflow-auto">
+                            {/*<div className="h-full overflow-auto">*/}
                                 {chartContent}
-                            </div>
+                            {/*</div>*/}
                         </TabsContent>
                     </Tabs>
                 </div>
 
-                <DialogFooter className="mt-2 pt-2 border-t border-slate-200 flex-shrink-0">
+                <DialogFooter className="mt-1 pt-2 border-t border-slate-200 flex-shrink-0">
                     <Button type="button" variant="outline" onClick={onClose}>
                         ปิด
                     </Button>
