@@ -1,0 +1,115 @@
+// components/Sidebar.tsx
+import React from "react";
+import { NavLink, useLocation } from "react-router-dom";
+
+interface TabItem {
+  name: string;
+  to: string;
+  short: string;
+  activePaths: string[];
+}
+
+const tabs: TabItem[] = [
+  { 
+    name: "iWealthy", 
+    to: "/iwealthy/form", 
+    short: "iW",
+    activePaths: ["/iwealthy/form", "/iwealthy/table", "/iwealthy/chart"] 
+  },
+  { 
+    name: "LTHC", 
+    to: "/lthc", 
+    short: "LtHc",
+    activePaths: ["/lthc", "/lthc/*"] 
+  },
+  { 
+    name: "โรคร้าย", 
+    to: "/ci", 
+    short: "CI",
+    activePaths: ["/ci", "/ci/*"] 
+  },
+  { 
+    name: "บำนาญ", 
+    to: "/retire", 
+    short: "Ret",
+    activePaths: ["/retire", "/retire/*"] 
+  },
+  { 
+    name: "คุ้มครองชีวิต", 
+    to: "/lifeplan", 
+    short: "LP",
+    activePaths: ["/lifeplan", "/lifeplan/*"] 
+  },
+];
+
+const SmartNavLink: React.FC<{
+  to: string;
+  activePaths: string[];
+  children: React.ReactNode;
+}> = ({ to, activePaths, children }) => {
+  const location = useLocation();
+  
+  // ฟังก์ชันตรวจสอบว่า path ปัจจุบันตรงกับที่กำหนดหรือไม่
+  const checkActive = () => {
+    return activePaths.some(path => {
+      // ถ้า path ลงท้ายด้วย * ให้ตรวจสอบว่า path ปัจจุบันเริ่มด้วย path นั้น
+      if (path.endsWith('/*')) {
+        const basePath = path.replace('/*', '');
+        return location.pathname.startsWith(basePath);
+      }
+      return location.pathname === path;
+    });
+  };
+
+  const isActive = checkActive();
+
+  return (
+    <NavLink
+      to={to}
+      className={`
+        relative flex items-center h-12 px-3 py-2
+        rounded-tl-md rounded-bl-md
+        text-sm font-medium transition-colors
+        overflow-hidden
+        ${isActive 
+          ? 'z-10 bg-blue-50 text-blue-700 border-t border-b border-l border-gray-300'
+          : 'text-gray-300 hover:bg-gray-100'
+        }
+      `}
+    >
+      {children}
+      {isActive && (
+        <div className="absolute right-0 top-1/4 bottom-1/4 w-0.5 bg-blue-500 rounded-l"></div>
+      )}
+    </NavLink>
+  );
+};
+
+const Sidebar: React.FC = () => {
+  return (
+    <div className="relative w-16 hover:w-28 transition-all bg-white h-full overflow-hidden group">
+      <div className="absolute right-0 top-0 bottom-0 w-px bg-gray-300"></div>
+      
+      <div className="flex flex-col py-2 pl-2 space-y-2 h-full">
+        {tabs.map((tab) => (
+          <SmartNavLink 
+            key={tab.name} 
+            to={tab.to} 
+            activePaths={tab.activePaths}
+          >
+            <div className="flex items-center justify-center w-full">
+              <div className="font-bold text-lg group-hover:hidden">
+                {tab.short}
+              </div>
+              <div className="hidden group-hover:block text-xs truncate whitespace-nowrap">
+                {tab.name}
+              </div>
+            </div>
+          </SmartNavLink>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default Sidebar;
