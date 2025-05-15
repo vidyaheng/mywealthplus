@@ -49,8 +49,8 @@ const ModalChartControls: React.FC<ModalChartControlsProps> = ({
     const displayData = hoveredData || initialData;
 
     const createDataRow = (id: string, labelText: string, value: number | undefined | null, colorClass: string, checked: boolean, onCheckedChange: (isChecked: boolean) => void, isFullScreen?: boolean) => (
-        <div className={` ${isFullScreen ? 'mb-1 mr-3' : 'mb-1.5'}`}>
-            <div className={`flex items-center ${isFullScreen ? 'space-x-1' : 'space-x-2'}`}>
+        <div className={isFullScreenView ? "mb-1 mr-2 flex flex-col items-start" : "mb-1.5"}>
+            <div className={`flex items-center ${isFullScreen ? 'space-x-1.5' : 'space-x-2'}`}>
                 <Checkbox
                     id={id}
                     checked={checked}
