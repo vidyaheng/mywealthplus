@@ -72,11 +72,11 @@ export default function RppRtuRatioSlider({
   if (compact) {
     return (
       <div className="space-y-1 w-full">
-        <div className="flex justify-between text-[10px] text-gray-700 font-semibold">
+        <div className="flex justify-between text-[10px] text-pink-400 font-semibold">
             <span>RPP: {displayRpp.toLocaleString('en-US')}</span>
             <span>RTU: {displayRtu.toLocaleString('en-US')}</span>
         </div>
-        <div className="flex w-full h-6 rounded-md overflow-hidden text-[10px]">
+        <div className="flex w-full h-4 rounded-md overflow-hidden text-[10px]">
           {/* RPP Part - ใส่ Gradient */}
           <div
             style={{ width: `${rppPercent}%` }}
@@ -109,12 +109,12 @@ export default function RppRtuRatioSlider({
 
   // Full Version JSX
   return (
-    <div className="space-y-2 w-full">
-      <div className="flex justify-between text-xs text-gray-500 px-1">
+    <div className="space-y-1 w-full">
+      <div className="flex justify-between text-[10px] text-gray-500 px-1">
         <span>เน้นคุ้มครอง</span><span>เน้นสมดุล</span><span>เน้นลงทุน</span>
       </div>
       {/* Visual Bar - ใส่ Gradient */}
-      <div className="flex w-full h-6 rounded-md overflow-hidden text-[10px] sm:text-xs items-stretch"> {/* แก้ไข typo ิflex -> flex */}
+      <div className="flex w-full h-6 rounded-md overflow-hidden text-[8px] sm:text-[10px] items-stretch"> {/* แก้ไข typo ิflex -> flex */}
         {/* RPP Part - ใส่ Gradient */}
         <div
           style={{ width: `${rppPercent}%` }}

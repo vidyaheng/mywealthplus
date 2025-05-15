@@ -147,7 +147,7 @@ export default function FormInputSection() {
                rppPercent={rppPercentForSlider}
                totalPremium={totalPremiumForSlider}
                onPercentChange={handlePercentChange} // ใช้ Handler จาก Context
-               compact={true} // ใช้ compact mode
+               compact={false} // ใช้ compact mode
            />
         </div>
 

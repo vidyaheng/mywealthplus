@@ -71,7 +71,7 @@ const ModalChartControls: React.FC<ModalChartControlsProps> = ({
                 )}
             </div>
             {!isFullScreen && value !== undefined && value !== null && ( /* การแสดงค่าแบบเดิมสำหรับ non-fullscreen */
-                <div className={`ml-8 text-xl font-semibold`} style={{ color: colorClass }}>
+                <div className={`ml-8 text-md font-semibold`} style={{ color: colorClass }}>
                     {formatNumber(value)} <span className="text-gray-600 font-normal text-[10px]">บาท</span>
                 </div>
             )}
@@ -89,7 +89,7 @@ const ModalChartControls: React.FC<ModalChartControlsProps> = ({
                 )}
                 {/* ถ้าเป็น Fullscreen ให้ Checkboxes เรียงแนวนอน */}
                 {isFullScreenView ? (
-                        <div className="flex flex-row flex-wrap items-center justify-between w-full text-lg p-1.5 gap-x-3 gap-y-2">
+                        <div className="flex flex-row flex-wrap items-center justify-between w-full text-md p-1.5 gap-x-3 gap-y-2">
                             {/* Section 1: Checkboxes */}
                             {/* CHANGED: Container นี้จะจัดให้ inner wrapper (ที่มี checkbox items) อยู่กลางแนวนอน */}
                             <div className={`flex justify-center flex-grow order-1 min-w-[280px]`}>
@@ -102,7 +102,7 @@ const ModalChartControls: React.FC<ModalChartControlsProps> = ({
                                             {createDataRow("mccPremiumCumulativeFS", "เบี้ยประกันภัยสะสม", displayData.premiumCumulative, "green", showPremiumCumulative, setShowPremiumCumulative)}
                                             {createDataRow("mccPremiumAnnualFS", "เบี้ยประกันภัยรายปี", displayData.premiumAnnual, "red", showPremiumAnnual, setShowPremiumAnnual)}
                                         </>
-                                    ) : <p className="text-lg text-gray-500 text-center py-2 w-full">เลื่อนเมาส์บนกราฟเพื่อดูข้อมูล</p>}
+                                    ) : <p className="text-md text-gray-500 text-center py-2 w-full">เลื่อนเมาส์บนกราฟเพื่อดูข้อมูล</p>}
                                 </div>
                             </div>
                         </div>
@@ -124,9 +124,9 @@ const ModalChartControls: React.FC<ModalChartControlsProps> = ({
             {/* ถ้าเป็น Fullscreen จะให้ Sliders อยู่ซ้าย ปุ่มอยู่ขวา */}
             <div className="flex flex-col space-y-1.5 order-2 sm:w-auto md:w-1/4 min-w-[180px]"> {/* w-1/4 for md+, min-width ensures it's not too crushed */}
                     <div className="flex flex-col items-start"> {/* Center label above slider */}
-                        <h4 className={`font-semibold text-gray-700 ${isFullScreenView ? 'text-[10px] mb-0.5' : 'text-xs mb-1'}`}>
+                        {/*<h4 className={`font-semibold text-gray-700 ${isFullScreenView ? 'text-[10px] mb-0.5' : 'text-xs mb-1'}`}>
                             สัดส่วนเบี้ย RPP/RTU
-                        </h4>
+                        </h4>*/}
                         <RppRtuRatioSlider
                             rppPercent={rppPercent}
                             totalPremium={totalPremium}
