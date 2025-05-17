@@ -1,5 +1,6 @@
 // src/components/GraphComponent.tsx
 import React from 'react'; // React import is crucial for JSX and React types
+import { useCallback, useMemo } from 'react';
 import {
     LineChart,
     Line,
@@ -12,11 +13,11 @@ import {
 } from 'recharts';
 
 export interface ChartData {
-    age: number;
-    deathBenefit: number;
-    accountValue: number;
-    premiumAnnual: number;
-    premiumCumulative: number;
+    age?: number;
+    deathBenefit?: number;
+    accountValue?: number;
+    premiumAnnual?: number;
+    premiumCumulative?: number;
 }
 
 interface GraphProps {
@@ -57,14 +58,39 @@ const Graph: React.FC<GraphProps> = ({
     onAgeChange
 }) => {
 
-    const filterTicks = (age: number): boolean => {
+    // filterTicks function ควรจะรับ number เท่านั้น (เหมือนเดิม)
+    const filterTicks = useCallback((age: number): boolean => {
         if (data && data.length > 0) {
-            if (age === data[0].age || age === data[data.length - 1].age) {
+            const firstAge = data[0]?.age; // ใช้ optional chaining เผื่อ data[0] ไม่มี
+            const lastAge = data[data.length - 1]?.age; // ใช้ optional chaining เผื่อ data[data.length - 1] ไม่มี
+
+            // ตรวจสอบว่า firstAge และ lastAge เป็น number จริงๆ ก่อนเปรียบเทียบ
+            if (typeof firstAge === 'number' && age === firstAge) {
+                return true;
+            }
+            if (typeof lastAge === 'number' && age === lastAge) {
                 return true;
             }
         }
         return age % 5 === 0;
-    };
+    }, [data]); // filterTicks ขึ้นอยู่กับ data
+
+    const tickValues = useMemo(() => {
+        if (!data || data.length === 0) {
+            return []; // ถ้าไม่มี data ก็ return array ว่าง
+        }
+
+        // 1. ดึงค่า age ทั้งหมดออกมา (TypeScript อาจจะมองว่าเป็น (number | undefined)[])
+        const allAges = data.map(item => item.age);
+
+        // 2. กรองเอาเฉพาะค่าที่เป็น number จริงๆ และไม่เป็น undefined
+        //    โดยใช้ type predicate `ageValue is number` เพื่อบอก TypeScript ว่าผลลัพธ์จะเป็น number[]
+        const definedAges: number[] = allAges.filter((ageValue): ageValue is number => typeof ageValue === 'number');
+
+        // 3. นำ definedAges (ซึ่งเป็น number[] แน่นอนแล้ว) มา filter ด้วย filterTicks
+        return definedAges.filter(filterTicks);
+
+    }, [data, filterTicks]); // คำนวณใหม่เมื่อ data หรือ filterTicks เปลี่ยน
 
     const handleMouseMove = (event: any) => {
         if (event && event.activePayload && event.activePayload.length > 0) {
@@ -117,7 +143,7 @@ const Graph: React.FC<GraphProps> = ({
 
 
     return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minHeight={500}>
             <LineChart
                 data={data}
                 onMouseMove={handleMouseMove}
@@ -128,7 +154,7 @@ const Graph: React.FC<GraphProps> = ({
                 <XAxis
                     dataKey="age"
                     tickFormatter={(tick) => `${tick}`}
-                    ticks={data.map(item => item.age).filter(filterTicks)}
+                    ticks={tickValues} 
                     interval="preserveStartEnd"
                     dy={10}
                     tick={{ fontSize: 10, fill: '#666' }}

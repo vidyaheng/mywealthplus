@@ -1,20 +1,20 @@
 // src/components/custom/FullScreenDisplayModal.tsx
 
 import { ReactNode } from 'react';
-import { Button } from "@/components/ui/button";
+//import { Button } from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
     DialogDescription,
-    DialogFooter,
+    //DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Plus, Minus } from 'lucide-react';
-import { AnnualTableView } from "@/components/DisplayTable"; // << ตรวจสอบ Path ให้ถูกต้อง
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden'; // <<< ตรวจสอบว่า Import ถูกต้อง
+//import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+//import { Plus, Minus } from 'lucide-react';
+//import { AnnualTableView } from "@/components/DisplayTable"; // << ตรวจสอบ Path ให้ถูกต้อง
+//import { VisuallyHidden } from '@radix-ui/react-visually-hidden'; // <<< ตรวจสอบว่า Import ถูกต้อง
 
 interface FullScreenDisplayModalProps {
     isOpen: boolean;
@@ -22,13 +22,16 @@ interface FullScreenDisplayModalProps {
     defaultActiveTab?: 'table' | 'graph';
     modalTitle?: string;
     headerInfo?: ReactNode;
-    tableContent: ReactNode;
-    chartContent: ReactNode;
-    viewMode: AnnualTableView; // สำหรับ default controls
-    onViewModeChange: (value: AnnualTableView) => void; // สำหรับ default controls
-    showCsv: boolean; // สำหรับ default controls
-    onShowCsvToggle: () => void; // สำหรับ default controls
-    showDefaultHeaderAndControls?: boolean;
+    tableTabContent: ReactNode;  
+    graphTabContent: ReactNode;
+    
+    //tableContent: ReactNode;
+    //chartContent: ReactNode;
+    //viewMode: AnnualTableView; // สำหรับ default controls
+    //onViewModeChange: (value: AnnualTableView) => void; // สำหรับ default controls
+    //showCsv: boolean; // สำหรับ default controls
+    //onShowCsvToggle: () => void; // สำหรับ default controls
+    //showDefaultHeaderAndControls?: boolean;
 }
 
 export default function FullScreenDisplayModal({
@@ -37,36 +40,40 @@ export default function FullScreenDisplayModal({
     defaultActiveTab = 'table',
     modalTitle = "แสดงผลเต็มหน้าจอ",
     headerInfo,
-    tableContent,
-    chartContent,
-    viewMode,
-    onViewModeChange,
-    showCsv,
-    onShowCsvToggle,
-    showDefaultHeaderAndControls = true,
+    tableTabContent,
+    graphTabContent,
+    //tableContent,
+    //chartContent,
+    //viewMode,
+    //onViewModeChange,
+    //showCsv,
+    //onShowCsvToggle,
+    //showDefaultHeaderAndControls = true,
 }: FullScreenDisplayModalProps) {
-
+    {/*}
     const handleViewModeToggle = (value: AnnualTableView) => {
         if (value) {
             onViewModeChange(value);
         }
-    };
+    }; */}
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <DialogContent className="max-w-[95vw] md:max-w-[90vw] lg:max-w-[85vw] max-h-[95vh] md:max-h-[90vh] flex flex-col p-1 sm:p-2 overflow-hidden"> {/*overflow-hidden*/}
+            <DialogContent className="max-w-[95vw] md:max-w-[90vw] lg:max-w-[85vw] max-h-[100vh] md:max-h-[100vh] flex flex-col p-1 sm:p-2 overflow-hidden"> {/*overflow-hidden*/}
                 {/* Accessible Title: ใส่ Title เสมอเพื่อ Accessibility */}
                 {/* ถ้าไม่แสดง Header ของ Modal เอง ให้ซ่อน Title นี้ด้วย VisuallyHidden */}
+                {/*}
                 {!showDefaultHeaderAndControls && (
                     <VisuallyHidden asChild>
                         <DialogTitle>{modalTitle || "รายละเอียดผลประโยชน์"}</DialogTitle>
                     </VisuallyHidden>
-                )}
+                )} */}
 
                 {/* ส่วน Header และ Controls ของ Modal (ถ้าแสดง) */}
+                {/*}
                 {showDefaultHeaderAndControls && (
-                    <>
-                        <DialogHeader className="flex-shrink-0 pb-1">
+                    <> */}
+                        {/*<DialogHeader className="flex-shrink-0 pb-1">
                             <DialogTitle>{modalTitle}</DialogTitle>
                             {headerInfo && (
                                 <DialogDescription asChild>
@@ -75,8 +82,8 @@ export default function FullScreenDisplayModal({
                                     </div>
                                 </DialogDescription>
                             )}
-                        </DialogHeader>
-
+                        </DialogHeader>*/}
+                        {/*
                         <div className="flex flex-wrap justify-start items-center gap-1 my-1 flex-shrink-0 px-1">
                             <ToggleGroup
                                 type="single"
@@ -114,11 +121,12 @@ export default function FullScreenDisplayModal({
                         </div>
                     </>
                 )}
+                */}
 
                 {/* Tabs Container - This div should allow Tabs to grow and manage its own height */}
-                <div className="flex flex-col flex-grow min-h-0 overflow-hidden"> {/* overflow-hidden is key here overflow-hidden*/}
+                <div className="flex flex-col flex-grow h-full overflow-hidden"> {/* overflow-hidden is key here overflow-hidden*/}
                     <Tabs defaultValue={defaultActiveTab} className="w-full h-full flex flex-col overflow-hidden">
-                        <TabsList className="h-7 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground grid w-full grid-cols-2 flex-shrink-0">
+                        <TabsList className="h-7 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground inline-flex self-start flex-shrink-0">
                             <TabsTrigger value="table">ตาราง</TabsTrigger>
                             <TabsTrigger value="graph">กราฟ</TabsTrigger>
                         </TabsList>
@@ -127,24 +135,34 @@ export default function FullScreenDisplayModal({
                         {/*<div className="flex-grow min-h-0 overflow-hidden mt-2"></div> */}
                         <TabsContent value="table" className="mt-1 flex-1 min-h-0 overflow-auto">
                             {/*<div className="h-full overflow-auto">*/}
-                                {tableContent}
+                                <DialogHeader className="flex-shrink-0 pb-1">
+                            <DialogTitle>{modalTitle}</DialogTitle>
+                                {headerInfo && (
+                                    <DialogDescription asChild>
+                                        <div className="mt-1 p-1 bg-slate-50 rounded text-xs border border-slate-200">
+                                            {headerInfo}
+                                        </div>
+                                    </DialogDescription>
+                                )}
+                            </DialogHeader>
+                                {tableTabContent}
                             {/*</div>*/}
                         </TabsContent>
 
                         {/* Chart Content - This will scroll if its content (chartContent) is taller */}
-                        <TabsContent value="graph" className="mt-1 flex-1 min-h-0 overflow-auto">
-                            {/*<div className="h-full overflow-auto">*/}
-                                {chartContent}
-                            {/*</div>*/}
+                        <TabsContent value="graph" className="mt-1 flex-1 min-h-0 overflow-hidden">
+                            <div className="h-full w-full">
+                                {graphTabContent}
+                            </div>
                         </TabsContent>
                     </Tabs>
                 </div>
-
+                {/*
                 <DialogFooter className="mt-1 pt-2 border-t border-slate-200 flex-shrink-0">
                     <Button type="button" variant="outline" onClick={onClose}>
                         ปิด
                     </Button>
-                </DialogFooter>
+                </DialogFooter>*/}
             </DialogContent>
         </Dialog>
     );

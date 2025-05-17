@@ -208,7 +208,7 @@ export default function ChangeFrequencyModal({
   // --- ส่วน JSX ---
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>เปลี่ยนงวดการชำระเบี้ยประกัน</DialogTitle>
         </DialogHeader>
@@ -234,7 +234,7 @@ export default function ChangeFrequencyModal({
 
                 {/* กลุ่ม 2: เลือกประเภทอ้างอิง */}
               <div className="flex flex-col space-y-1 min-w-[90px]">
-                <Label htmlFor="ref-type" className="text-xs whitespace-nowrap">โดยอ้างอิง</Label>
+                {/*<Label htmlFor="ref-type" className="text-xs whitespace-nowrap">โดยอ้างอิง</Label>*/}
                   <Select onValueChange={handleRefTypeChange} value={refType}>
                       <SelectTrigger id="ref-type" className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
                       <SelectContent>

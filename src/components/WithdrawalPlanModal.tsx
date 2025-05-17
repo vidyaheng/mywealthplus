@@ -194,7 +194,7 @@ export default function WithdrawalPlanModal({
           {/* แถว 1: จำนวนเงิน */}
           <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
             <div className="flex-1 space-y-1 min-w-[120px]">
-              <Label htmlFor="withdrawal-type" className="text-xs">เงินต้องการถอน</Label>
+              <Label htmlFor="withdrawal-type" className="text-xs">ต้องการถอนเงิน</Label>
               <Select value={currentType} onValueChange={handleTypeChange}>
                 <SelectTrigger id="withdrawal-type" className="h-8 text-xs"> <SelectValue /> </SelectTrigger>
                 <SelectContent>
@@ -221,7 +221,7 @@ export default function WithdrawalPlanModal({
                 <div className="flex flex-col space-y-1">
                   <Label htmlFor="ref-type-wd" className="text-xs sr-only">อ้างอิง</Label>
                   <Select onValueChange={handleRefTypeChange} value={currentRefType}>
-                     <SelectTrigger id="ref-type-wd" className="h-8 text-xs w-[80px]"> <SelectValue /> </SelectTrigger>
+                     <SelectTrigger id="ref-type-wd" className="h-8 text-xs w-[100px]"> <SelectValue /> </SelectTrigger>
                      <SelectContent>
                        <SelectItem value="age" className="text-xs">ที่อายุ</SelectItem>
                        {/* <SelectItem value="year" className="text-xs">ปีที่</SelectItem> */}
@@ -231,7 +231,7 @@ export default function WithdrawalPlanModal({
                 <div className="flex flex-col space-y-1">
                     <Label htmlFor="start-value-wd" className="text-xs sr-only">{currentRefType === 'age' ? 'เริ่มที่อายุ' : 'เริ่มปีที่'}</Label>
                     <Select onValueChange={handleStartValueChange} value={(currentRefType === 'age' ? currentStartValue : Math.max(1, currentStartValue - currentAge)).toString()} disabled={startOptions.length === 0}>
-                        <SelectTrigger id="start-value-wd" className="h-8 text-xs w-[80px]" disabled={startOptions.length === 0}> <SelectValue /> </SelectTrigger>
+                        <SelectTrigger id="start-value-wd" className="h-8 text-xs w-[85px]" disabled={startOptions.length === 0}> <SelectValue /> </SelectTrigger>
                         <SelectContent>{startOptions.length > 0 ? startOptions.map(opt => ( <SelectItem key={opt} value={opt.toString()} className="text-xs">{opt} {currentRefType === 'age' ? 'ปี' : ''}</SelectItem> )) : <SelectItem value="" disabled>เต็ม</SelectItem>}</SelectContent>
                     </Select>
                 </div>
@@ -244,7 +244,7 @@ export default function WithdrawalPlanModal({
                     <div className="flex flex-col space-y-1">
                         <Label htmlFor="end-value-wd" className="text-xs sr-only">{currentRefType === 'age' ? 'ถึงอายุ' : 'ถึงปีที่'}</Label>
                         <Select onValueChange={handleEndValueChange} value={(currentRefType === 'age' ? currentEndValue : Math.max(1, currentEndValue - currentAge)).toString()} disabled={endOptions.length === 0}>
-                            <SelectTrigger id="end-value-wd" className="h-8 text-xs w-[80px]" disabled={endOptions.length === 0}> <SelectValue /> </SelectTrigger>
+                            <SelectTrigger id="end-value-wd" className="h-8 text-xs w-[85px]" disabled={endOptions.length === 0}> <SelectValue /> </SelectTrigger>
                             <SelectContent>{endOptions.length > 0 ? endOptions.map(opt => ( <SelectItem key={opt} value={opt.toString()} className="text-xs">{opt} {currentRefType === 'age' ? 'ปี' : ''}</SelectItem>)) : <SelectItem value="" disabled>เต็ม</SelectItem>}</SelectContent>
                         </Select>
                     </div>

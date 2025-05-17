@@ -7,6 +7,7 @@ interface TabItem {
   to: string;
   short: string;
   activePaths: string[];
+  logoSrc?: string;
 }
 
 const tabs: TabItem[] = [
@@ -14,7 +15,8 @@ const tabs: TabItem[] = [
     name: "iWealthy", 
     to: "/iwealthy/form", 
     short: "iW",
-    activePaths: ["/iwealthy/form", "/iwealthy/table", "/iwealthy/chart"] 
+    activePaths: ["/iwealthy/form", "/iwealthy/table", "/iwealthy/chart"], 
+    logoSrc: "/images/iWealthy6-cutout.png"
   },
   { 
     name: "LTHC", 
@@ -98,9 +100,17 @@ const Sidebar: React.FC = () => {
             activePaths={tab.activePaths}
           >
             <div className="flex items-center justify-center w-full">
-              <div className="font-bold text-lg group-hover:hidden">
-                {tab.short}
-              </div>
+              <div className="group-hover:hidden flex items-center justify-center w-full h-full"> {/* ให้ div นี้จัดกลาง logo/text */}
+                                {tab.logoSrc ? (
+                                    <img 
+                                        src={tab.logoSrc} 
+                                        alt={`${tab.name} Logo`} 
+                                        className="h-8 w-8 object-contain" // กำหนดขนาด Logo, h-8 w-8 คือ 32px x 32px
+                                    />
+                                ) : (
+                                    <span className="font-bold text-lg text-gray-600">{tab.short}</span> // ปรับสี text-gray-600 สำหรับ non-active
+                                )}
+                            </div>
               <div className="hidden group-hover:block text-xs truncate whitespace-nowrap">
                 {tab.name}
               </div>

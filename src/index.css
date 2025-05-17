@@ -80,4 +80,36 @@
   }
 }
 
+/* ----- VVVVVV เพิ่ม Custom CSS สำหรับ Slider Theme สีอ่อนบนพื้นหลังเข้ม VVVVVV ----- */
+/* ใช้สำหรับ Slider ที่มี class "slider-dark-theme" */
+
+/* 1. Track (ราง Slider) */
+/* เป้าหมาย: <span data-orientation="horizontal" class="... bg-gray-300"> */
+.slider-dark-theme > span[data-orientation="horizontal"].bg-gray-300 {
+    background-color: hsl(190, 13%, 56%) !important; /* สีเทา-น้ำเงินเข้มปานกลาง */
+}
+/* หรือถ้า class bg-gray-300 อาจจะเปลี่ยนไป หรือต้องการ target ที่แน่นอนกว่า: */
+/* .slider-dark-theme > span:nth-child(1) { background-color: hsl(220, 25%, 35%) !important; } */
+
+
+/* 2. Range (ส่วนที่ถูกเลือกแล้ว) */
+/* เป้าหมาย: <span data-orientation="horizontal" class="... bg-blue-600"> */
+.slider-dark-theme > span[data-orientation="horizontal"] > span[data-orientation="horizontal"].bg-blue-600 {
+    background-color: hsl(200, 80%, 65%) !important; /* สีฟ้าสว่าง */
+}
+/* หรือถ้า class bg-blue-600 อาจจะเปลี่ยนไป หรือต้องการ target ที่แน่นอนกว่า: */
+/* .slider-dark-theme > span:nth-child(1) > span:nth-child(1) { background-color: hsl(200, 80%, 65%) !important; } */
+
+
+/* 3. Thumb (ปุ่มเลื่อน) */
+/* เป้าหมาย: <span role="slider" class="... border-blue-600 bg-white ..."> */
+.slider-dark-theme span[role="slider"].border-blue-600.bg-white {
+    background-color: hsl(0, 0%, 100%) !important;   /* สีขาว */
+    border-color: hsl(200, 80%, 65%) !important;     /* สีขอบฟ้าสว่าง */
+}
+/* หรือถ้า class เหล่านี้อาจจะเปลี่ยนไป: */
+/* .slider-dark-theme span[role="slider"] { 
+    background-color: hsl(0, 0%, 100%) !important;
+    border-color: hsl(200, 80%, 65%) !important;
+} */
 /* --- ไม่ต้องมี Custom CSS สำหรับ .ratio-slider ที่นี่แล้ว --- */

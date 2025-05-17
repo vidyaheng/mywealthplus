@@ -208,7 +208,7 @@ export default function ReduceSumInsuredModal({
   // --- ส่วน JSX ---
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-xl"> {/* ขยาย Modal เล็กน้อย */}
+      <DialogContent className="sm:max-w-2xl"> {/* ขยาย Modal เล็กน้อย */}
         <DialogHeader>
           <DialogTitle>แก้ไขจำนวนเงินเอาประกันภัยฯ</DialogTitle>
         </DialogHeader>
@@ -227,7 +227,7 @@ export default function ReduceSumInsuredModal({
 
               {/* 1. เลือกประเภทอ้างอิง */}
               <div className="flex flex-col space-y-1">
-                <Label htmlFor="ref-type" className="text-xs whitespace-nowrap">อ้างอิง</Label>
+                {/*<Label htmlFor="ref-type" className="text-xs whitespace-nowrap">อ้างอิง</Label>*/}
                 {/* เปิดใช้งาน Dropdown นี้ */}
                 <Select onValueChange={handleRefTypeChange} value={refType}>
                   <SelectTrigger id="ref-type" className="h-8 text-xs w-[90px]"> <SelectValue /> </SelectTrigger>

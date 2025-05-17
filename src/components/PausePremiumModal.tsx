@@ -243,7 +243,7 @@ export default function PausePremiumModal({
   // --- ส่วน JSX ---
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>หยุดพักชำระเบี้ย</DialogTitle>
         </DialogHeader>
@@ -256,7 +256,7 @@ export default function PausePremiumModal({
               <div className="flex flex-col space-y-1">
                 <Label htmlFor="ref-type-pause" className="text-xs sr-only">อ้างอิง</Label>
                 <Select onValueChange={handleRefTypeChange} value={refType} disabled={!canAddNewPeriod}>
-                  <SelectTrigger id="ref-type-pause" className="h-8 text-xs w-[80px]" disabled={!canAddNewPeriod}> <SelectValue /> </SelectTrigger>
+                  <SelectTrigger id="ref-type-pause" className="h-8 text-xs w-[100px]" disabled={!canAddNewPeriod}> <SelectValue /> </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="age" className="text-xs">ที่อายุ</SelectItem>
                     <SelectItem value="year" className="text-xs">ปีที่</SelectItem> 
@@ -372,7 +372,7 @@ export default function PausePremiumModal({
           <DialogClose asChild>
               <Button type="button" variant="outline" size="sm">ยกเลิก</Button>
           </DialogClose>
-          <Button type="button" size="sm" onClick={handleSavePlan}>บันทึก</Button>
+          <Button type="button" size="sm" onClick={handleSavePlan} className='bg-blue-700'>บันทึก</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
