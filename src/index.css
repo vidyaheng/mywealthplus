@@ -113,3 +113,27 @@
     border-color: hsl(200, 80%, 65%) !important;
 } */
 /* --- ไม่ต้องมี Custom CSS สำหรับ .ratio-slider ที่นี่แล้ว --- */
+
+/*iHealht Ultra Font Color*/
+/* กำหนดสไตล์ใหม่สำหรับ option ของ iHealthy Ultra */
+.text-ihu-smart,
+.text-ihu-bronze,
+.text-ihu-silver,
+.text-ihu-gold,
+.text-ihu-diamond,
+.text-ihu-platinum {
+  color: #333333; /* สีเทาเข้มเกือบดำ (แนะนำ) */
+  /* หรือ color: #000000; (สีดำสนิท) */
+  font-weight: 500; /* Medium (ปกติคือ 400) */
+  /* หรือ font-weight: 600; (Semibold) */
+  /* หรือ font-weight: normal; (ถ้าไม่ต้องการให้หนา) */
+
+  /* ลบ text-shadow ถ้าเคยใส่ไว้สำหรับทำขอบ */
+  text-shadow: none;
+  -webkit-text-stroke-width: 0;
+}
+
+/* Optional: ทำให้ option ที่ถูก focus หรือ hover มีสไตล์ที่แตกต่างเล็กน้อย (ถ้า browser รองรับ) */
+select option:hover {
+  background-color: #f0f0f0; /* สีพื้นหลังอ่อนๆ ตอน hover */
+}

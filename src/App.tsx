@@ -4,8 +4,8 @@
 import React, { useState, useMemo, useEffect, useCallback, createContext, useContext } from 'react';
 import { BrowserRouter as RouterContainer, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
-import TopButtons from "./components/TopButtons";
-import InvestmentReturnInput from './components/InvestmentReturnInput';
+//import TopButtons from "./components/TopButtons";
+//import InvestmentReturnInput from './components/InvestmentReturnInput';
 import ReduceSumInsuredModal from './components/ReduceSumInsuredModal';
 import ChangeFrequencyModal from './components/ChangeFrequencyModal';
 import WithdrawalPlanModal from './components/WithdrawalPlanModal';
@@ -16,7 +16,7 @@ import IWealthyLayout from "./pages/iwealthy/IWealthyLayout";
 import IWealthyFormPage from "./pages/iwealthy/iWealthyFormPage";
 import IWealthyTablePage from "./pages/iwealthy/iWealthyTablePage";
 import IWealthyChartPage from "./pages/iwealthy/iWealthyChartPage";
-import LthcPage from "./pages/lthc/LthcPage";
+//import LthcPage from "./pages/lthc/LthcPage";
 import CiPage from "./pages/ci/CiPage";
 import RetirePage from "./pages/retire/RetirePage";
 import LifePlanPage from "./pages/lifeplan/LifePlanPage";
@@ -35,6 +35,9 @@ import {
     PaymentFrequency,
     Gender
 } from './lib/calculations'; // ตรวจสอบว่า path ถูกต้อง
+import LTHCLayout from './pages/lthc/LTHCLayout'; // Import LTHCLayout
+import LthcFormPage from './pages/lthc/LthcFormPage';
+import LthcTablePage from './pages/lthc/LthcTablePage';
 import { v4 as uuidv4 } from 'uuid';
 
 // --- ส่วนที่ 1: Context Type, ค่าเริ่มต้น, Context Object, และ Hook Helper ---
@@ -344,7 +347,7 @@ function App() {
                 <div className="flex flex-1 overflow-hidden">
                     <Sidebar />
                     <div className="flex-1 flex flex-col overflow-hidden">
-                        <div className="flex-shrink-0">
+                        {/*<div className="flex-shrink-0">
                             <TopButtons
                                 onOpenReduceModal={openReduceModal}
                                 onOpenChangeFreqModal={openChangeFreqModal}
@@ -383,14 +386,18 @@ function App() {
                                     <Route path="table" element={<IWealthyTablePage />} />
                                     <Route path="chart" element={<IWealthyChartPage />} />
                                 </Route>
-                                <Route path="/lthc" element={<LthcPage />} />
+                                <Route path="/lthc" element={<LTHCLayout />}>
+                                    <Route index element={<Navigate to="form" replace />} />
+                                    <Route path="form" element={<LthcFormPage />} />
+                                    <Route path="table" element={<LthcTablePage />} />
+                                </Route>
                                 <Route path="/ci" element={<CiPage />} />
                                 <Route path="/retire" element={<RetirePage />} />
                                 <Route path="/lifeplan" element={<LifePlanPage />} />
                                 <Route path="*" element={<div>404 - Page Not Found</div>} />
                             </Routes>
                         </main>
-                    </div>
+                    </div> 
                 </div>
             </div>
             {/* Modals */}

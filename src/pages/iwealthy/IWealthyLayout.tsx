@@ -7,6 +7,8 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 // Import Hook และ Type สำหรับ Context ที่สร้างไว้ใน App.tsx (ปรับ Path ตามต้องการ)
 import { useAppOutletContext } from '../../App';
 import {Button} from '@/components/ui/button'
+import TopButtons from "../../components/TopButtons"; 
+import InvestmentReturnInput from "../../components/InvestmentReturnInput"; 
 // --- จบ ส่วนที่ 1 ---
 
 // --- ส่วนที่ 2: ข้อมูลสำหรับสร้าง Tabs ---
@@ -74,6 +76,29 @@ export default function IWealthyLayout() {
         <div className="flex-grow bg-blue-50 border-b border-gray-300"></div> {/* แก้ไข border ให้ตรงกับ inactive tab */}
       </div>
       {/* === จบ ส่วน Tab Bar === */}
+
+      {/* ===================================================================== */}
+            {/* >>>>> ใส่ TopButtons และ InvestmentReturnInput ตรงนี้ได้เลยครับ <<<<< */}
+            {/* ===================================================================== */}
+            <div className="flex-shrink-0 px-4 pt-3 pb-1 bg-blue-50"> {/* อาจจะเพิ่ม bg-blue-50 ให้เข้ากับ tab bar */}
+                <TopButtons
+                    onOpenReduceModal={context.openReduceModal}
+                    onOpenChangeFreqModal={context.openChangeFreqModal}
+                    onOpenWithdrawalModal={context.openWithdrawalModal}
+                    onOpenPauseModal={context.openPauseModal}
+                    onOpenAddInvestmentModal={context.openAddInvestmentModal}
+                />
+            </div>
+            <div className="flex justify-end px-4 py-2 bg-blue-50 flex-shrink-0"> {/* อาจจะเพิ่ม bg-blue-50 */}
+                <div className="w-full max-w-xs">
+                    <InvestmentReturnInput
+                        value={context.investmentReturn}
+                        onChange={context.handleChangeInvestmentReturn}
+                        showInputField={true}
+                    />
+                </div>
+            </div>
+            {/* >>>>> สิ้นสุดส่วนที่เพิ่มเข้ามา <<<<< */}
 
       {/* เส้นขอบคั่น (อาจจะไม่จำเป็น ถ้า Tab Bar จัดการเส้นขอบแล้ว) */}
       {/* <div className="border-b border-gray-300"></div> */}
