@@ -8,7 +8,8 @@ import type {
     AnnualLTHCOutputRow,
     UseLthcPlannerProps,
     UseLthcPlannerReturn,
-    LTHCMode,
+    PolicyOriginMode,
+    IWealthyMode,
     AnnualHealthPremiumDetail,
     // Types ที่ LthcPage อาจจะใช้ในการ cast (ถ้ายังจำเป็น)
     //LifeReadyPaymentTerm,
@@ -23,14 +24,17 @@ export function useLthcPlanner({
     initialPolicyholderEntryAge,
     initialPolicyholderGender,
     initialSelectedHealthPlans,
-    initialMode = 'automatic',
+    initialPolicyOriginMode = 'newPolicy',
+    initialIWealthyMode = 'automatic',
 }: UseLthcPlannerProps): UseLthcPlannerReturn {
 
     // --- State Management ---
     const [policyholderEntryAge, setPolicyholderEntryAge] = useState<number>(initialPolicyholderEntryAge);
     const [policyholderGender, setPolicyholderGender] = useState<Gender>(initialPolicyholderGender);
     const [selectedHealthPlans, setSelectedHealthPlans] = useState<HealthPlanSelections>(initialSelectedHealthPlans);
-    const [mode, setMode] = useState<LTHCMode>(initialMode);
+    const [policyOriginMode, setPolicyOriginMode] = useState<PolicyOriginMode>(initialPolicyOriginMode);
+    const [existingPolicyEntryAge, setExistingPolicyEntryAge] = useState<number | undefined>(undefined);
+    const [iWealthyMode, setIWealthyMode] = useState<IWealthyMode>(initialIWealthyMode);
 
     // Manual Mode States
     const [manualRpp, setManualRpp] = useState<number>(60000);
@@ -60,30 +64,32 @@ export function useLthcPlanner({
 
     // Effect to update autoIWealthyPPT when entryAge or mode changes
     useEffect(() => {
-        if (mode === 'automatic') {
+        if (iWealthyMode === 'automatic') {
             let newPpt: number;
             if (policyholderEntryAge <= 45) { newPpt = 15; }
             else if (policyholderEntryAge <= 50) { newPpt = Math.max(1, 60 - policyholderEntryAge); }
             else { newPpt = 10; }
             setAutoIWealthyPPT(currentAutoPPT => currentAutoPPT !== newPpt ? newPpt : currentAutoPPT);
         }
-    }, [policyholderEntryAge, mode]);
+    }, [policyholderEntryAge, iWealthyMode]);
 
     // --- Instantiate Calculation Hook ---
     const lthcCalculations = useLthcCalculations(); // Hook นี้จะคืน object ที่มีฟังก์ชันคำนวณ
 
     // Memoized health premiums (using the function from lthcCalculations hook)
     const healthPremiums = useMemo<AnnualHealthPremiumDetail[]>(() => {
-        if (lthcCalculations && typeof lthcCalculations.calculateHealthPremiums === 'function') {
-            return lthcCalculations.calculateHealthPremiums(
+        if (lthcCalculations && typeof lthcCalculations.calculateAllHealthPremiums === 'function') {
+            return lthcCalculations.calculateAllHealthPremiums(
                 policyholderEntryAge,
                 policyholderGender,
-                selectedHealthPlans
+                selectedHealthPlans,
+                policyOriginMode,
+                existingPolicyEntryAge
             );
         }
         console.warn("useLthcPlanner: lthcCalculations.calculateAllHealthPremiums is not available. Returning empty array.");
         return [];
-    }, [policyholderEntryAge, policyholderGender, selectedHealthPlans, lthcCalculations]);
+    }, [policyholderEntryAge, policyholderGender, selectedHealthPlans, policyOriginMode, existingPolicyEntryAge, lthcCalculations]);
 
 
     // --- Main Calculation Function ---
@@ -100,9 +106,16 @@ export function useLthcPlanner({
             setIsLoading(false);
             return;
         }
+            const commonCalcParams = {
+            currentEntryAge: policyholderEntryAge, // อายุ ณ ปัจจุบัน
+            gender: policyholderGender,
+            plans: selectedHealthPlans,
+            originMode: policyOriginMode,
+            originalEntryAge: existingPolicyEntryAge,
+        };
 
         try {
-            if (mode === 'manual') {
+            if ( iWealthyMode === 'manual') {
                 const manualResultData = await lthcCalculations.calculateManualPlan(
                     policyholderEntryAge,
                     policyholderGender,
@@ -111,7 +124,9 @@ export function useLthcPlanner({
                     manualRtu,
                     manualInvestmentReturn,
                     manualIWealthyPPT,
-                    manualWithdrawalStartAge
+                    manualWithdrawalStartAge,
+                    commonCalcParams.originMode,
+                    commonCalcParams.originalEntryAge
                 );
                 setResult(manualResultData);
                 // if (manualResultData.errorMsg) setError(manualResultData.errorMsg); // If calculateManualPlan returns errorMsg
@@ -123,7 +138,9 @@ export function useLthcPlanner({
                     selectedHealthPlans,
                     autoInvestmentReturn,
                     autoIWealthyPPT,
-                    autoRppRtuRatio
+                    autoRppRtuRatio,
+                    commonCalcParams.originMode, 
+                    commonCalcParams.originalEntryAge
                 );
 
                 setResult(autoResult.outputIllustration); // Can be null if solver fails
@@ -141,9 +158,9 @@ export function useLthcPlanner({
             setIsLoading(false);
         }
     }, [
-        mode, policyholderEntryAge, policyholderGender, selectedHealthPlans,
+        iWealthyMode, policyholderEntryAge, policyholderGender, selectedHealthPlans,
         manualRpp, manualRtu, manualInvestmentReturn, manualIWealthyPPT, manualWithdrawalStartAge,
-        autoInvestmentReturn, autoIWealthyPPT, autoRppRtuRatio,
+        autoInvestmentReturn, autoIWealthyPPT, autoRppRtuRatio, policyOriginMode, existingPolicyEntryAge,
         lthcCalculations // Dependency on the calculation hook instance
     ]);
 
@@ -151,6 +168,8 @@ export function useLthcPlanner({
         entryAge?: number;
         gender?: Gender;
         healthPlans?: HealthPlanSelections;
+        policyOriginMode?: PolicyOriginMode;
+        existingPolicyEntryAge?: number;
     }) => {
         if (options?.entryAge !== undefined) setPolicyholderEntryAge(options.entryAge);
         if (options?.gender) setPolicyholderGender(options.gender);
@@ -158,10 +177,15 @@ export function useLthcPlanner({
         // Consider using useEffect to trigger runCalculation after state updates
         // or pass options directly to a modified runCalculation.
         await runCalculation();
-    }, [runCalculation, setPolicyholderEntryAge, setPolicyholderGender, setSelectedHealthPlans]);
+    }, [runCalculation, setPolicyholderEntryAge, setPolicyholderGender, setSelectedHealthPlans, setPolicyOriginMode, setExistingPolicyEntryAge]);
 
     return {
-        mode, setMode,
+        policyOriginMode, // ⭐ เพิ่ม
+        setPolicyOriginMode, // ⭐ เพิ่ม
+        existingPolicyEntryAge, // ⭐ เพิ่ม
+        setExistingPolicyEntryAge, // ⭐ เพิ่ม
+        iWealthyMode, // ⭐ เปลี่ยนชื่อ
+        setIWealthyMode, // ⭐ เปลี่ยนชื่อ
         isLoading: isLoading, // Consistent with UseLthcPlannerReturn
         error,
         result,

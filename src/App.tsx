@@ -38,6 +38,7 @@ import {
 import LTHCLayout from './pages/lthc/LTHCLayout'; // Import LTHCLayout
 import LthcFormPage from './pages/lthc/LthcFormPage';
 import LthcTablePage from './pages/lthc/LthcTablePage';
+import LthcChartPage from './pages/lthc/LthcChartPage';
 import { v4 as uuidv4 } from 'uuid';
 
 // --- ส่วนที่ 1: Context Type, ค่าเริ่มต้น, Context Object, และ Hook Helper ---
@@ -390,6 +391,7 @@ function App() {
                                     <Route index element={<Navigate to="form" replace />} />
                                     <Route path="form" element={<LthcFormPage />} />
                                     <Route path="table" element={<LthcTablePage />} />
+                                    <Route path="chart" element={<LthcChartPage />} />
                                 </Route>
                                 <Route path="/ci" element={<CiPage />} />
                                 <Route path="/retire" element={<RetirePage />} />

@@ -22,7 +22,8 @@ const tabs: TabItem[] = [
     name: "LTHC", 
     to: "/lthc", 
     short: "LtHc",
-    activePaths: ["/lthc", "/lthc/*"] 
+    activePaths: ["/lthc", "/lthc/*"],
+    logoSrc: "/images/LTHCBlue.svg"
   },
   { 
     name: "โรคร้าย", 

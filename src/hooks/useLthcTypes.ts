@@ -24,7 +24,8 @@ import type {
 
 // --- Basic Enum-like Types ---
 export type Gender = HealthPlanGenderOriginal;
-export type LTHCMode = 'manual' | 'automatic';
+export type PolicyOriginMode = 'newPolicy' | 'existingPolicy';
+export type IWealthyMode = 'manual' | 'automatic'; //เปลี่ยนจากเดิม LTHCMode
 export type PaymentFrequency = 'monthly' | 'annual';
 
 // --- Health Plan Specific Types ---
@@ -34,13 +35,13 @@ export type LifeReadyPaymentTerm = LifeReadyPaymentTermOriginal;
 // IHealthyUltraPlan will be the type for actual plan names ('Smart', 'Bronze', etc.)
 export type IHealthyUltraPlan = IHealthyUltraPlanOriginal;
 // IHealthyUltraPlanSelection will include a way to signify "not selected"
-export type IHealthyUltraPlanSelection = IHealthyUltraPlan | 'NONE'; // 'NONE' signifies not selected
+export type IHealthyUltraPlanSelection = IHealthyUltraPlan | null; // 'NONE' signifies not selected
 
 // For MEB:
 // MEBPlan will be the type for actual plan values (500, 1000, etc.)
 export type MEBPlan = MEBPlanOriginal;
 // MEBPlanSelection will include a way to signify "not selected" (using 0 as per previous UI logic)
-export type MEBPlanSelection = MEBPlan | 0; // 0 signifies not selected
+export type MEBPlanSelection = MEBPlan | null; // 0 signifies not selected
 
 // Interface for the user's health plan selections
 export interface HealthPlanSelections {
@@ -102,12 +103,17 @@ export interface UseLthcPlannerProps {
     initialPolicyholderEntryAge: number;
     initialPolicyholderGender: Gender;
     initialSelectedHealthPlans: HealthPlanSelections; // ใช้ HealthPlanSelections ที่นิยามในไฟล์นี้
-    initialMode?: LTHCMode;
+    initialPolicyOriginMode?: PolicyOriginMode; 
+    initialIWealthyMode?: IWealthyMode;
 }
 
 export interface UseLthcPlannerReturn {
-    mode: LTHCMode;
-    setMode: React.Dispatch<React.SetStateAction<LTHCMode>>;
+    policyOriginMode: PolicyOriginMode;
+    setPolicyOriginMode: React.Dispatch<React.SetStateAction<PolicyOriginMode>>; 
+    iWealthyMode: IWealthyMode;
+    setIWealthyMode: React.Dispatch<React.SetStateAction<IWealthyMode>>;
+    existingPolicyEntryAge?: number;
+    setExistingPolicyEntryAge: React.Dispatch<React.SetStateAction<number | undefined>>;
     policyholderEntryAge: number;
     setPolicyholderEntryAge: React.Dispatch<React.SetStateAction<number>>;
     policyholderGender: Gender;

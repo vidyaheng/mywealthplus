@@ -132,8 +132,76 @@
   text-shadow: none;
   -webkit-text-stroke-width: 0;
 }
-
+/*------ LTHC----------*/
 /* Optional: ทำให้ option ที่ถูก focus หรือ hover มีสไตล์ที่แตกต่างเล็กน้อย (ถ้า browser รองรับ) */
 select option:hover {
   background-color: #f0f0f0; /* สีพื้นหลังอ่อนๆ ตอน hover */
 }
+
+/* --- Base style for custom LTHC checkbox --- */
+.lthc-checkbox-base {
+  background-color: white !important; /* บังคับพื้นหลังขาว */
+  border-width: 3px; /* กำหนดความหนาของขอบถ้าต้องการ */
+}
+
+/* --- Health Premium Alone (สีส้ม/แดง #ff7300) --- */
+.lthc-checkbox-healthPremiumAlone {
+  border-color: #ff7300 !important; /* สีขอบเดียวกับเส้นกราฟ (ทั้ง check และ uncheck) */
+}
+.lthc-checkbox-healthPremiumAlone[data-state="checked"] > span > svg {
+  stroke: #ff7300 !important; /* สีเครื่องหมายถูกเดียวกับเส้นกราఫ్/ขอบ เมื่อ check */
+  stroke-width: 5px; 
+}
+.lthc-checkbox-healthPremiumAlone[data-state="unchecked"] > span > svg {
+  stroke: transparent !important; /* ไม่มีสีเครื่องหมายถูก เมื่อ uncheck */
+}
+
+/* --- LTHC Combined Premium (สีเขียว #387908) --- */
+.lthc-checkbox-lthcCombinedPremium {
+  border-color: #387908 !important;
+}
+.lthc-checkbox-lthcCombinedPremium[data-state="checked"] > span > svg {
+  stroke: #387908 !important;
+  stroke-width: 5px;
+}
+.lthc-checkbox-lthcCombinedPremium[data-state="unchecked"] > span > svg {
+  stroke: transparent !important;
+}
+
+/* --- Total Combined DB (สีม่วง #8884d8) --- */
+.lthc-checkbox-totalCombinedDB {
+  border-color: #8884d8 !important;
+}
+.lthc-checkbox-totalCombinedDB[data-state="checked"] > span > svg {
+  stroke: #8884d8 !important;
+  stroke-width: 5px;
+}
+.lthc-checkbox-totalCombinedDB[data-state="unchecked"] > span > svg {
+  stroke: transparent !important;
+}
+
+/* --- Cumulative Withdrawal (สีเหลือง/ส้ม #ffce56) --- */
+.lthc-checkbox-cumulativeWithdrawal {
+  border-color: #d4bf04 !important;
+}
+.lthc-checkbox-cumulativeWithdrawal[data-state="checked"] > span > svg {
+  stroke: #d4bf04 !important;
+  stroke-width: 5px;
+}
+.lthc-checkbox-cumulativeWithdrawal[data-state="unchecked"] > span > svg {
+  stroke: transparent !important;
+}
+
+/* --- EOY Account Value (สีน้ำเงินเข้ม/ม่วง #413ea0) --- */
+.lthc-checkbox-eoyAccountValue {
+  border-color: #26A69A !important;
+}
+.lthc-checkbox-eoyAccountValue[data-state="checked"] > span > svg {
+  stroke: #26A69A !important;
+  stroke-width: 5px;
+}
+.lthc-checkbox-eoyAccountValue[data-state="unchecked"] > span > svg {
+  stroke: transparent !important;
+}
+
+/*------------LTHC-----------*/
