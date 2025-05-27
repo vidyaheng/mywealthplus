@@ -112,12 +112,12 @@ export const useLthcCalculations = () => {
             }
 
             let ihuPremium = 0;
-            if (plans.iHealthyUltraPlan !== null && plans.iHealthyUltraPlan !== 'NONE' && attainedAge <= MAX_IHU_PREMIUM_AGE && attainedAge <= MAX_POLICY_AGE_TYPE) {
+            if (plans.iHealthyUltraPlan !== null && plans.iHealthyUltraPlan !== null && attainedAge <= MAX_IHU_PREMIUM_AGE && attainedAge <= MAX_POLICY_AGE_TYPE) {
                 ihuPremium = calculateIHealthyUltraPremium(attainedAge, gender, plans.iHealthyUltraPlan as IHealthyUltraPlan);
             }
 
             let mebPremium = 0;
-            if (plans.mebPlan !== null && plans.mebPlan !== 0 && attainedAge <= MEB_TERMINATION_AGE_TYPE) {
+            if (plans.mebPlan !== null && plans.mebPlan !== null && attainedAge <= MEB_TERMINATION_AGE_TYPE) {
                 mebPremium = calculateMEBPremium(attainedAge, plans.mebPlan as MEBPlan);
             }
 
