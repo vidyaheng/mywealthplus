@@ -105,6 +105,21 @@ export default function LthcTablePage() {
     if (error) return <div className="p-4 text-red-600">เกิดข้อผิดพลาด: {error}</div>;
     if (!result || result.length === 0) return <div className="p-4 text-center text-gray-500">ไม่มีข้อมูลผลประโยชน์สำหรับแสดงผล กรุณากลับไปหน้ากรอกข้อมูลแล้วกดคำนวณ</div>;
 
+    // 1. ดึงชื่อแผน iHealthy Ultra (ถ้ายังไม่มีใน scope)
+    const iHealthyPlanName = selectedHealthPlans?.iHealthyUltraPlan;
+
+    // 2. คำนวณ colSpans สำหรับแถวบนสุด
+    const healthPlanHeaderColSpan = isHealthDetailsExpanded ? 5 : 2;
+
+    let lthcHeaderColSpan = 1; // เบี้ยสุขภาพ (iWealthy text)
+    lthcHeaderColSpan += isIWealthyPremiumExpanded ? 3 : 1; // กลุ่ม เบี้ย iW
+    lthcHeaderColSpan += 1; // เงินถอน
+    lthcHeaderColSpan += isIWealthyValueDetailsExpanded ? 6 : 1; // กลุ่ม มูลค่า กธ
+    lthcHeaderColSpan += 1; // คุ้มครองชีวิตรวม
+
+    // สร้าง Suffix สำหรับชื่อแผน
+    const planNameSuffix = iHealthyPlanName ? ` (${iHealthyPlanName})` : "";
+
     return (
         <div className="space-y-8">
             {/* ⭐⭐⭐ ตารางเดียวใหญ่ ⭐⭐⭐ */}
@@ -118,21 +133,56 @@ export default function LthcTablePage() {
                 <div className="overflow-x-auto shadow-md sm:rounded-lg border border-gray-200" style={{ maxHeight: '70vh' }}>
                     <table className="min-w-full divide-y divide-gray-200 text-xs">
                         <thead className="bg-gray-100 sticky top-0 z-10">
+                            {/* แถวที่ 1: หัวข้อแบบ Spanning ตามที่ขอ */}
+                            <tr>
+                                {/* ช่องว่างสำหรับ "ปีที่" */}
+                                <th scope="col" className="px-2 py-3 bg-gray-50"></th>
+                                {/* ช่องว่างสำหรับ "อายุ" */}
+                                <th scope="col" className="px-2 py-3 bg-gray-50"></th>
+
+                                {/* SPACER COLUMN ในแถวที่ 1 (ไม่มีสีพื้นหลัง) */}
+                                <th scope="col" className="px-1 py-3"></th> {/* ลด padding แนวนอนเล็กน้อยเพื่อให้ดูเป็น spacer */}
+
+                                {/* หัวข้อ "แผน สุขภาพ (ชื่อแผนที่เลือก)" */}
+                                <th
+                                    scope="col"
+                                    colSpan={healthPlanHeaderColSpan}
+                                    className="px-2 py-3 text-center text-sm font-semibold text-sky-700 uppercase tracking-wider bg-sky-50" // ปรับสีตามต้องการ
+                                >
+                                    แผน สุขภาพ{planNameSuffix}
+                                </th>
+
+                                {/* SPACER COLUMN ในแถวที่ 1 (ไม่มีสีพื้นหลัง) */}
+                                <th scope="col" className="px-1 py-3"></th> {/* ลด padding แนวนอนเล็กน้อยเพื่อให้ดูเป็น spacer */}
+
+                                {/* หัวข้อ "แผนสุขภาพ LTHC" */}
+                                <th
+                                    scope="col"
+                                    colSpan={lthcHeaderColSpan}
+                                    className="px-2 py-3 text-center text-sm font-semibold text-purple-700 uppercase tracking-wider bg-purple-50" // ปรับสีตามต้องการ
+                                >
+                                    แผนสุขภาพ LTHC
+                                </th>
+                            </tr>
+
+                            {/* แถวที่ 2: หัวคอลัมน์เดิม */}
                             <tr>
                                 {/* Common Columns */}
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">ปีที่</th>
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">อายุ</th>
-                            
+                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-gray-50">ปีที่</th>
+                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">อายุ</th>
+                                
+                                {/* SPACER COLUMN ในแถวที่ 2 (ไม่มีสีพื้นหลัง) */}
+                                <th scope="col" className="px-1 py-3 bg-gray-100"></th> {/* ลด padding แนวนอนเล็กน้อย */}
 
                                 {/* Health Premium Details (Expandable) */}
                                 {isHealthDetailsExpanded && (
                                     <>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">เบี้ย LR</th>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">เบี้ย IHU</th>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">เบี้ย MEB</th>
+                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-sky-50">เบี้ย LR</th>
+                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-sky-50">เบี้ย IHU</th>
+                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-sky-50">เบี้ย MEB</th>
                                     </>
                                 )}
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-red-600 uppercase tracking-wider whitespace-nowrap">
+                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-red-600 uppercase tracking-wider whitespace-nowrap bg-sky-50">
                                     {/*</th><th scope="col" className="relative px-1 py-3 text-center sticky right-[564px] md:right-[calc(3*100px+2*80px)] bg-gray-100 z-20"> {/* Adjust 'right' value based on actual width of subsequent fixed columns */}
                                     <div className="flex flex-col items-center">
                                         <span>เบี้ยสุขภาพ</span>
@@ -141,19 +191,22 @@ export default function LthcTablePage() {
                                         </button>
                                     </div>
                                 </th>
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-purple-600 uppercase tracking-wider whitespace-nowrap">คุ้มครองชีวิต</th>    
+                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-purple-600 uppercase tracking-wider whitespace-nowrap bg-sky-50">คุ้มครองชีวิต</th>    
+
+                                {/* SPACER COLUMN ในแถวที่ 2 (ไม่มีสีพื้นหลัง) */}
+                                <th scope="col" className="px-1 py-3 bg-gray-100"></th> {/* ลด padding แนวนอนเล็กน้อย */}
 
                                 {/* iWealthy Section */}
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-red-500 uppercase tracking-wider whitespace-nowrap bg-gray-100">เบี้ยสุขภาพ</th>
+                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-red-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">เบี้ยสุขภาพ</th>
 
                                 {isIWealthyPremiumExpanded && (
                                     <>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">RPP (iW)</th>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">RTU (iW)</th>
+                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">RPP (iW)</th>
+                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">RTU (iW)</th>
                                         {/* LSTU column can be added here if iWealthyTotalPremium doesn't include it */}
                                     </>
                                 )}
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-blue-600 uppercase tracking-wider whitespace-nowrap">
+                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-blue-600 uppercase tracking-wider whitespace-nowrap bg-purple-50">
                                     <div className="flex flex-col items-center">
                                         <span>เบี้ย iW</span>
                                         <button onClick={() => setIsIWealthyPremiumExpanded(!isIWealthyPremiumExpanded)} className="p-0.5 rounded-full hover:bg-gray-300 focus:outline-none" title={isIWealthyPremiumExpanded ? "ยุบ" : "ขยาย"}>
@@ -164,18 +217,18 @@ export default function LthcTablePage() {
                                 
 
 
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-orange-600 uppercase tracking-wider whitespace-nowrap bg-gray-100 sticky right-[156px] md:right-[80px] z-20">เงินถอน</th>
+                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-orange-600 uppercase tracking-wider whitespace-nowrap bg-purple-50 sticky right-[156px] md:right-[80px] z-20">เงินถอน</th>
 
                                 {isIWealthyValueDetailsExpanded && (
                                     <>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pr Chrg</th>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">COI</th>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">AdFEE</th>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">ผลตอบแทน</th>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Bonus</th>
+                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">ค่าธรรมเนียม</th>
+                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">COI</th>
+                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">AdFEE</th>
+                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">ผลตอบแทน</th>
+                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">Bonus</th>
                                     </>
                                 )}
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-green-600 uppercase tracking-wider whitespace-nowrap bg-gray-100 sticky right-[80px] md:right-0 z-20">
+                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-green-600 uppercase tracking-wider whitespace-nowrap bg-purple-50 sticky right-[80px] md:right-0 z-20">
                                     <div className="flex flex-col items-center">
                                         <span>มูลค่า กธ</span>
                                         <button onClick={() => setIsIWealthyValueDetailsExpanded(!isIWealthyValueDetailsExpanded)} className="p-0.5 rounded-full hover:bg-gray-300 focus:outline-none" title={isIWealthyValueDetailsExpanded ? "ยุบ" : "ขยาย"}>
@@ -183,7 +236,7 @@ export default function LthcTablePage() {
                                         </button>
                                     </div>
                                 </th>
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-purple-600 uppercase tracking-wider whitespace-nowrap">คุ้มครองชีวิตรวม</th>
+                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-purple-600 uppercase tracking-wider whitespace-nowrap bg-purple-50">คุ้มครองชีวิตรวม</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -194,6 +247,8 @@ export default function LthcTablePage() {
                                         <td className="px-2 py-2 whitespace-nowrap text-center">{row.policyYear}</td>
                                         <td className="px-2 py-2 whitespace-nowrap text-center">{row.age}</td>
                                         
+                                        {/* SPACER CELL in tbody */}
+                                        <td className="px-1 py-2 bg-gray-100"></td> {/* ใช้ padding แนวนอนเท่ากับ spacer ใน header */}
 
                                         {isHealthDetailsExpanded && (
                                             <>
@@ -205,7 +260,8 @@ export default function LthcTablePage() {
                                         <td className="px-2 py-2 whitespace-nowrap text-center font-semibold text-red-500">{Math.round(row.totalHealthPremium).toLocaleString()}</td>
                                         <td className="px-2 py-2 whitespace-nowrap text-center font-semibold text-purple-500">{Math.round(row.lifeReadyDeathBenefit).toLocaleString()}</td>
                                         
-
+                                        {/* SPACER CELL in tbody */}
+                                        <td className="px-1 py-2 bg-gray-100"></td> {/* ใช้ padding แนวนอนเท่ากับ spacer ใน header */}
 
                                         <td className="px-2 py-2 whitespace-nowrap text-center font-semibold text-red-500">{Math.round(healthPremiumPaidByUser).toLocaleString()}</td>
 
