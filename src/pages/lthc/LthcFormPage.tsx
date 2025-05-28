@@ -309,7 +309,7 @@ export default function LthcFormPage() {
                             <p className="text-xs text-gray-600 pt-1">Package: ทุน 50,000 บ., ชำระถึงอายุ 99 ปี</p>
                         )}
                          <div className="pt-2">
-                            <p className="text-xs text-gray-600">เบี้ยประกัน LifeReady ปีแรก (โดยประมาณ):</p>
+                            <p className="text-xs text-gray-600">เบี้ยประกัน LifeReady ปีแรก:</p>
                             <p className={`text-md font-semibold ${policyOriginMode === 'existingPolicy' ? 'text-orange-700' : (lifeReadyMode === 'package' ? 'text-green-700' : 'text-blue-700')}`}>
                                 {currentLrPremium.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
                             </p>
@@ -362,7 +362,7 @@ export default function LthcFormPage() {
                         </label>
                          {isMEBSelected && (
                             <div className="pl-6 space-y-1 animate-fadeIn">
-                                <label htmlFor="mebPlanValue-form" className="text-xs text-gray-600 block">เลือกจำนวนเงิน:</label>
+                                <label htmlFor="mebPlanValue-form" className="text-xs text-gray-600 block">เลือกแผน:</label>
                                 <select
                                     id="mebPlanValue-form"
                                     value={selectedHealthPlans.mebPlan === null || selectedHealthPlans.mebPlan === null ? 500 : selectedHealthPlans.mebPlan}
@@ -410,23 +410,23 @@ export default function LthcFormPage() {
                     )}
                     {iWealthyMode === 'automatic' && (
                         <div className="space-y-3 animate-fadeIn">
-                            <p className="text-xs text-gray-600">ระบบจะคำนวณเบี้ย iWealthy (RPP 100%) ที่ต่ำที่สุด จากนั้นคุณสามารถปรับ Ratio RPP/RTU ได้</p>
+                            <p className="text-xs text-gray-600">ระบบจะคำนวณเบี้ย iWealthy ที่ต่ำที่สุด ตาม Ratio RPP/RTU ที่คุณเลือก</p>
                             <div><label htmlFor="autoInvReturn" className="block text-xs font-medium text-gray-700">ผลตอบแทน (%):</label><input id="autoInvReturn" type="number" step="0.5" value={autoInvestmentReturn} onChange={e => setAutoInvestmentReturn(Number(e.target.value))} className="mt-0.5 p-2 w-full border rounded-md shadow-sm text-sm" /></div>
-                            <div><label htmlFor="autoIWppt" className="block text-xs font-medium text-gray-700">ระยะเวลาจ่ายเบี้ย iWealthy (ปี):</label><input id="autoIWppt" type="number" value={autoIWealthyPPT} onChange={e => setAutoIWealthyPPT(Number(e.target.value))} className="mt-0.5 p-2 w-full border rounded-md shadow-sm text-sm" /></div>
+                            <div><label htmlFor="autoIWppt" className="block text-xs font-medium text-gray-700">ระยะเวลาชำระเบี้ย iWealthy (ปี):</label><input id="autoIWppt" type="number" value={autoIWealthyPPT} onChange={e => setAutoIWealthyPPT(Number(e.target.value))} className="mt-0.5 p-2 w-full border rounded-md shadow-sm text-sm" /></div>
                             <div>
-                                <label htmlFor="autoRppRtu" className="block text-xs font-medium text-gray-700">สัดส่วน RPP/RTU (หลังคำนวณครั้งแรก):</label>
+                                <label htmlFor="autoRppRtu" className="block text-xs font-medium text-gray-700">สัดส่วน RPP/RTU ที่ต้องการ:</label>
                                 <select id="autoRppRtu" value={autoRppRtuRatio} onChange={e => setAutoRppRtuRatio(e.target.value)} className="mt-0.5 p-2 w-full border rounded-md shadow-sm text-sm">
                                     <option value="100/0">RPP 100%</option> <option value="80/20">RPP 80%/RTU 20%</option>
                                     <option value="70/30">RPP 70%/RTU 30%</option> <option value="60/40">RPP 60%/RTU 40%</option>
                                     <option value="50/50">RPP 50%/RTU 50%</option>
                                 </select>
                             </div>
-                            {calculatedMinPremium !== undefined && (
+                            {/*{calculatedMinPremium !== undefined && (
                                 <div className="mt-3 p-2 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 text-xs">
-                                    <p>เบี้ย iWealthy (ฐาน RPP 100%) แนะนำ: {calculatedMinPremium.toLocaleString()} บ./ปี</p>
+                                    <p>เบี้ย iWealthy ที่แนะนำ: {calculatedMinPremium.toLocaleString()} บ./ปี</p>
                                     <p>(RPP: {calculatedRpp?.toLocaleString()}, RTU: {calculatedRtu?.toLocaleString()})</p>
                                 </div>
-                            )}
+                            )}*/}
                         </div>
                     )}
                 </section>
@@ -435,12 +435,21 @@ export default function LthcFormPage() {
             {/* สรุปเบี้ยสุขภาพปีแรก และ ปุ่มคำนวณหลัก */}
             <section className="mt-6 p-6 border rounded-lg shadow-xl bg-gradient-to-r from-sky-500 to-indigo-600">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="text-white text-center md:text-left">
-                        <h3 className="text-md font-semibold">เบี้ยประกันสุขภาพรวมปีแรก (โดยประมาณ):</h3>
+                    <div className="text-white text-left">
+                        <h3 className="text-md font-semibold">เบี้ยประกันสุขภาพรวมปีแรก:</h3>
                         <p className="text-3xl font-bold mt-1">
                             {totalFirstYearHealthPremium.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-lg font-medium">บาท/ปี</span>
                         </p>
                     </div>
+                    {calculatedMinPremium !== undefined && (
+                        <div className="mt-3 p-2 text-white text-left">
+                            <h3 className="text-md font-semibold">เบี้ย iWealthy ที่แนะนำ:</h3>
+                            <p className="text-3xl font-bold mt-1">    
+                                {calculatedMinPremium.toLocaleString()} <span className="text-lg font-medium">บาท/ปี</span>
+                            </p>
+                            <p>(RPP: {calculatedRpp?.toLocaleString()}, RTU: {calculatedRtu?.toLocaleString()})</p>
+                        </div>
+                    )}
                     <button
                         onClick={runCalculation}
                         disabled={isLoading || showIHUWarning} // บล็อกถ้า isLoading หรือถ้าไม่เลือก IHU

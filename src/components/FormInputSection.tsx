@@ -126,7 +126,7 @@ export default function FormInputSection() {
         </div>
 
         {/* คอลัมน์ 2: งวดการชำระ */}
-        <div className="w-full sm:w-auto justify-self-start md:justify-self-start"> {/* ปรับ justify */}
+        <div className="w-full justify-self-start md:justify-self-start"> {/* ปรับ justify */}
           <label className="block mb-1 text-xs font-medium text-gray-700">งวดการชำระ</label>
           <div className="flex border border-gray-500 rounded overflow-hidden w-full h-6">
             {(['monthly', 'semi-annual', 'annual'] as const).map((freq, index) => (

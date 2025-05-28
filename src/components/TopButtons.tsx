@@ -60,7 +60,7 @@ export default function TopButtons({
   return (
     // Container จัดชิดขวา, กำหนดพื้นหลัง, padding, gap
     // (ปรับแก้ className ตามต้องการเพื่อให้ Layout สวยงามเมื่อมี 5 ปุ่ม)
-    <div className="flex justify-end gap-2 p-2 bg-blue-50"> {/* อาจจะลด p / gap */}
+    <div className="flex justify-end gap-4 p-2 bg-blue-50"> {/* อาจจะลด p / gap */}
       {/* วน Loop สร้างปุ่มจาก Array topActions */}
       {topActions.map((action) => (
         <button

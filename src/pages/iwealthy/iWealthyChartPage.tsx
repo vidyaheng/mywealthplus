@@ -211,9 +211,17 @@ const IWealthyChartPage = () => {
             </div>
 
             {/* On-page graph display */}
-            <div className="flex flex-col md:flex-row w-full h-[calc(100vh-250px)] gap-1"> {/* Adjusted height slightly */}
+            <div className="flex flex-col md:flex-row w-full h-[calc(100vh-180px)] gap-1"> {/* Adjusted height slightly */}
                 <div className="flex-grow md:w-3/4 border border-gray-300 rounded-md shadow-md p-1 overflow-hidden relative">
-                    <div className="absolute inset-0"> {/* Ensures Graph fills this parent */}
+                    <div className="relative" 
+                        style={{
+                            flexGrow: 1, // ⭐ กำหนดความสูงที่ต้องการให้เป็น viewport ของกราฟ
+                            overflowY: 'auto', // ⭐ ทำให้ scroll ได้เมื่อเนื้อหาเกิน
+                            minHeight: 0,
+                            // width: '100%', // อาจจะกำหนดความกว้างด้วยถ้าจำเป็น
+                            // border: '1px solid red' // ใส่ border เพื่อดูขอบเขต (สำหรับ debug)
+                        }}
+                        >
                         <Graph
                             data={chartDataForGraph}
                             setHoveredData={setHoveredGraphData}

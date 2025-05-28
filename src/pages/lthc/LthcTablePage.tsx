@@ -128,7 +128,7 @@ export default function LthcTablePage() {
                     ตารางผลประโยชน์แผนสุขภาพครบวงจร (LTHC Planner)
                 </h2>
                 <p className="text-sm text-gray-600 mb-3">
-                    แผนที่เลือก: {getPlanDisplayName()}
+                    แผนสุขภาพพที่เลือก: {getPlanDisplayName()}
                 </p>
                 <div className="overflow-x-auto shadow-md sm:rounded-lg border border-gray-200" style={{ maxHeight: '70vh' }}>
                     <table className="min-w-full divide-y divide-gray-200 text-xs">

@@ -150,7 +150,7 @@ export default function FullScreenDisplayModal({
                         </TabsContent>
 
                         {/* Chart Content - This will scroll if its content (chartContent) is taller */}
-                        <TabsContent value="graph" className="mt-1 flex-1 min-h-0 overflow-hidden">
+                        <TabsContent value="graph" className="mt-1 flex-1 min-h-0 overflow-auto">
                             <div className="h-full w-full">
                                 {graphTabContent}
                             </div>

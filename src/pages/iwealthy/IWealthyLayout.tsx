@@ -43,23 +43,26 @@ export default function IWealthyLayout() {
     {/* ===================================================================== */}
             {/* >>>>> ใส่ TopButtons และ InvestmentReturnInput ตรงนี้ได้เลยครับ <<<<< */}
             {/* ===================================================================== */}
-            <div className="flex-shrink-0 px-4 pt-3 pb-1 bg-blue-50"> {/* อาจจะเพิ่ม bg-blue-50 ให้เข้ากับ tab bar */}
-                <TopButtons
-                    onOpenReduceModal={context.openReduceModal}
-                    onOpenChangeFreqModal={context.openChangeFreqModal}
-                    onOpenWithdrawalModal={context.openWithdrawalModal}
-                    onOpenPauseModal={context.openPauseModal}
-                    onOpenAddInvestmentModal={context.openAddInvestmentModal}
-                />
-            </div>
-            <div className="flex justify-end px-4 py-2 bg-blue-50 flex-shrink-0"> {/* อาจจะเพิ่ม bg-blue-50 */}
-                <div className="w-full max-w-xs">
-                    <InvestmentReturnInput
-                        value={context.investmentReturn}
-                        onChange={context.handleChangeInvestmentReturn}
-                        showInputField={true}
-                    />
-                </div>
+            <div className="flex justify-between items-center px-4 py-3 bg-blue-50 flex-shrink-0">
+              {/* ส่วนซ้าย: TopButtons */}
+              <div className="ml-4"> {/* อาจจะใส่ div ครอบ TopButtons ถ้าต้องการ styling เพิ่มเติมเฉพาะส่วนนี้ */}
+                  <TopButtons
+                      onOpenReduceModal={context.openReduceModal}
+                      onOpenChangeFreqModal={context.openChangeFreqModal}
+                      onOpenWithdrawalModal={context.openWithdrawalModal}
+                      onOpenPauseModal={context.openPauseModal}
+                      onOpenAddInvestmentModal={context.openAddInvestmentModal}
+                  />
+              </div>
+
+              {/* ส่วนขวา: InvestmentReturnInput */}
+              <div className="w-full max-w-xs"> {/* div นี้ยังคงใช้เพื่อจำกัดความกว้างของ Input */}
+                  <InvestmentReturnInput
+                      value={context.investmentReturn}
+                      onChange={context.handleChangeInvestmentReturn}
+                      showInputField={true}
+                  />
+              </div>
             </div>
             {/* >>>>> สิ้นสุดส่วนที่เพิ่มเข้ามา <<<<< */}
 

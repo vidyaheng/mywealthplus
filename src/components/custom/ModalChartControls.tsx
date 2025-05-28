@@ -140,10 +140,10 @@ const ModalChartControls: React.FC<ModalChartControlsProps> = ({
                         </div>
                         {displayData ? (
                             <>
-                                {createDataRow("mccFSDeathBenefit", "คุ้มครองชีวิต", displayData.deathBenefit, "#70A8DB", showDeathBenefit, setShowDeathBenefit)}
-                                {createDataRow("mccFSAccountValue", "มูลค่ากรมธรรม์", displayData.accountValue, "#F5A623", showAccountValue, setShowAccountValue)}
-                                {createDataRow("mccFSPremiumCumulative", "เบี้ยประกันสะสม", displayData.premiumCumulative, "#99BE60", showPremiumCumulative, setShowPremiumCumulative)}
-                                {createDataRow("mccFSPremiumAnnual", "เบี้ยประกันรายปี", displayData.premiumAnnual, "red", showPremiumAnnual, setShowPremiumAnnual)}
+                                {createDataRow("mccFSDeathBenefit", "เสียชีวิต", displayData.deathBenefit, "#70A8DB", showDeathBenefit, setShowDeathBenefit)}
+                                {createDataRow("mccFSAccountValue", "มูลค่า กธ", displayData.accountValue, "#F5A623", showAccountValue, setShowAccountValue)}
+                                {createDataRow("mccFSPremiumCumulative", "เบี้ยสะสม", displayData.premiumCumulative, "#99BE60", showPremiumCumulative, setShowPremiumCumulative)}
+                                {createDataRow("mccFSPremiumAnnual", "เบี้ยรายปี", displayData.premiumAnnual, "red", showPremiumAnnual, setShowPremiumAnnual)}
                             </>
                         ) : <p className="text-xs text-gray-500 text-center py-2 w-full">เลื่อนเมาส์บนกราฟเพื่อดูข้อมูล</p>}
                     </div>
