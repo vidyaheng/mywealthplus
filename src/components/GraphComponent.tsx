@@ -143,6 +143,7 @@ const Graph: React.FC<GraphProps> = ({
 
 
     return (
+        
         <ResponsiveContainer width="100%" height="100%" minHeight={500}>
             <LineChart
                 data={data}

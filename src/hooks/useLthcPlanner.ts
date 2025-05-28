@@ -37,7 +37,7 @@ export function useLthcPlanner({
     const [iWealthyMode, setIWealthyMode] = useState<IWealthyMode>(initialIWealthyMode);
 
     // Manual Mode States
-    const [manualRpp, setManualRpp] = useState<number>(60000);
+    const [manualRpp, setManualRpp] = useState<number>(100000);
     const [manualRtu, setManualRtu] = useState<number>(0);
     const [manualInvestmentReturn, setManualInvestmentReturn] = useState<number>(5);
     const [manualIWealthyPPT, setManualIWealthyPPT] = useState<number>(15);

@@ -94,7 +94,7 @@ export default function FormInputSection() {
             {/* อายุ */}
             <div className="min-w-[90px] w-24"> {/* ปรับ width */}
               <div className="flex items-center gap-1.5 mb-1">
-                <FaBirthdayCake className="text-gray-500 text-sm flex-shrink-0"/>
+                <FaBirthdayCake className="text-blue-700 text-sm flex-shrink-0"/>
                 <label htmlFor="age-select" className="text-xs font-medium text-gray-700">อายุ</label>
               </div>
               <select
@@ -109,7 +109,7 @@ export default function FormInputSection() {
             {/* เพศ */}
             <div className="min-w-[150px]">
                <div className="flex items-center gap-1.5 mb-1">
-                 <FaVenusMars className="text-gray-500 text-sm flex-shrink-0" />
+                 <FaVenusMars className="text-blue-700 text-sm flex-shrink-0" />
                  <label className="text-xs font-medium text-gray-700">เพศ</label>
                </div>
               <div className="flex gap-3 items-center h-9">

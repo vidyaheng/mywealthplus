@@ -119,6 +119,7 @@ const GraphComponentLTHC: React.FC<GraphComponentLTHCProps> = ({
 
     return (
         <ResponsiveContainer width="100%" height="100%" minHeight={400}>
+            <div style={{ width: '100%', height: '100%', overflowY: 'auto' }}>
             <LineChart
                 data={data}
                 onMouseMove={handleMouseMove}
@@ -162,6 +163,7 @@ const GraphComponentLTHC: React.FC<GraphComponentLTHCProps> = ({
                 {showCumulativeWithdrawal && <Line isAnimationActive={false} type="monotone" dataKey="cumulativeWithdrawal" name="เงินถอนจาก iW รวม (สะสม)" stroke="#ffc658" strokeWidth={2} dot={false} activeDot={renderActiveDot} />}
                 {showIWealthyAV && <Line isAnimationActive={false} type="monotone" dataKey="eoyAccountValue" name="มูลค่า AV iWealthy (สิ้นปี)" stroke="#26A69A" strokeWidth={2} dot={false} activeDot={renderActiveDot} />}
             </LineChart>
+            </div>
         </ResponsiveContainer>
     );
 };

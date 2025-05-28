@@ -22,6 +22,9 @@ import {
     calculateMEBPremium,
 } from '../../lib/healthPlanCalculations'; // ตรวจสอบ Path
 
+import { FaBirthdayCake, FaVenusMars } from 'react-icons/fa'; // Import Icons
+
+
 // Constants
 const MIN_LR_SA_NORMAL_MODE = 150000;
 const PACKAGE_LR_SA = 50000;
@@ -161,6 +164,7 @@ export default function LthcFormPage() {
     }, [policyholderEntryAge]);
 
     const showIHUWarning = !isIHUSelected; //เงื่อนไขสำหรับแสดงคำเตือน IHU
+    
 
     return (
         <div className="space-y-6 pb-12">
@@ -172,7 +176,11 @@ export default function LthcFormPage() {
                         <h3 className="text-lg font-semibold text-slate-700 mb-2">ข้อมูลผู้เอาประกัน</h3>
                         <div className="grid grid-cols-2 gap-x-4 items-end">
                             <div>
-                                <label htmlFor="currentEntryAge" className="block text-sm font-medium text-gray-700">อายุ (ปัจจุบัน):</label>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                    <FaBirthdayCake className="text-blue-700 text-sm flex-shrink-0"/>
+                                    <label htmlFor="currentEntryAge" className="text-sm font-medium text-gray-700">อายุ (ปัจจุบัน)</label>
+                                </div>
+                                
                                 <select
                                     id="currentEntryAge"
                                     value={policyholderEntryAge}
@@ -184,7 +192,10 @@ export default function LthcFormPage() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">เพศ:</label>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                    <FaVenusMars className="text-blue-700 text-sm flex-shrink-0" />
+                                    <label className="mb-1 text-sm font-medium text-gray-700">เพศ</label>
+                                </div>
                                 <div className="flex space-x-3 items-center mt-1.5">
                                     <label className="flex items-center cursor-pointer">
                                         <input type="radio" name="genderForm" value="male" checked={policyholderGender === 'male'} onChange={() => setPolicyholderGender('male')} className="form-radio accent-blue-600 h-4 w-4" />
