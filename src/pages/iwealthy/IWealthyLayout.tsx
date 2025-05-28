@@ -40,6 +40,29 @@ export default function IWealthyLayout() {
     // Container หลักของ Layout นี้ (ใช้โครงสร้างและ Style เดิมของคุณ)
     <div className="flex flex-col h-auto -mt-2"> {/* พิจารณาเอา -mt-10 ออกถ้าไม่ต้องการ */}
 
+    {/* ===================================================================== */}
+            {/* >>>>> ใส่ TopButtons และ InvestmentReturnInput ตรงนี้ได้เลยครับ <<<<< */}
+            {/* ===================================================================== */}
+            <div className="flex-shrink-0 px-4 pt-3 pb-1 bg-blue-50"> {/* อาจจะเพิ่ม bg-blue-50 ให้เข้ากับ tab bar */}
+                <TopButtons
+                    onOpenReduceModal={context.openReduceModal}
+                    onOpenChangeFreqModal={context.openChangeFreqModal}
+                    onOpenWithdrawalModal={context.openWithdrawalModal}
+                    onOpenPauseModal={context.openPauseModal}
+                    onOpenAddInvestmentModal={context.openAddInvestmentModal}
+                />
+            </div>
+            <div className="flex justify-end px-4 py-2 bg-blue-50 flex-shrink-0"> {/* อาจจะเพิ่ม bg-blue-50 */}
+                <div className="w-full max-w-xs">
+                    <InvestmentReturnInput
+                        value={context.investmentReturn}
+                        onChange={context.handleChangeInvestmentReturn}
+                        showInputField={true}
+                    />
+                </div>
+            </div>
+            {/* >>>>> สิ้นสุดส่วนที่เพิ่มเข้ามา <<<<< */}
+
       {/* === ส่วน Tab Bar === */}
       <div className="flex bg-blue-50 px-4 relative">
         {/* วน Loop สร้างปุ่ม Tab แต่ละอัน */}
@@ -77,28 +100,7 @@ export default function IWealthyLayout() {
       </div>
       {/* === จบ ส่วน Tab Bar === */}
 
-      {/* ===================================================================== */}
-            {/* >>>>> ใส่ TopButtons และ InvestmentReturnInput ตรงนี้ได้เลยครับ <<<<< */}
-            {/* ===================================================================== */}
-            <div className="flex-shrink-0 px-4 pt-3 pb-1 bg-blue-50"> {/* อาจจะเพิ่ม bg-blue-50 ให้เข้ากับ tab bar */}
-                <TopButtons
-                    onOpenReduceModal={context.openReduceModal}
-                    onOpenChangeFreqModal={context.openChangeFreqModal}
-                    onOpenWithdrawalModal={context.openWithdrawalModal}
-                    onOpenPauseModal={context.openPauseModal}
-                    onOpenAddInvestmentModal={context.openAddInvestmentModal}
-                />
-            </div>
-            <div className="flex justify-end px-4 py-2 bg-blue-50 flex-shrink-0"> {/* อาจจะเพิ่ม bg-blue-50 */}
-                <div className="w-full max-w-xs">
-                    <InvestmentReturnInput
-                        value={context.investmentReturn}
-                        onChange={context.handleChangeInvestmentReturn}
-                        showInputField={true}
-                    />
-                </div>
-            </div>
-            {/* >>>>> สิ้นสุดส่วนที่เพิ่มเข้ามา <<<<< */}
+      
 
       {/* เส้นขอบคั่น (อาจจะไม่จำเป็น ถ้า Tab Bar จัดการเส้นขอบแล้ว) */}
       {/* <div className="border-b border-gray-300"></div> */}

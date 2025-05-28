@@ -188,11 +188,11 @@ export default function LthcFormPage() {
                                 <div className="flex space-x-3 items-center mt-1.5">
                                     <label className="flex items-center cursor-pointer">
                                         <input type="radio" name="genderForm" value="male" checked={policyholderGender === 'male'} onChange={() => setPolicyholderGender('male')} className="form-radio accent-blue-600 h-4 w-4" />
-                                        <span className={`ml-1.5 mb-4 text-sm ${policyholderGender === 'male' ? 'font-bold text-blue-600' : 'text-gray-700'}`}>ชาย</span>
+                                        <span className={`ml-1.5 mb-3 text-sm ${policyholderGender === 'male' ? 'font-bold text-blue-600' : 'text-gray-700'}`}>ชาย</span>
                                     </label>
                                     <label className="flex items-center cursor-pointer">
                                         <input type="radio" name="genderForm" value="female" checked={policyholderGender === 'female'} onChange={() => setPolicyholderGender('female')} className="form-radio accent-pink-600 h-4 w-4" />
-                                        <span className={`ml-1.5 mb-4 text-sm ${policyholderGender === 'female' ? 'font-bold text-pink-600' : 'text-gray-700'}`}>หญิง</span>
+                                        <span className={`ml-1.5 mb-3 text-sm ${policyholderGender === 'female' ? 'font-bold text-pink-600' : 'text-gray-700'}`}>หญิง</span>
                                     </label>
                                 </div>
                             </div>

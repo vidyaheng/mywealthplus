@@ -163,7 +163,7 @@ export default function LthcChartPage() {
             </div>
 
             {/* On-page graph display */}
-            <div className="flex flex-col md:flex-row w-full h-[calc(100vh-220px)]"> {/* ปรับความสูงตามต้องการ */}
+            <div className="flex flex-col md:flex-row w-full h-[calc(100vh-280px)]"> {/* ปรับความสูงตามต้องการ */}
                 <div className="flex-grow md:w-3/4 border border-gray-300 rounded-md shadow-md p-1 overflow-hidden relative">
                     <div className="absolute inset-0">
                         <GraphComponentLTHC

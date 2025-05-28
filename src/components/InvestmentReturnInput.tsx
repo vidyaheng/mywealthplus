@@ -179,7 +179,7 @@ export default function InvestmentReturnInput({
                 </div>
 
                 {showInputField && !isFullScreenView && ( 
-                    <div className="flex items-center gap-x-1 w-auto flex-shrink-0">
+                    <div className="flex items-center mb-3 gap-x-1 w-auto flex-shrink-0">
                         <input
                             type="text"
                             inputMode="decimal"
