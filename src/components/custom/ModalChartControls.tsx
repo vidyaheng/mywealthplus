@@ -115,9 +115,9 @@ const ModalChartControls: React.FC<ModalChartControlsProps> = ({
     if (isFullScreenView) {
         // ----- Layout สำหรับ Fullscreen Modal (พยายามจัดแนวนอน, compact) -----
         return (
-            <div className="bg-blue-900 flex flex-row flex-wrap items-center justify-between w-full text-sm p-1.5 gap-x-3 gap-y-2">
+            <div className="bg-blue-900 flex flex-row flex-wrap items-center justify-between w-full text-sm p-1.5 gap-x-1 gap-y-2">
                 {/* Section 1: Checkboxes (เรียงแนวนอนและ wrap, พยายามใช้พื้นที่) */}
-                <div className="flex-auto order-1 min-w-[260px] xs:min-w-[280px] sm:min-w-[320px]">
+                <div className="flex-auto order-1 min-w-[150px] xs:min-w-[180px] sm:min-w-[220px]">
                     <div className="flex flex-row flex-wrap justify-center sm:justify-start items-center gap-x-2 gap-y-1">
                         {/* คอลัมน์ซ้าย: Title "ข้อมูล ณ อายุ" และ ปุ่ม "Update" */}
                         <div className="flex flex-col space-y-2 flex-shrink-0 items-start py-1 border-r border-gray-200 mr-8"> {/* flex-shrink-0 เพื่อไม่ให้คอลัมน์นี้หด */}
@@ -150,7 +150,7 @@ const ModalChartControls: React.FC<ModalChartControlsProps> = ({
                 </div>
 
                 {/* Section 2: Sliders (เรียงแนวตั้งภายใน Section นี้, Section นี้จะพยายามแคบ) */}
-                <div className="flex flex-col space-y-1.5 order-2 w-full xs:w-auto xs:min-w-[180px] sm:max-w-[200px] md:max-w-[220px]">
+                <div className="flex flex-col space-y-1.5 order-2 w-full xs:w-auto xs:min-w-[160px] sm:max-w-[180px] md:max-w-[200px]">
                     <div className="flex flex-col items-center w-full">
                         {/*<h4 className="text-[11px] font-semibold text-gray-100 mb-0.5 whitespace-nowrap">
                             สัดส่วนเบี้ย RPP/RTU
