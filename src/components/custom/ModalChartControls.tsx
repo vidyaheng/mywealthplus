@@ -117,7 +117,7 @@ const ModalChartControls: React.FC<ModalChartControlsProps> = ({
         return (
             <div className="bg-blue-900 flex flex-row flex-wrap items-center justify-between w-full text-sm p-1.5 gap-x-1 gap-y-2">
                 {/* Section 1: Checkboxes (เรียงแนวนอนและ wrap, พยายามใช้พื้นที่) */}
-                <div className="flex-auto order-1 min-w-[150px] xs:min-w-[180px] sm:min-w-[220px]">
+                <div className="flex-auto order-1 min-w-[120px] xs:min-w-[140px] sm:min-w-[160px]">
                     <div className="flex flex-row flex-wrap justify-center sm:justify-start items-center gap-x-2 gap-y-1">
                         {/* คอลัมน์ซ้าย: Title "ข้อมูล ณ อายุ" และ ปุ่ม "Update" */}
                         <div className="flex flex-col space-y-2 flex-shrink-0 items-start py-1 border-r border-gray-200 mr-8"> {/* flex-shrink-0 เพื่อไม่ให้คอลัมน์นี้หด */}

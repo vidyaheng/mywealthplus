@@ -131,8 +131,8 @@ export default function PausePremiumModal({
       // Reset start/end value (ใช้ Setter โดยตรง)
       const defaultStartAge = firstPossibleStartAge;
       const finalMaxAge = maxPossibleAge > defaultStartAge ? maxPossibleAge : defaultStartAge;
-      setStartValue(newRefType === 'age' ? defaultStartAge : Math.max(1, defaultStartAge - currentAge)); // <<< ใช้ setStartValue
-      setEndValue(newRefType === 'age' ? finalMaxAge : Math.max(1, finalMaxAge - currentAge)); // <<< ใช้ setEndValue
+      setStartValue(newRefType === 'age' ? defaultStartAge : Math.max(1, defaultStartAge - currentAge + 1)); // <<< ใช้ setStartValue
+      setEndValue(newRefType === 'age' ? finalMaxAge : Math.max(1, finalMaxAge - currentAge + 1)); // <<< ใช้ setEndValue
   };
 
   const handleStartValueChange = (value: string) => {
@@ -168,11 +168,11 @@ export default function PausePremiumModal({
     // แปลงค่าให้เป็นอายุจริง
     const startAge = refType === 'age' 
       ? startValue 
-      : currentAge + startValue;
+      : currentAge + startValue - 1;
     
     const endAge = refType === 'age' 
       ? endValue 
-      : currentAge + endValue;
+      : currentAge + endValue - 1;
   
     console.log('Adding period:', { startAge, endAge });
   
@@ -201,8 +201,8 @@ export default function PausePremiumModal({
     // Reset form
     const nextStartAge = endAge + 1;
     if (nextStartAge <= maxPossibleAge) {
-      setStartValue(refType === 'age' ? nextStartAge : nextStartAge - currentAge);
-      setEndValue(refType === 'age' ? maxPossibleAge : maxPossibleAge - currentAge);
+      setStartValue(refType === 'age' ? nextStartAge : Math.max(1, nextStartAge - currentAge + 1));
+      setEndValue(refType === 'age' ? maxPossibleAge : Math.max(1, maxPossibleAge - currentAge + 1));
     } else {
       setCanAddNewPeriod(false);
     }

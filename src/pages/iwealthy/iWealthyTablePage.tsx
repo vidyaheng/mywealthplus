@@ -190,7 +190,7 @@ export default function IWealthyTablePage() {
     return (
         <div className="p-4 md:p-6 space-y-4">
             <h2 className="text-xl font-semibold text-center text-blue-800 mb-4">
-                ตารางสรุปผลประโยชน์ ({pageViewMode === 'compact' ? 'รายปี (แบบย่อ)' : 'รายปี (แบบเต็ม)'})
+                ตารางสรุปผลประโยชน์ ({pageViewMode === 'compact' ? 'แบบย่อ' : 'แบบเต็ม'})
             </h2>
 
             <div className="flex justify-between items-center mb-3">
@@ -237,7 +237,7 @@ export default function IWealthyTablePage() {
                 viewMode={pageViewMode} // ใช้ pageViewMode
                 showCsv={pageShowCsv}   // ใช้ pageShowCsv
                 formatNumber={formatNumber}
-                caption="ตารางสรุปผลประโยชน์โดยประมาณ (ในหน้าหลัก)"
+                //caption="ตารางสรุปผลประโยชน์โดยประมาณ (ในหน้าหลัก)"
             />
 
             {isFullScreenModalOpen && illustrationData && (
