@@ -1,24 +1,39 @@
+// tsconfig.node.json  <--- ให้ใช้เนื้อหานี้แทนของเดิมทั้งหมด
 {
+  "extends": "./tsconfig.json", // (Optional) ถ้าคุณต้องการสืบทอด options บางอย่างจาก tsconfig.json หลัก
+                                // ถ้าไม่ต้องการ ก็เอาบรรทัดนี้ออก แล้วกำหนด compilerOptions ทั้งหมดเอง
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
-    "target": "ES2022",
-    "lib": ["ES2023"],
-    "module": "ESNext",
-    "composite": true,
+    "composite": true,                // สำคัญเมื่อถูกอ้างอิงจาก tsconfig.json หลัก
+    "target": "ES2020",               // หรือ ES version ใหม่กว่าที่ Node.js ของคุณรองรับ
+    "module": "CommonJS",             // ⭐ ให้ ts-node compile เป็น CommonJS สำหรับ Express server
+    "moduleResolution": "Node",       // หรือ "NodeNext"
+    "esModuleInterop": true,          // ⭐⭐⭐ สำคัญมาก: ต้องเป็น true เพื่อแก้ TS1259
+    "allowSyntheticDefaultImports": true, // มักจะใช้คู่กับ esModuleInterop
+    "resolveJsonModule": true,        // ถ้ามีการ import .json
     "skipLibCheck": true,
-
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "noEmit": false,
-
-    /* Linting */
+    "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "outDir": "./dist/server",        // (Optional) ถ้าคุณต้องการ build output ไปที่โฟลเดอร์นี้
+    "rootDir": ".",                   // ถ้า server.ts และ accessLog.ts อยู่ที่ root ของโปรเจกต์
+    "sourceMap": true,                // มีประโยชน์สำหรับการ debug
+    "types": ["node"],                // ระบุ types สำหรับ Node.js environment
+
+    // ถ้าคุณไม่ได้ extends จาก tsconfig.json หลัก และต้องการ path aliases:
+    // "baseUrl": ".",
+    // "paths": {
+    //   "@/*": ["./src/*"] // ถ้า backend ของคุณมีการใช้ path alias @/* ไปยัง src
+    // }
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo" // เพิ่มกลับเข้ามาได้
   },
-  "include": ["vite.config.ts"]
+  "include": [
+    "server.ts",                    // ⭐ ไฟล์ backend หลักของคุณ
+    "accessLog.ts"                  // ⭐ ไฟล์ model หรือไฟล์ backend อื่นๆ ที่เกี่ยวข้อง
+    // เพิ่มไฟล์ .ts อื่นๆ ที่เป็นส่วนของ backend ของคุณที่นี่
+  ],
+  "exclude": [
+    "node_modules",
+    "src",                          // ถ้า frontend code ทั้งหมดอยู่ใน src และ backend files ไม่ได้อยู่ในนั้น
+    "vite.config.ts",               // ไม่ควรให้ node config มายุ่งกับ vite config โดยตรงใน include นี้
+    "dist"                          // ไม่ต้อง include output directory
+  ]
 }

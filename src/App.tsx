@@ -20,6 +20,7 @@ import IWealthyChartPage from "./pages/iwealthy/iWealthyChartPage";
 import CiPage from "./pages/ci/CiPage";
 import RetirePage from "./pages/retire/RetirePage";
 import LifePlanPage from "./pages/lifeplan/LifePlanPage";
+import PinForm from './PinForm';
 import {
     getSumInsuredFactor,
     generateIllustrationTables,
@@ -334,10 +335,18 @@ function App() {
         openPauseModal, handleSavePausePlan,
         openAddInvestmentModal, handleSaveAddInvestmentPlan,
     ]);
+
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+        if (!isAuthenticated) {
+            // ยังไม่ได้ใส่ PIN หรือ PIN ไม่ถูกต้อง
+            return <PinForm onSuccess={() => setIsAuthenticated(true)} />;
+        }
     // --- จบส่วน Context Value ---
 
     // --- ส่วน JSX Layout ---
     return (
+        
         <AppContext.Provider value={contextValue}>
             <div className="flex flex-col h-screen bg-blue-50 font-sans">
                 <header className="bg-white shadow-sm w-full py-2 px-4 flex-shrink-0">
@@ -411,4 +420,5 @@ function App() {
         </AppContext.Provider>
     );
 }
+
 // --- จบ App Component ---

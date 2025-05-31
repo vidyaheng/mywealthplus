@@ -1,0 +1,7 @@
+
+{
+  "watch": ["server.ts", "accessLog.ts"], 
+  "ext": "ts,json",
+  "ignore": ["src/", "node_modules/", "dist/"],
+  "exec": "ts-node --project tsconfig.node.json server.ts"
+}

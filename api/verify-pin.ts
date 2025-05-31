@@ -1,16 +1,21 @@
-export default function handler(req: any, res: any) {
-  // อ่าน PIN ที่อนุญาตจาก environment variable ถ้าไม่กำหนดจะใช้ค่า default
+export default function handler(req:any, res:any) {
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method Not Allowed' });
+    return;
+  }
+
   const allowedPins = (process.env.ACCESS_PINS || '104669,114252,114460,126641,126666,130079,132987')
     .split(',')
     .map(pin => pin.trim());
 
-  // รับ PIN ที่ผู้ใช้ส่งมา (เช่น { "pin": "123456" })
-  const { pin } = req.body;
+  const { pin } = req.body || {};
+  if (!pin) {
+    res.status(400).json({ success: false, error: 'PIN is required' });
+    return;
+  }
 
-  // ตรวจสอบว่าตรงกับ PIN ที่อนุญาตหรือไม่
   const ok = allowedPins.includes(pin);
 
-  // Log สำหรับ track การเข้าใช้งาน
   console.log({
     time: new Date().toISOString(),
     pin,
