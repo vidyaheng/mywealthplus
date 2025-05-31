@@ -3,6 +3,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import AccessLog from './accessLog';
+import { allowedPins } from './allowedPins';
 
 const app = express();
 app.use(cors());
@@ -27,7 +28,7 @@ mongoose.connect(MONGODB_URI)
   });
 // --- ⭐ สิ้นสุดจุดตรวจสอบสำคัญ ⭐ ---
 
-const allowedPins = ['104669','114252','114460','126641','126666','130079','132987',"094373"];
+//const allowedPins = ['104669','114252','114460','126641','126666','130079','132987',"094373"];
 
 app.post('/api/verify-pin', async (req: Request, res: Response) => {
   console.log('Request received at /api/verify-pin');
@@ -49,10 +50,10 @@ app.post('/api/verify-pin', async (req: Request, res: Response) => {
         // หรือจะโยน error เพื่อให้ client รู้ว่ามีปัญหาภายในก็ได้
     } else {
         await AccessLog.create({
-          ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+          ip,
           pin,
           success: ok,
-          userAgent: req.headers['user-agent'] || '',
+          userAgent
         });
         console.log('Log saved!');
     }

@@ -34,6 +34,7 @@
     "node_modules",
     "src",                          // ถ้า frontend code ทั้งหมดอยู่ใน src และ backend files ไม่ได้อยู่ในนั้น
     "vite.config.ts",               // ไม่ควรให้ node config มายุ่งกับ vite config โดยตรงใน include นี้
-    "dist"                          // ไม่ต้อง include output directory
+    "dist",
+    "*.ts"                          // ไม่ต้อง include output directory
   ]
 }
