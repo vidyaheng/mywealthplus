@@ -319,6 +319,7 @@ export function calculateBenefitIllustrationMonthly(
     let currentAccountValue_BOM = 0;
     let currentSumAssured = input.initialSumInsured;
     let paidMonthsCount = 0;
+    let paidPeriodsCount = 0;
     let wasWithdrawalInFirst6Years = false;
     const eomValuesLast12Months: number[] = [];
 
@@ -386,6 +387,7 @@ export function calculateBenefitIllustrationMonthly(
             rpp_month = (input.rppPerYear || 0) / paymentsPerYear;
             rtu_month = (input.rtuPerYear || 0) / paymentsPerYear;
             paidMonthsCount++;
+            paidPeriodsCount++;
         }
         if (monthInYear === 1) {
             sortedAdditionalInvestments.forEach(inv => {
@@ -470,18 +472,19 @@ export function calculateBenefitIllustrationMonthly(
 
         // 7. Royalty Bonus (only if not lapsed yet)
         royaltyBonus_month = 0;
-        if (!policyIsLapsed && monthInYear === 12) {
-            const paid6Y = paidMonthsCount >= (ROYALTY_BONUS_ELIGIBILITY_YEARS * 12);
-            const eligible6Y = paid6Y && !wasWithdrawalInFirst6Years;
-            const pausedThisY = sortedPausePeriods.some(p => p.startAge === currentAge || (p.startAge < currentAge && p.endAge >= currentAge));
-            const withdrewThisY = withdrawal_month > 0;
-            if (eligible6Y && (policyYear <= premiumPayingTermYears) && !pausedThisY && !withdrewThisY) {
-                if (eomValuesLast12Months.length === 12) {
-                    royaltyBonus_month = Math.max(0, (eomValuesLast12Months.reduce((a, b) => a + b, 0) / 12) * ROYALTY_BONUS_RATE);
+            if (!policyIsLapsed && monthInYear === 12) {
+                // เปลี่ยนจาก paidMonthsCount >= 72 เป็น paidPeriodsCount >= 6
+                const paid6Y = paidPeriodsCount >= ROYALTY_BONUS_ELIGIBILITY_YEARS;
+                const eligible6Y = paid6Y && !wasWithdrawalInFirst6Years;
+                const pausedThisY = sortedPausePeriods.some(p => p.startAge === currentAge || (p.startAge < currentAge && p.endAge >= currentAge));
+                const withdrewThisY = withdrawal_month > 0;
+                if (eligible6Y && (policyYear <= premiumPayingTermYears) && !pausedThisY && !withdrewThisY) {
+                    if (eomValuesLast12Months.length === 12) {
+                        royaltyBonus_month = Math.max(0, (eomValuesLast12Months.reduce((a, b) => a + b, 0) / 12) * ROYALTY_BONUS_RATE);
+                    }
                 }
+                calculatedEomValueThisMonth += royaltyBonus_month;
             }
-            calculatedEomValueThisMonth += royaltyBonus_month;
-        }
 
         // 8. Final EOM and status for the month
         const eomValueRawForMonth = calculatedEomValueThisMonth;

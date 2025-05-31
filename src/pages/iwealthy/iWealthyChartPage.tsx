@@ -96,16 +96,18 @@ const IWealthyChartPage = () => {
     const chartDataForGraph: ChartData[] = useMemo(() => {
         if (!illustrationData?.annual) return [];
         let cumulativePremium = 0;
-        return illustrationData.annual.map((row: AnnualCalculationOutputRow) => {
-            cumulativePremium += row.totalPremiumYear;
-            return {
-                age: row.age,
-                deathBenefit: row.eoyDeathBenefit,
-                accountValue: row.eoyAccountValue,
-                premiumAnnual: row.totalPremiumYear,
-                premiumCumulative: cumulativePremium,
-            };
-        });
+        return illustrationData.annual
+            .filter((row: AnnualCalculationOutputRow) => row.eoyAccountValue > 0) // <--- เพิ่ม filter ตรงนี้
+            .map((row: AnnualCalculationOutputRow) => {
+                cumulativePremium += row.totalPremiumYear;
+                return {
+                    age: row.age,
+                    deathBenefit: row.eoyDeathBenefit,
+                    accountValue: row.eoyAccountValue,
+                    premiumAnnual: row.totalPremiumYear,
+                    premiumCumulative: cumulativePremium,
+                };
+            });
     }, [illustrationData]);
     
     const handleGraphAgeChangeFromComponent = (ageFromGraph: number) => {

@@ -81,7 +81,7 @@ export default function RppRtuRatioSlider({
           <div
             style={{ width: `${rppPercent}%` }}
             className={`relative flex items-center justify-center text-white transition-all duration-200 ease-out after:content-[''] after:absolute after:top-0 after:bottom-0 after:right-0 after:w-px after:bg-white ${
-              isChartPage ? 'bg-gradient-to-r from-blue-300 to-pink-400' : 'bg-gradient-to-r from-blue-900 to-purple-600'
+              isChartPage ? 'bg-gradient-to-r from-blue-300 to-pink-400' : 'bg-gradient-to-r from-blue-300 to-pink-400'
             }`}
           >
             {rppPercent > 0 && `${rppPercent}%`} {/* แสดง % ถ้าไม่เท่ากับ 0 */}

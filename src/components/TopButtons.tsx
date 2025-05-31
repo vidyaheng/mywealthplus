@@ -66,12 +66,12 @@ export default function TopButtons({
         <button
           key={action.id} // ใช้ id เป็น key
           // กำหนด Style ของปุ่ม (อาจจะต้องปรับ w- หรือ font ให้เล็กลงถ้า 5 ปุ่มเบียดกัน)
-          className="flex flex-col items-center gap-0.5 p-1 text-[10px] sm:text-xs text-blue-700 rounded hover:bg-blue-100 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-300 w-16 text-center"
+          className="flex flex-col items-center gap-0.5 p-1 text-[10px] sm:text-xs text-purple-700 rounded hover:bg-blue-100 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-300 w-16 text-center"
           // กำหนด onClick ให้เรียก handler พร้อมส่ง id
           onClick={() => handleActionClick(action.id)}
         >
           {/* ไอคอน */}
-          <div className="text-lg sm:text-xl text-blue-600 h-5 sm:h-6 flex items-center justify-center">
+          <div className="text-lg sm:text-xl text-purple-600 h-5 sm:h-6 flex items-center justify-center">
              {React.createElement(action.icon)}
           </div>
           {/* ข้อความ Label */}

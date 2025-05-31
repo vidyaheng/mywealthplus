@@ -1,19 +1,6 @@
-// src/components/custom/DisplayTable.tsx (หรือตาม Path ที่คุณต้องการ)
+//import React from "react";
+import { AnnualCalculationOutputRow } from "../lib/calculations";
 
-import {
-    Table,
-    TableBody,
-    TableCaption,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-    TableFooter, // เพิ่ม TableFooter สำหรับแถวผลรวม
-    
-} from "@/components/ui/table"; // ปรับ path ตาม UI Library ของคุณ
-import { AnnualCalculationOutputRow } from "../lib/calculations"; // << ปรับ path ให้ถูกต้องไปยัง type ของคุณ
-
-// นิยาม Type สำหรับ viewMode (อาจจะย้ายไปไฟล์ shared types ถ้าใช้ที่อื่นด้วย)
 export type AnnualTableView = 'compact' | 'full';
 
 interface DisplayTableProps {
@@ -21,8 +8,8 @@ interface DisplayTableProps {
   viewMode: AnnualTableView;
   showCsv: boolean;
   formatNumber: (num: number | undefined | null) => string;
-  caption?: string; // Caption ของตาราง (optional)
-  className?: string; // สำหรับ custom class เพิ่มเติม (optional)
+  caption?: string;
+  className?: string;
 }
 
 export default function DisplayTable({
@@ -30,20 +17,18 @@ export default function DisplayTable({
   viewMode,
   showCsv,
   formatNumber,
-  caption = "ตารางสรุปผลประโยชน์โดยประมาณ", // Default caption
+  //caption = "ตารางสรุปผลประโยชน์โดยประมาณ",
   className
 }: DisplayTableProps) {
 
-  // ถ้าไม่มีข้อมูล ให้แสดงข้อความหรือ return null (จัดการโดย Parent Component แล้วส่วนหนึ่ง)
   if (!data || data.length === 0) {
     return (
-        <div className="p-4 text-center text-gray-600">
-            ไม่มีข้อมูลสำหรับแสดงในตาราง
-        </div>
+      <div className="p-4 text-center text-gray-600">
+        ไม่มีข้อมูลสำหรับแสดงในตาราง
+      </div>
     );
   }
 
-  // คำนวณผลรวม
   const totals = data.reduce((acc, row) => {
     acc.premiumRPPYear += row.premiumRPPYear || 0;
     acc.premiumRTUYear += row.premiumRTUYear || 0;
@@ -58,8 +43,6 @@ export default function DisplayTable({
     acc.investmentReturnYear += row.investmentReturnYear || 0;
     acc.royaltyBonusYear += row.royaltyBonusYear || 0;
     acc.withdrawalYear += row.withdrawalYear || 0;
-    // คอลัมน์ที่ไม่ต้องการรวม:
-    // investmentBaseYear, eoyAccountValue, eoyCashSurrenderValue, eoyDeathBenefit, eoySumInsured
     return acc;
   }, {
     premiumRPPYear: 0,
@@ -77,161 +60,132 @@ export default function DisplayTable({
     withdrawalYear: 0,
   });
 
-  // กำหนดสีพื้นหลังสำหรับ header และ footer cells ที่จะ sticky
-  // ควรเลือกสีทึบแสง และเข้ากับ theme ของคุณ (อาจใช้ utility class จาก Shadcn/ui เช่น bg-background, bg-muted)
-  const headerCellStickyBg = "bg-slate-50 dark:bg-slate-800"; // ตัวอย่างสีพื้นหลัง header
-  const footerCellStickyBg = "bg-slate-100 dark:bg-slate-700"; // ตัวอย่างสีพื้นหลัง footer (เหมือนเดิม)
+  const headerCellStickyBg = "bg-slate-100 dark:bg-slate-800";
+  const footerCellStickyBg = "bg-slate-200 dark:bg-slate-700";
+
+// Default classes for table cells from Shadcn UI (example)
+  const thBaseClass = "h-10 px-3 align-middle font-medium text-muted-foreground text-xs"; // ปรับ padding ตามความเหมาะสม
+  const tdBaseClass = "p-2 align-middle text-xs"; // ปรับ padding
 
   return (
-    // --- ขั้นตอนที่ 1: ตรวจสอบและตั้งค่า Scroll Container ---
-    // div นี้ทำหน้าที่เป็น container ที่จะมีการ scroll เนื้อหาภายใน
-    // `relative` ช่วยให้ z-index ของ sticky children ทำงานถูกต้อง
-    // `max-h-[600px]` (หรือค่าอื่น) จำกัดความสูงเพื่อให้เกิด vertical scroll และ sticky top/bottom ทำงาน
     <div className={`overflow-x-auto overflow-y-auto relative ${className || ''} max-h-[600px]`}>
-      {/* `border-collapse` ช่วยให้การแสดงผล sticky กับเส้นขอบดูดีขึ้น */}
-      <Table className="min-w-full border-collapse">
-        {caption && <TableCaption>{caption}</TableCaption>}
-
-        {/* --- ขั้นตอนที่ 2: ทำให้เซลล์ส่วนหัว (TableHead) ทั้งหมด Sticky --- */}
-        <TableHeader>
-
-          {/* TableRow ของ Header ไม่ต้องใส่ sticky แต่สามารถใส่สีพื้นหลังเพื่อให้ครอบคลุมช่องว่างระหว่างเซลล์ (ถ้ามี) */}
-          {/* หาก TableHead ทุกอันมีสีพื้นหลังของตัวเองแล้ว สีพื้นหลังของ TableRow นี้อาจจะไม่จำเป็น */}
-
-          <TableRow className={`${headerCellStickyBg}`}>
-            {/* คอลัมน์ที่แสดงเสมอ */}
-
-            {/* เพิ่ม `sticky top-0 z-10` และสีพื้นหลังให้กับ TableHead แต่ละอัน */}
-            {/* `z-10` เป็นค่าเริ่มต้น อาจต้องปรับถ้ามี element อื่นซ้อนทับ */}
-            <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-center text-xs`}>ปีที่</TableHead>
-            <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-center text-xs`}>อายุ</TableHead>
-            <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-center text-xs`}>เบี้ยหลัก RPP (บาท)</TableHead>
-            <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-center text-xs`}>เบี้ยลงทุน RTU (บาท)</TableHead>
-            {/* คอลัมน์สำหรับ Full View */}
+      <table className="min-w-full border-collapse text-xs"> {/* เพิ่ม text-xs ให้ table เพื่อให้ default */}
+        {/*caption && <caption className="mt-4 text-sm text-muted-foreground">{caption}</caption>*/}
+        <thead className={`sticky top-0 z-10 ${headerCellStickyBg}`}> {/* ทำให้ thead ทั้งก้อน sticky */}
+          {/* <TableRow> เดิมของคุณมีสีพื้นหลังอยู่แล้ว ซึ่งดีครับ */}
+          <tr className={`${headerCellStickyBg}`}>
+            {/* --- ปรับ className ของ th --- */}
+            <th className={`${thBaseClass} text-center sticky top-0 z-10 ${headerCellStickyBg}`}>ปีที่</th>
+            <th className={`${thBaseClass} text-center sticky top-0 z-10 ${headerCellStickyBg}`}>อายุ</th>
+            <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>เบี้ยหลัก RPP (บาท)</th>
+            <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>เบี้ยลงทุน RTU (บาท)</th>
             {viewMode === 'full' && (
-              <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-right text-xs`}>เบี้ย LSTU (บาท)</TableHead>
+              <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>เบี้ย LSTU (บาท)</th>
             )}
-            <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-right text-xs`}>เบี้ยรวมปีนี้ (บาท)</TableHead>
+            <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>เบี้ยรวมปีนี้ (บาท)</th>
             {viewMode === 'full' && (
               <>
-                <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-right text-xs`}>Charge RPP (บาท)</TableHead>
-                <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-right text-xs`}>Charge RTU (บาท)</TableHead>
-                <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-right text-xs`}>Charge รวม (บาท)</TableHead>
-                <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-right text-xs`}>COI (บาท)</TableHead>
-                <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-right text-xs`}>Admin Fee (บาท)</TableHead>
+                <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>Charge RPP (บาท)</th>
+                <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>Charge RTU (บาท)</th>
+                <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>Charge รวม (บาท)</th>
+                <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>COI (บาท)</th>
+                <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>Admin Fee (บาท)</th>
+                <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>รวมค่าธรรมเนียม (บาท)</th>
               </>
             )}
-            <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-right text-xs`}>รวมค่าธรรมเนียม (บาท)</TableHead>
+            
             {viewMode === 'full' && (
               <>
-                <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-right text-xs`}>เงินลงทุน (บาท)</TableHead>
-                <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-right text-xs`}>ผลตอบแทน (บาท)</TableHead>
+                <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>เงินลงทุน (บาท)</th>
+                <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>ผลตอบแทน (บาท)</th>
               </>
             )}
-            <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-right text-xs`}>Bonus (บาท)</TableHead>
-            <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-right text-xs`}>มูลค่ากรมธรรม์สิ้นปี (บาท)</TableHead>
+            <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>Bonus (บาท)</th>
+            <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>มูลค่ากรมธรรม์สิ้นปี (บาท)</th>
             {showCsv && (
-              <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-right text-xs`}>มูลค่าเวนคืนสิ้นปี (บาท)</TableHead>
+              <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>มูลค่าเวนคืนสิ้นปี (บาท)</th>
             )}
-            <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-right text-xs`}>ผลประโยชน์กรณีเสียชีวิต (บาท)</TableHead>
-            <TableHead className={`sticky top-0 z-10 ${headerCellStickyBg} text-right text-xs`}>เงินถอนปีนี้ (บาท)</TableHead>
-          </TableRow>
-        </TableHeader>
-
-        <TableBody>
+            <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>ผลประโยชน์กรณีเสียชีวิต (บาท)</th>
+            <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>เงินถอนปีนี้ (บาท)</th>
+          </tr>
+        </thead>
+        <tbody className="[&_tr:last-child]:border-0"> {/* เพิ่ม class นี้เพื่อให้เส้นขอบแถวสุดท้ายใน body หายไป (ถ้า footer ไม่มี border-top) */}
           {data.map((row) => (
-            <TableRow key={row.policyYear}>
-              {/* Cells ที่แสดงเสมอ */}
-              <TableCell className="text-center text-xs font-medium">{row.policyYear}</TableCell>
-              <TableCell className="text-center text-xs">{row.age}</TableCell>
-              <TableCell className="text-right text-xs">{formatNumber(row.premiumRPPYear)}</TableCell>
-              <TableCell className="text-right text-xs">{formatNumber(row.premiumRTUYear)}</TableCell>
-
-              {/* Cell สำหรับ Full View */}
+            <tr key={row.policyYear} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+              {/* --- ปรับ className ของ td --- */}
+              <td className={`${tdBaseClass} text-center font-medium`}>{row.policyYear}</td>
+              <td className={`${tdBaseClass} text-center`}>{row.age}</td>
+              <td className={`${tdBaseClass} text-right`}>{formatNumber(row.premiumRPPYear)}</td>
+              <td className={`${tdBaseClass} text-right`}>{formatNumber(row.premiumRTUYear)}</td>
               {viewMode === 'full' && (
-                <TableCell className="text-right text-xs">{formatNumber(row.premiumLSTUYearGross)}</TableCell>
+                <td className={`${tdBaseClass} text-right`}>{formatNumber(row.premiumLSTUYearGross)}</td>
               )}
-
-              {/* Cells ที่แสดงเสมอ */}
-              <TableCell className="text-right text-xs">{formatNumber(row.totalPremiumYear)}</TableCell>
-
-              {/* Cell สำหรับ Full View (ค่าธรรมเนียมแยก) */}
+              <td className={`${tdBaseClass} text-right`}>{formatNumber(row.totalPremiumYear)}</td>
               {viewMode === 'full' && (
                 <>
-                  <TableCell className="text-right text-xs text-orange-600">{formatNumber(row.premiumChargeRPPYear)}</TableCell>
-                  <TableCell className="text-right text-xs text-orange-600">{formatNumber(row.premiumChargeRTUYear)}</TableCell>
-                  <TableCell className="text-right text-xs text-orange-600">{formatNumber(row.totalPremiumChargeYear)}</TableCell>
-                  <TableCell className="text-right text-xs text-red-600">{formatNumber(row.totalCOIYear)}</TableCell>
-                  <TableCell className="text-right text-xs text-red-600">{formatNumber(row.totalAdminFeeYear)}</TableCell>
+                  <td className={`${tdBaseClass} text-right text-orange-600`}>{formatNumber(row.premiumChargeRPPYear)}</td>
+                  <td className={`${tdBaseClass} text-right text-orange-600`}>{formatNumber(row.premiumChargeRTUYear)}</td>
+                  <td className={`${tdBaseClass} text-right text-orange-600`}>{formatNumber(row.totalPremiumChargeYear)}</td>
+                  <td className={`${tdBaseClass} text-right text-red-600`}>{formatNumber(row.totalCOIYear)}</td>
+                  <td className={`${tdBaseClass} text-right text-red-600`}>{formatNumber(row.totalAdminFeeYear)}</td>
+                  <td className={`${tdBaseClass} text-right text-red-600`}>{formatNumber(row.totalFeesYear)}</td>
                 </>
               )}
-
-              {/* Cells ที่แสดงเสมอ */}
-              <TableCell className="text-right text-xs text-red-600">{formatNumber(row.totalFeesYear)}</TableCell>
-
-              {/* Cell สำหรับ Full View */}
+              
               {viewMode === 'full' && (
                 <>
-                  <TableCell className="text-right text-xs">{formatNumber(row.investmentBaseYear)}</TableCell>
-                  <TableCell className="text-right text-xs text-blue-600">{formatNumber(row.investmentReturnYear)}</TableCell>
+                  <td className={`${tdBaseClass} text-right`}>{formatNumber(row.investmentBaseYear)}</td>
+                  <td className={`${tdBaseClass} text-right text-blue-600`}>{formatNumber(row.investmentReturnYear)}</td>
                 </>
               )}
-
-              {/* Cells ที่แสดงเสมอ */}
-              <TableCell className="text-right text-xs text-green-600">{formatNumber(row.royaltyBonusYear)}</TableCell>
-              <TableCell className="text-right text-xs font-semibold">{formatNumber(row.eoyAccountValue)}</TableCell>
-
-              {/* Cell CSV แสดงตามเงื่อนไข */}
+              <td className={`${tdBaseClass} text-right text-green-600`}>{formatNumber(row.royaltyBonusYear)}</td>
+              <td className={`${tdBaseClass} text-right font-semibold`}>{formatNumber(row.eoyAccountValue)}</td>
               {showCsv && (
-                <TableCell className="text-right text-xs">{formatNumber(row.eoyCashSurrenderValue)}</TableCell>
+                <td className={`${tdBaseClass} text-right`}>{formatNumber(row.eoyCashSurrenderValue)}</td>
               )}
-
-              {/* Cells ที่แสดงเสมอ */}
-              <TableCell className="text-right text-xs">{formatNumber(row.eoyDeathBenefit)}</TableCell>
-              <TableCell className="text-right text-xs">{formatNumber(row.withdrawalYear)}</TableCell>
-            </TableRow>
+              <td className={`${tdBaseClass} text-right`}>{formatNumber(row.eoyDeathBenefit)}</td>
+              <td className={`${tdBaseClass} text-right`}>{formatNumber(row.withdrawalYear)}</td>
+            </tr>
           ))}
-        </TableBody>
-        {/* --- แถวผลรวม --- */}
-        {/* --- ขั้นตอนที่ 3: ทำให้เซลล์ส่วนท้าย (TableCell ใน TableFooter) ทั้งหมด Sticky --- */}
-        <TableFooter>
-          {/* TableRow ของ Footer ไม่ต้องใส่ sticky แต่สามารถใส่สีพื้นหลังเพื่อให้ครอบคลุมช่องว่างระหว่างเซลล์ (ถ้ามี) */}
-          <TableRow className={`${footerCellStickyBg} font-semibold`}>
-            {/* เพิ่ม `sticky bottom-0 z-10` และสีพื้นหลังให้กับ TableCell แต่ละอันในแถวผลรวม */}
-            <TableCell className={` text-center text-xs font-semibold`}>รวม</TableCell>
-            <TableCell className={` text-center text-xs`}>-</TableCell>
-            <TableCell className={` text-right text-xs`}>{formatNumber(totals.premiumRPPYear)}</TableCell>
-            <TableCell className={` text-right text-xs`}>{formatNumber(totals.premiumRTUYear)}</TableCell>
+        </tbody>
+        <tfoot className="border-t"> {/* เพิ่ม border-t ให้ tfoot */}
+          <tr className={`${footerCellStickyBg} font-semibold`}>
+            {/* --- ปรับ className ของ td ใน footer --- */}
+            <td className={`${tdBaseClass} text-center font-semibold`}>รวม</td>
+            <td className={`${tdBaseClass} text-center`}>-</td>
+            <td className={`${tdBaseClass} text-right`}>{formatNumber(totals.premiumRPPYear)}</td>
+            <td className={`${tdBaseClass} text-right`}>{formatNumber(totals.premiumRTUYear)}</td>
             {viewMode === 'full' && (
-              <TableCell className={` text-right text-xs`}>{formatNumber(totals.premiumLSTUYearGross)}</TableCell>
+              <td className={`${tdBaseClass} text-right`}>{formatNumber(totals.premiumLSTUYearGross)}</td>
             )}
-            <TableCell className={` text-right text-xs`}>{formatNumber(totals.totalPremiumYear)}</TableCell>
+            <td className={`${tdBaseClass} text-right`}>{formatNumber(totals.totalPremiumYear)}</td>
             {viewMode === 'full' && (
               <>
-                <TableCell className={` text-right text-xs text-orange-600`}>{formatNumber(totals.premiumChargeRPPYear)}</TableCell>
-                <TableCell className={` text-right text-xs text-orange-600`}>{formatNumber(totals.premiumChargeRTUYear)}</TableCell>
-                <TableCell className={` text-right text-xs text-orange-600`}>{formatNumber(totals.totalPremiumChargeYear)}</TableCell>
-                <TableCell className={` text-right text-xs text-red-600`}>{formatNumber(totals.totalCOIYear)}</TableCell>
-                <TableCell className={` text-right text-xs text-red-600`}>{formatNumber(totals.totalAdminFeeYear)}</TableCell>
+                <td className={`${tdBaseClass} text-right text-orange-600`}>{formatNumber(totals.premiumChargeRPPYear)}</td>
+                <td className={`${tdBaseClass} text-right text-orange-600`}>{formatNumber(totals.premiumChargeRTUYear)}</td>
+                <td className={`${tdBaseClass} text-right text-orange-600`}>{formatNumber(totals.totalPremiumChargeYear)}</td>
+                <td className={`${tdBaseClass} text-right text-red-600`}>{formatNumber(totals.totalCOIYear)}</td>
+                <td className={`${tdBaseClass} text-right text-red-600`}>{formatNumber(totals.totalAdminFeeYear)}</td>
+                <td className={`${tdBaseClass} text-right text-red-600`}>{formatNumber(totals.totalFeesYear)}</td>
               </>
             )}
-            <TableCell className={` text-right text-xs text-red-600`}>{formatNumber(totals.totalFeesYear)}</TableCell>
+            
             {viewMode === 'full' && (
               <>
-                <TableCell className={` text-right text-xs`}>-</TableCell>
-                <TableCell className={` text-right text-xs text-blue-600`}>{formatNumber(totals.investmentReturnYear)}</TableCell>
+                <td className={`${tdBaseClass} text-right`}>-</td>
+                <td className={`${tdBaseClass} text-right text-blue-600`}>{formatNumber(totals.investmentReturnYear)}</td>
               </>
             )}
-            <TableCell className={` text-right text-xs text-green-600`}>{formatNumber(totals.royaltyBonusYear)}</TableCell>
-            <TableCell className={` text-right text-xs font-semibold`}>-</TableCell>
+            <td className={`${tdBaseClass} text-right text-green-600`}>{formatNumber(totals.royaltyBonusYear)}</td>
+            <td className={`${tdBaseClass} text-right font-semibold`}>-</td>
             {showCsv && (
-              <TableCell className={` text-right text-xs`}>-</TableCell>
+              <td className={`${tdBaseClass} text-right`}>-</td>
             )}
-            <TableCell className={` text-right text-xs`}>-</TableCell>
-            <TableCell className={` text-right text-xs`}>{formatNumber(totals.withdrawalYear)}</TableCell>
-          </TableRow>
-        </TableFooter>
-      </Table>
+            <td className={`${tdBaseClass} text-right`}>-</td>
+            <td className={`${tdBaseClass} text-right`}>{formatNumber(totals.withdrawalYear)}</td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   );
 }

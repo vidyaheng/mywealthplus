@@ -7,7 +7,7 @@ import { AnnualCalculationOutputRow } from '../../lib/calculations'; // ใช�
 import { ChartData } from '../../components/GraphComponent'; // Import ChartData (ปรับ path ให้ถูกต้อง)
 
 import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+//import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ZoomIn, Plus, Minus } from 'lucide-react';
 
 import DisplayTable, { AnnualTableView } from '@/components/DisplayTable'; 
@@ -194,20 +194,28 @@ export default function IWealthyTablePage() {
             </h2>
 
             <div className="flex justify-between items-center mb-3">
-                <ToggleGroup
-                    type="single"
-                    size="sm"
-                    value={pageViewMode} // ใช้ pageViewMode สำหรับตารางบนหน้านี้
-                    onValueChange={(value) => { if (value) setPageViewMode(value as AnnualTableView); }}
-                    className="border border-gray-300 rounded overflow-hidden w-fit h-8 bg-white"
-                >
-                    <ToggleGroupItem value="compact" aria-label="Compact View" className={`px-3 py-1 text-xs data-[state=on]:bg-blue-600 data-[state=on]:text-white focus:z-10 focus:outline-none ${pageViewMode === 'compact' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                <div className="flex flex-row w-fit border border-gray-300 rounded-md overflow-hidden bg-white">
+                    <button
+                        onClick={() => setPageViewMode('compact')}
+                        className={`px-3 py-1 text-xs font-medium transition-colors border-r border-gray-300 ${
+                        pageViewMode === 'compact'
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'bg-white text-gray-700 hover:bg-blue-100'
+                        }`}
+                    >
                         มุมมองแบบย่อ
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="full" aria-label="Full View" className={`px-3 py-1 text-xs data-[state=on]:bg-blue-600 data-[state=on]:text-white border-l border-gray-300 focus:z-10 focus:outline-none ${pageViewMode === 'full' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                    </button>
+                    <button
+                        onClick={() => setPageViewMode('full')}
+                        className={`px-3 py-1 text-xs font-medium transition-colors border-r border-gray-300 ${
+                        pageViewMode === 'full'
+                            ? 'bg-orange-600 text-white shadow-md'
+                            : 'bg-white text-gray-700 hover:bg-orange-100'
+                        }`}
+                    >
                         มุมมองแบบเต็ม
-                    </ToggleGroupItem>
-                </ToggleGroup>
+                    </button>
+                </div>
 
                 <div className="flex items-center space-x-2">
                     <Button
@@ -231,6 +239,7 @@ export default function IWealthyTablePage() {
                     </Button>
                 </div>
             </div>
+
             
             <DisplayTable
                 data={filteredAnnualData}
@@ -239,6 +248,7 @@ export default function IWealthyTablePage() {
                 formatNumber={formatNumber}
                 //caption="ตารางสรุปผลประโยชน์โดยประมาณ (ในหน้าหลัก)"
             />
+            
 
             {isFullScreenModalOpen && illustrationData && (
                 <FullScreenDisplayModal
@@ -249,7 +259,7 @@ export default function IWealthyTablePage() {
                     headerInfo={
                          (typeof age === 'number' && typeof gender === 'string' && typeof sumInsured === 'number') ? (
                             <div className="text-xs">
-                                <p>ผู้เอาประกัน: (ตัวอย่าง)</p> {/* ควรดึงชื่อจริงมาแสดงถ้ามี */}
+                                <p>ผู้เอาประกัน:</p> {/* ควรดึงชื่อจริงมาแสดงถ้ามี */}
                                 <p>อายุ: {age} | เพศ: {gender === 'male' ? 'ชาย' : 'หญิง'}</p>
                                 <p>ทุนประกันภัยหลัก: {formatNumber(sumInsured)} บาท</p>
                             </div>

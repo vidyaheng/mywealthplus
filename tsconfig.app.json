@@ -6,27 +6,22 @@
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
-
-    /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["react"],
-
-    /* Linting */
+    "types": ["react", "node"],               // <-- เพิ่ม node ที่นี่
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-
-    "baseUrl": ".",                      // <--- เพิ่มบรรทัดนี้
-    "paths": {                           // <--- เพิ่ม Block นี้
+    "baseUrl": ".",
+    "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "api"]                  // <-- เพิ่ม "api" ถ้าใช้ serverless function ที่นี่
 }

@@ -5,7 +5,7 @@ import React from 'react';
 import DisplayTable, { AnnualTableView } from '@/components/DisplayTable';
 import { AnnualCalculationOutputRow } from '@/lib/calculations';
 import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+//import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Plus, Minus } from 'lucide-react';
 
 interface ModalTableViewProps {
@@ -29,7 +29,7 @@ const ModalTableView: React.FC<ModalTableViewProps> = ({
     onViewModeChange,
     showCsv,
     onShowCsvToggle,
-    onRecalculate,
+    //onRecalculate,
     caption = "ตารางผลประโยชน์ (Fullscreen)"
 }) => {
     return (
@@ -37,23 +37,34 @@ const ModalTableView: React.FC<ModalTableViewProps> = ({
             {/* Controls Bar for Table */}
             <div className="flex flex-wrap justify-between items-center gap-x-2 gap-y-1 p-2 flex-shrink-0 border-b bg-slate-50">
                 {/* Left Group: ViewMode Toggle และ CSV Toggle */}
-                <div className="flex items-center gap-x-2">
-                    <ToggleGroup
-                        type="single"
-                        size="sm"
-                        value={viewMode}
-                        onValueChange={onViewModeChange}
-                        className="border border-gray-300 rounded w-fit h-8 bg-white"
+                <div className="flex items-center">
+                     <button
+                        type="button"
+                        className={`px-3 py-1 text-xs rounded-l border border-gray-300 h-6 ${viewMode === 'compact'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white text-gray-700 hover:bg-blue-100'
+                        }`}
+                        aria-label="Compact View"
+                        onClick={() => onViewModeChange('compact')}
                     >
-                        <ToggleGroupItem value="compact" aria-label="Compact View" className={`px-3 py-1 text-xs data-[state=on]:bg-blue-600 data-[state=on]:text-white focus:z-10 focus:outline-none ${viewMode === 'compact' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
-                            ย่อ
-                        </ToggleGroupItem>
-                        <ToggleGroupItem value="full" aria-label="Full View" className={`px-3 py-1 text-xs data-[state=on]:bg-blue-600 data-[state=on]:text-white border-l border-gray-300 focus:z-10 focus:outline-none ${viewMode === 'full' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
-                            เต็ม
-                        </ToggleGroupItem>
-                    </ToggleGroup>
+                        ย่อ
+                    </button>
+                    <button
+                        type="button"
+                        className={`px-3 py-1 text-xs rounded-r border border-gray-300 h-6 border-l-0 ${viewMode === 'full'
+                            ? 'bg-orange-600 text-white'
+                            : 'bg-white text-gray-700 hover:bg-orange-100'
+                        }`}
+                        aria-label="Full View"
+                        onClick={() => onViewModeChange('full')}
+                    >
+                        เต็ม
+                    </button>
                     
-                    <Button
+                    
+                </div>
+                <div className="flex items-end space-x-2">
+                <Button
                         variant="outline"
                         size="sm"
                         onClick={onShowCsvToggle}
@@ -63,9 +74,7 @@ const ModalTableView: React.FC<ModalTableViewProps> = ({
                         {showCsv ? <Minus size={16} /> : <Plus size={16} />}
                         <span className="ml-1 text-xs hidden sm:inline">เวนคืน</span>
                     </Button>
-                </div>
-
-                {/* Right Group: ปุ่ม Update */}
+                {/* Right Group: ปุ่ม Update 
                 {onRecalculate && (
                     <Button
                         onClick={onRecalculate}
@@ -74,7 +83,8 @@ const ModalTableView: React.FC<ModalTableViewProps> = ({
                     >
                         Update
                     </Button>
-                )}
+                )}*/}
+                </div>
             </div>
 
             {/* DisplayTable Area */}
