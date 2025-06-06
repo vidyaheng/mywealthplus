@@ -1,10 +1,15 @@
-/** @type {import('tailwindcss').Config} */
-export default {
-    darkMode: ["class"],
-    content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}",
-				'./node_modules/shadcn/**/*.{js,ts,tsx}',
-	],
+// tailwind.config.js
 
+
+const colors = require('tailwindcss/colors'); // Import палитры цветов Tailwind (ถ้าต้องการใช้ชื่อสี Tailwind)
+
+export default {
+  darkMode: ["class"],
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+    './node_modules/shadcn/**/*.{js,ts,tsx}', // ถ้าใช้ ShadCN
+  ],
   theme: {
   	extend: {
   		borderRadius: {
@@ -56,6 +61,8 @@ export default {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
-}
+  plugins: [
+    require("tailwindcss-animate"),   
+  ],
 
+};

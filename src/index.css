@@ -205,3 +205,22 @@ select option:hover {
 }
 
 /*------------LTHC-----------*/
+
+/* สำหรับ RadioGroupItem ของเพศชาย */
+.radio-male[data-state="checked"] .radio-indicator {
+  background-color: #3b82f6; /* สีน้ำเงิน (Tailwind's blue-500) */
+  border-color: #3b82f6;
+}
+.radio-male[data-state="checked"] .radio-indicator::after { /* สำหรับจุดด้านใน (ถ้ามี) */
+  background-color: white; /* หรือสีที่ตัดกัน */
+}
+
+
+/* สำหรับ RadioGroupItem ของเพศหญิง */
+.radio-female[data-state="checked"] .radio-indicator {
+  background-color: #ec4899; /* สีชมพู (Tailwind's pink-500) */
+  border-color: #ec4899;
+}
+.radio-female[data-state="checked"] .radio-indicator::after { /* สำหรับจุดด้านใน (ถ้ามี) */
+  background-color: white; /* หรือสีที่ตัดกัน */
+}
