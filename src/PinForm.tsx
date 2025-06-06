@@ -12,7 +12,7 @@ const PinForm: React.FC<PinFormProps> = ({ onSuccess }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setResult(null);
-    const res = await fetch('http://localhost:3001/api/verify-pin', {
+    const res = await fetch('/api/verify-pin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin }),
