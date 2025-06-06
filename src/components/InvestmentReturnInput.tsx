@@ -1,9 +1,9 @@
-// src/components/InvestmentReturnInput.tsx
 import React, { useState, useCallback, useEffect } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { cn } from "@/lib/utils";
 
+// --- ไม่มีการเปลี่ยนแปลง props และค่า default ---
 interface InvestmentReturnInputProps {
     label?: string;
     value: number;
@@ -14,7 +14,7 @@ interface InvestmentReturnInputProps {
     displayPrecision?: number;
     showInputField?: boolean;
     sliderOnlyCompact?: boolean;
-    isFullScreenView?: boolean; // Prop เพื่อบอกว่าเป็น Fullscreen view หรือไม่
+    isFullScreenView?: boolean;
 }
 
 const MIN_VALUE_DEFAULT = 0;
@@ -22,6 +22,7 @@ const MAX_VALUE_DEFAULT = 10;
 const SNAP_THRESHOLD_DEFAULT = 0.05;
 const SLIDER_STEP_DEFAULT = 0.01;
 const DISPLAY_PRECISION_DEFAULT = 2;
+
 
 export default function InvestmentReturnInput({
     label = "ผลตอบแทนการลงทุนคาดหวัง (% ต่อปี)",
@@ -31,15 +32,37 @@ export default function InvestmentReturnInput({
     max = MAX_VALUE_DEFAULT,
     step = SLIDER_STEP_DEFAULT,
     displayPrecision = DISPLAY_PRECISION_DEFAULT,
-    showInputField = true, // ใน ModalChartControls สำหรับ Fullscreen คุณตั้งค่านี้เป็น false
+    showInputField = true,
     sliderOnlyCompact = false,
-    isFullScreenView = false, // Default เป็น false
+    isFullScreenView = false,
 }: InvestmentReturnInputProps) {
+    // `inputValue` ยังคงเป็น state ภายในสำหรับแสดงผลในช่อง input
+    // เพื่อให้ผู้ใช้สามารถพิมพ์ค่าที่ยังไม่สมบูรณ์ได้ เช่น "5."
     const [inputValue, setInputValue] = useState<string>(value.toFixed(displayPrecision));
-    const currentSliderStep = step;
 
+    // ✅ [แก้ไข] : ทำให้ useEffect ทำงานเมื่อ `value` จาก parent เปลี่ยนเท่านั้น
+    // หน้าที่ของมันคือ "ซิงค์" ค่าจาก Slider มาที่ Input field
+    useEffect(() => {
+        // อัปเดตค่าในช่อง input ให้ตรงกับ state หลัก (value)
+        // โดยจะทำงานเมื่อมีการเลื่อน Slider หรือค่าเริ่มต้นมีการเปลี่ยนแปลง
+        // เราจะเปรียบเทียบค่าตัวเลข เพื่อป้องกันการ re-render ที่ไม่จำเป็น
+        if (parseFloat(inputValue) !== value) {
+            setInputValue(value.toFixed(displayPrecision));
+        }
+    }, [value, displayPrecision]);
+
+
+    const updateValue = useCallback((newValue: number) => {
+        // Clamp คือการจำกัดค่าให้อยู่ในขอบเขต min-max
+        const clampedValue = Math.max(min, Math.min(max, newValue));
+        if (clampedValue !== value) {
+            onChange(clampedValue);
+        }
+    }, [onChange, value, min, max]);
+
+    // `snapValue` ไม่มีการเปลี่ยนแปลง
     const snapValue = useCallback((val: number): number => {
-        const epsilon = currentSliderStep / 2;
+        const epsilon = step / 2;
         const workingPrecision = Math.max(displayPrecision + 2, 4);
         const roundedVal = parseFloat(val.toFixed(workingPrecision));
         const integerPart = Math.floor(roundedVal);
@@ -57,80 +80,70 @@ export default function InvestmentReturnInput({
             }
         }
         return parseFloat(roundedVal.toFixed(displayPrecision));
-    }, [currentSliderStep, displayPrecision]);
+    }, [step, displayPrecision]);
 
-    useEffect(() => {
-        const currentNumericInputValue = parseFloat(inputValue);
-        const valueAsFixedString = value.toFixed(displayPrecision);
-        if (isNaN(currentNumericInputValue) || Math.abs(currentNumericInputValue - value) > (currentSliderStep / 10) || inputValue !== valueAsFixedString) {
-            setInputValue(valueAsFixedString);
-        }
-    }, [value, displayPrecision, inputValue, currentSliderStep]);
 
-    const updateValue = useCallback((newValue: number) => {
-        let clampedValue = Math.max(min, Math.min(max, newValue));
-        clampedValue = parseFloat(clampedValue.toFixed(displayPrecision));
-        const valueAsFixedString = value.toFixed(displayPrecision);
-        const clampedValueAsFixedString = clampedValue.toFixed(displayPrecision);
-        if (clampedValueAsFixedString !== valueAsFixedString) {
-            onChange(clampedValue);
-        } else if (inputValue !== valueAsFixedString) {
-            setInputValue(valueAsFixedString);
-        }
-    }, [onChange, value, min, max, displayPrecision, inputValue]);
-
+    // `handleSliderChange` ไม่มีการเปลี่ยนแปลงมากนัก
     const handleSliderChange = useCallback((values: number[]) => {
         updateValue(snapValue(values[0]));
     }, [updateValue, snapValue]);
 
+
+    // ✅ [แก้ไข] : ทำให้ Input อัปเดตค่ากลับไปที่ parent ทันที
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const rawValue = e.target.value;
-        if (rawValue === '' || /^[0-9]*\.?[0-9]*$/.test(rawValue)) {
-            setInputValue(rawValue);
-        }
-    }, []);
+        setInputValue(rawValue); // 1. อัปเดตสิ่งที่ผู้ใช้เห็นในช่อง input ทันที
 
-    const handleInputBlur = useCallback(() => {
-        let parsedValue = parseFloat(inputValue);
+        // 2. ถ้าค่าที่พิมพ์เป็นตัวเลข, ให้ส่งค่ากลับไปที่ parent เลย
+        const parsedValue = parseFloat(rawValue);
         if (!isNaN(parsedValue)) {
+            updateValue(parsedValue); // การเรียกฟังก์ชันนี้จะทำให้ Slider ขยับตาม
+        }
+    }, [updateValue]);
+
+
+    // ✅ [แก้ไข] : ทำให้ onBlur จัดการเรื่องการ format และค่าที่ไม่ถูกต้อง
+    const handleInputBlur = useCallback(() => {
+        const parsedValue = parseFloat(inputValue);
+        if (!isNaN(parsedValue)) {
+            // ถ้าค่าถูกต้อง, ให้ทำการ snap และ clamp ค่าสุดท้าย
             const snappedOnBlur = snapValue(parsedValue);
-            const clampedValue = Math.max(min, Math.min(max, snappedOnBlur));
-            updateValue(clampedValue);
-            setInputValue(clampedValue.toFixed(displayPrecision));
+            updateValue(snappedOnBlur); // ส่งค่าสุดท้ายที่จัดรูปแบบแล้วกลับไป
+            // ไม่ต้อง setInputValue ที่นี่ เพราะ useEffect จะจัดการให้เองเมื่อ `value` prop เปลี่ยน
         } else {
+            // ถ้าผู้ใช้พิมพ์ค่าผิด หรือลบจนหมด, ให้ค่ากลับไปเป็น state ล่าสุดที่ถูกต้อง
             setInputValue(value.toFixed(displayPrecision));
         }
-    }, [inputValue, snapValue, updateValue, value, min, max, displayPrecision]);
+    }, [inputValue, snapValue, updateValue, value, displayPrecision]);
 
+    // --- ส่วนของ JSX และ Classes ไม่มีการเปลี่ยนแปลง ---
     const isCompactSliderOnlyMode = sliderOnlyCompact && !showInputField;
 
-    // กำหนดสีและสไตล์ตาม isFullScreenView
     const labelClasses = cn(
         "block font-medium truncate",
         isCompactSliderOnlyMode ? "text-[11px]" : "text-xs",
-        isFullScreenView ? "text-gray-200" : "text-gray-700" // สี Label
+        isFullScreenView ? "text-gray-200" : "text-gray-700"
     );
     const valueDisplayClasses = cn(
         "font-semibold",
         isCompactSliderOnlyMode ? "text-[11px]" : "text-xs",
-        isFullScreenView ? "text-sky-300" : (isCompactSliderOnlyMode ? "text-blue-700" : "text-blue-600") // สี Value ข้าง Label
+        isFullScreenView ? "text-sky-300" : (isCompactSliderOnlyMode ? "text-blue-700" : "text-blue-600")
     );
     const minMaxTextClasses = cn(
         "flex justify-between text-[10px] px-0.5 mt-0.5",
-        isFullScreenView ? "text-gray-300" : "text-gray-500" // สี Min/Max text
+        isFullScreenView ? "text-gray-300" : "text-gray-500"
     );
-    const sliderWrapperClasses = cn( // Class สำหรับ div ครอบ Slider โดยตรง
-        isFullScreenView && "dark-slider-wrapper-for-variables" // Class นี้อาจจะไม่จำเป็นถ้า Slider ไม่ตอบสนองต่อ .dark โดยตรง
-                                                              // หรือจะใช้ class นี้เพื่อ scope CSS Variables ถ้าจำเป็น
+    const sliderWrapperClasses = cn(
+        isFullScreenView && "dark-slider-wrapper-for-variables"
     );
-     const sliderComponentClasses = cn(
+    const sliderComponentClasses = cn(
         "w-full cursor-pointer",
         isCompactSliderOnlyMode ? "h-3" : "h-4",
-        isFullScreenView && "slider-dark-theme" // << Class หลักสำหรับ Custom CSS ใน index.css
+        isFullScreenView && "slider-dark-theme"
     );
     const inputFieldClasses = cn(
         "h-7 text-center outline-none transition-colors focus:bg-opacity-20",
-        isFullScreenView ? // ใน Fullscreen มักจะ showInputField={false} อยู่แล้ว แต่เผื่อไว้
+        isFullScreenView ?
         "w-[50px] bg-blue-800 text-white border-b-2 border-blue-600 focus:border-sky-400 focus:bg-blue-700" :
         "w-[50px] sm:w-[60px] bg-blue-50 text-md sm:text-lg text-blue-700 font-semibold border-b-2 border-gray-600 focus:border-blue-600 focus:bg-blue-100"
     );
@@ -151,7 +164,7 @@ export default function InvestmentReturnInput({
                     </Label>
                     {(!showInputField || isCompactSliderOnlyMode) && (
                          <span className={valueDisplayClasses}>
-                            {value.toFixed(displayPrecision)}%
+                             {value.toFixed(displayPrecision)}%
                          </span>
                     )}
                 </div>
@@ -159,14 +172,14 @@ export default function InvestmentReturnInput({
 
             <div className={`flex items-center w-full ${showInputField && !isFullScreenView ? 'gap-x-2 sm:gap-x-3' : ''}`}>
                 <div className={`${showInputField && !isFullScreenView ? 'flex-1' : 'w-full'}`}>
-                    <div className={sliderWrapperClasses}> {/* Wrapper นี้อาจจะใช้ใส่ .dark หรือ custom CSS vars */}
+                    <div className={sliderWrapperClasses}>
                         <Slider
                             id={`investment-return-slider-${label ? label.replace(/\s+/g, '-') : 'default'}`}
                             value={[value]}
                             onValueChange={handleSliderChange}
                             min={min}
                             max={max}
-                            step={currentSliderStep}
+                            step={step}
                             className={sliderComponentClasses}
                         />
                     </div>
@@ -178,7 +191,7 @@ export default function InvestmentReturnInput({
                     )}
                 </div>
 
-                {showInputField && !isFullScreenView && ( 
+                {showInputField && !isFullScreenView && (
                     <div className="flex items-center mb-3 gap-x-1 w-auto flex-shrink-0">
                         <input
                             type="text"
