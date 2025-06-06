@@ -1,7 +1,7 @@
 // tailwind.config.js
 
 
-const colors = require('tailwindcss/colors'); // Import палитры цветов Tailwind (ถ้าต้องการใช้ชื่อสี Tailwind)
+//const colors = require('tailwindcss/colors'); // Import палитры цветов Tailwind (ถ้าต้องการใช้ชื่อสี Tailwind)
 
 export default {
   darkMode: ["class"],
