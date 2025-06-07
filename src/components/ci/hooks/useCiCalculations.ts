@@ -88,7 +88,7 @@ export const useCiCalculations = () => {
     const checkIWealthySolvencyCi = useCallback((
         iWealthyAnnualData: IWealthyAnnualOutputRow[] | undefined,
         plannedWithdrawals: WithdrawalPlanRecord[], // เบี้ย CI ที่ iWealthy วางแผนจะจ่าย
-        targetAVPercentageOfTotalCIPaid: number = 0.70,
+        //targetAVPercentageOfTotalCIPaid: number = 0.70,
         targetAgeForValueCheck: number = MAX_POLICY_AGE_TYPE // อายุที่ตรวจสอบมูลค่า (เช่น สิ้นปีอายุ 98)
     ): boolean => {
         if (!iWealthyAnnualData || iWealthyAnnualData.length === 0) {
@@ -150,9 +150,13 @@ export const useCiCalculations = () => {
         });
 
         if (totalCiPremiumsPlannedByIWealthy > 0) {
-            const requiredValueAtTargetAge = targetAVPercentageOfTotalCIPaid * totalCiPremiumsPlannedByIWealthy;
+            {/*const requiredValueAtTargetAge = targetAVPercentageOfTotalCIPaid * totalCiPremiumsPlannedByIWealthy;
             if (finalAccountValue < requiredValueAtTargetAge) {
                 // console.log(`Solver Check: AV at age ${targetAgeForValueCheck} (${finalAccountValue}) < ${targetAVPercentageOfTotalCIPaid*100}% of total CI premiums ${totalCiPremiumsPlannedByIWealthy} (Target: ${requiredValueAtTargetAge})`);
+                return false;
+            */}
+            if (finalAccountValue <= 500000) {
+                // ถ้าค่าน้อยกว่าหรือเท่ากับ 500,000 ให้ถือว่าไม่ผ่านเงื่อนไข
                 return false;
             }
         }

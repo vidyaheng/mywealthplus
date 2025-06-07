@@ -1,3 +1,8 @@
+// src/hooks/useCiPlanner.ts
+
+// ✅ เพิ่มบรรทัดนี้ที่บนสุด เพื่อส่งออก (re-export) Type ออกไปพร้อมกับ Hook
+export type { UseCiPlannerReturn } from '../types/useCiTypes';
+
 import { useState, useCallback, useEffect } from 'react';
 
 // --- Types ---
@@ -19,13 +24,13 @@ const defaultInitialCiPlans: CiPlanSelections = {
     icareChecked: false,
     icareSA: 0,
     ishieldChecked: false,
-    ishieldPlan: null,
+    ishieldPlan: '',
     ishieldSA: 0,
     mainRiderChecked: false,
-    lifeReadyPlan: null,
+    lifeReadyPlan: '',
     lifeReadySA: 0,
     rokraiChecked: false,
-    rokraiPlan: null,
+    rokraiPlan: '',
     dciChecked: false,
     dciSA: 0,
 };
@@ -37,6 +42,7 @@ export function useCiPlanner({
     initialIWealthyMode = 'automatic',
     initialPolicyOriginMode = 'newPolicy',
     initialUseIWealthy = false, // ค่าเริ่มต้นสำหรับ useIWealthy คือ false (ปิด)
+    onCalculationComplete,
 }: UseCiPlannerProps): UseCiPlannerReturn {
 
     // --- States for Policyholder & Policy Context ---
@@ -109,7 +115,12 @@ export function useCiPlanner({
     ]);
 
     // --- Main Calculation Trigger ---
+    // ภายในไฟล์ src/hooks/useCiPlanner.ts
+
     const runCalculation = useCallback(async () => {
+        // DEBUG LOG ที่เราใส่ไว้
+        console.log(`[DEBUG] runCalculation CALLED. Current withdrawalStartAge is: ${iWealthyWithdrawalStartAge}`);
+
         setIsLoading(true);
         setError(null);
         setResult(null);
@@ -117,86 +128,69 @@ export function useCiPlanner({
         setCalculatedRpp(undefined);
         setCalculatedRtu(undefined);
 
-        // ciPremiumsSchedule ควรจะถูกคำนวณและ set โดย useEffect ข้างบนแล้ว
-        // ถ้า ciPremiumsSchedule ยังเป็น null อาจจะยังไม่พร้อม หรือมีปัญหา
-        const currentCiScheduleForCalc = ciPremiumsSchedule || []; // ใช้ array ว่างถ้ายังเป็น null
-
-        if (!useIWealthy) {
-            if (currentCiScheduleForCalc.length > 0) {
-                // สร้างผลลัพธ์ที่แสดงเฉพาะข้อมูล CI premiums
-                const ciOnlyIllustration: AnnualCiOutputRow[] = currentCiScheduleForCalc.map(ciRow => {
-                    const lifeReadySAForCombinedDB = (selectedCiPlans.mainRiderChecked && selectedCiPlans.lifeReadySA > 0)
-                        ? selectedCiPlans.lifeReadySA
-                        : 0;
-                    return {
-                        policyYear: ciRow.policyYear,
-                        age: ciRow.age,
-                        lifeReadyPremiumPaid: ciRow.lifeReadyPremium,
-                        ciRidersPremiumPaid: Math.round(
-                            (ciRow.icarePremium || 0) +
-                            (ciRow.ishieldPremium || 0) +
-                            (ciRow.rokraiPremium || 0) +
-                            (ciRow.dciPremium || 0)
-                        ),
-                        totalCiPackagePremiumPaid: Math.round(ciRow.totalCiPremium),
-                        iWealthyRpp: undefined, iWealthyRtu: undefined, iWealthyTotalPremium: undefined,
-                        iWealthyWithdrawal: undefined, iWealthyEoyAccountValue: undefined,
-                        iWealthyEoyDeathBenefit: undefined, iWealthySumAssured: undefined,
-                        iWealthyEOYCSV: undefined, iWealthyPremChargeRPP: undefined,
-                        iWealthyPremChargeRTU: undefined, iWealthyPremChargeTotal: undefined,
-                        iWealthyCOI: undefined, iWealthyAdminFee: undefined, iWealthyTotalFees: undefined,
-                        iWealthyInvestmentBase: undefined, iWealthyInvestmentReturn: undefined,
-                        iWealthyRoyaltyBonus: undefined,
-                        totalCombinedDeathBenefit: lifeReadySAForCombinedDB,
-                    };
-                });
-                setResult(ciOnlyIllustration);
-            } else {
-                setResult(null); // ไม่มี schedule ก็ไม่มี result
-            }
-            setIsLoading(false);
-            return;
-        }
-
-        // กรณีใช้ iWealthy
-        if (!ciCalculations.calculateManualPlanCi || !ciCalculations.calculateAutomaticPlanCi) {
-            setError("Calculation services for iWealthy are not available.");
-            setIsLoading(false);
-            return;
-        }
-        if (currentCiScheduleForCalc.length === 0 && useIWealthy) { // เพิ่มการตรวจสอบนี้
-             setError("CI premium schedule is not available for iWealthy calculation. Please select CI plans.");
-             setIsLoading(false);
-             return;
-        }
-
         try {
+            const currentCiScheduleForCalc = ciPremiumsSchedule || [];
+
+            // --- กรณีไม่ใช้ iWealthy ---
+            if (!useIWealthy) {
+                if (currentCiScheduleForCalc.length > 0) {
+                    const ciOnlyIllustration: AnnualCiOutputRow[] = currentCiScheduleForCalc.map(ciRow => {
+                        const lifeReadySAForCombinedDB = (selectedCiPlans.mainRiderChecked && selectedCiPlans.lifeReadySA > 0) 
+                            ? selectedCiPlans.lifeReadySA 
+                            : 0;
+                        return {
+                            policyYear: ciRow.policyYear,
+                            age: ciRow.age,
+                            lifeReadyPremiumPaid: ciRow.lifeReadyPremium,
+                            ciRidersPremiumPaid: Math.round(
+                                (ciRow.icarePremium || 0) +
+                                (ciRow.ishieldPremium || 0) +
+                                (ciRow.rokraiPremium || 0) +
+                                (ciRow.dciPremium || 0)
+                            ),
+                            totalCiPackagePremiumPaid: Math.round(ciRow.totalCiPremium),
+                            totalCombinedDeathBenefit: lifeReadySAForCombinedDB,
+                            iWealthyRpp: undefined, iWealthyRtu: undefined, iWealthyTotalPremium: undefined,
+                            iWealthyWithdrawal: undefined, iWealthyEoyAccountValue: undefined,
+                            iWealthyEoyDeathBenefit: undefined, iWealthySumAssured: undefined,
+                            iWealthyEOYCSV: undefined, iWealthyPremChargeRPP: undefined,
+                            iWealthyPremChargeRTU: undefined, iWealthyPremChargeTotal: undefined,
+                            iWealthyCOI: undefined, iWealthyAdminFee: undefined, iWealthyTotalFees: undefined,
+                            iWealthyInvestmentBase: undefined, iWealthyInvestmentReturn: undefined,
+                            iWealthyRoyaltyBonus: undefined,
+                        };
+                    });
+                    setResult(ciOnlyIllustration);
+                } else {
+                    setResult(null);
+                }
+                return;
+            }
+
+            // --- กรณีใช้ iWealthy ---
+            if (!ciCalculations.calculateManualPlanCi || !ciCalculations.calculateAutomaticPlanCi) {
+                setError("Calculation services for iWealthy are not available.");
+                return;
+            }
+            if (currentCiScheduleForCalc.length === 0) {
+                setError("CI premium schedule is not available for iWealthy calculation. Please select CI plans.");
+                return;
+            }
+
             if (iWealthyMode === 'manual') {
                 const manualResultData = await ciCalculations.calculateManualPlanCi(
-                    policyholderEntryAge,
-                    policyholderGender,
-                    selectedCiPlans,
-                    manualRpp,
-                    manualRtu,
-                    iWealthyInvestmentReturn,
-                    iWealthyOwnPPT,
-                    iWealthyWithdrawalStartAge,
-                    policyOriginMode,
-                    existingPolicyEntryAge
+                    policyholderEntryAge, policyholderGender, selectedCiPlans,
+                    manualRpp, manualRtu, iWealthyInvestmentReturn,
+                    iWealthyOwnPPT, iWealthyWithdrawalStartAge,
+                    policyOriginMode, existingPolicyEntryAge
                 );
                 setResult(manualResultData);
             } else { // 'automatic' mode
                 const autoWithdrawalStartAgeForSolver = policyholderEntryAge + iWealthyOwnPPT;
                 const autoResult = await ciCalculations.calculateAutomaticPlanCi(
-                    policyholderEntryAge,
-                    policyholderGender,
-                    selectedCiPlans,
-                    iWealthyInvestmentReturn,
-                    iWealthyOwnPPT,
-                    autoRppRtuRatio,
-                    autoWithdrawalStartAgeForSolver,
-                    policyOriginMode,
-                    existingPolicyEntryAge
+                    policyholderEntryAge, policyholderGender, selectedCiPlans,
+                    iWealthyInvestmentReturn, iWealthyOwnPPT, autoRppRtuRatio,
+                    autoWithdrawalStartAgeForSolver, policyOriginMode, existingPolicyEntryAge
                 );
                 setResult(autoResult.outputIllustration);
                 setCalculatedMinPremium(autoResult.minPremiumResult);
@@ -208,26 +202,29 @@ export function useCiPlanner({
             }
         } catch (err) {
             console.error("CI Calculation Error in useCiPlanner Hook (runCalculation):", err);
-            setError(err instanceof Error ? err.message : 'An unexpected error occurred during iWealthy calculation.');
+            setError(err instanceof Error ? err.message : 'An unexpected error occurred during calculation.');
         } finally {
             setIsLoading(false);
+            onCalculationComplete?.();
         }
     }, [
+        // 🔥 นี่คือ Dependency Array ที่ถูกต้องและครบถ้วน
         useIWealthy,
         iWealthyMode,
         policyholderEntryAge,
         policyholderGender,
-        selectedCiPlans, // Object - การเปลี่ยนแปลง reference จะ trigger
+        selectedCiPlans,
         manualRpp,
         manualRtu,
         iWealthyInvestmentReturn,
         iWealthyOwnPPT,
         iWealthyWithdrawalStartAge,
         autoRppRtuRatio,
-        ciCalculations, // Object ที่มี functions ที่ memoized
-        ciPremiumsSchedule, // State ที่ใช้ใน branch ของ !useIWealthy
+        ciCalculations,
+        ciPremiumsSchedule,
         policyOriginMode,
-        existingPolicyEntryAge
+        existingPolicyEntryAge,
+        onCalculationComplete
     ]);
 
     // --- Return Values for CIFormPage.tsx ---

@@ -17,7 +17,7 @@ import IWealthyFormPage from "./pages/iwealthy/iWealthyFormPage";
 import IWealthyTablePage from "./pages/iwealthy/iWealthyTablePage";
 import IWealthyChartPage from "./pages/iwealthy/iWealthyChartPage";
 //import LthcPage from "./pages/lthc/LthcPage";
-import CiPage from "./pages/ci/CiPage";
+import CiPlannerPage from "./pages/ci/CiPlannerPage";
 import RetirePage from "./pages/retire/RetirePage";
 import LifePlanPage from "./pages/lifeplan/LifePlanPage";
 import PinForm from './PinForm';
@@ -402,7 +402,7 @@ function App() {
                                     <Route path="table" element={<LthcTablePage />} />
                                     <Route path="chart" element={<LthcChartPage />} />
                                 </Route>
-                                <Route path="/ci" element={<CiPage />} />
+                                <Route path="/ci" element={<CiPlannerPage />} />
                                 <Route path="/retire" element={<RetirePage />} />
                                 <Route path="/lifeplan" element={<LifePlanPage />} />
                                 <Route path="*" element={<div>404 - Page Not Found</div>} />

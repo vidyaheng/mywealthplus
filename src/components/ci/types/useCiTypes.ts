@@ -34,18 +34,19 @@ export type PaymentFrequency = 'monthly' | 'annual';
 export type LifeReadyPlan = OriginalLifeReadyPlan;
 export type IShieldPlan = OriginalIShieldPlan;
 export type RokRaiSoShieldPlan = keyof AllRokRaiSoShieldPremiums;
+export type RokraiPlan = 'S' | 'M' | 'L' | 'XL';
 
 export interface CiPlanSelections {
     icareChecked: boolean;
     icareSA: number;
     ishieldChecked: boolean;
-    ishieldPlan: IShieldPlan | null;
+    ishieldPlan: IShieldPlan | '';
     ishieldSA: number;
     mainRiderChecked: boolean;
-    lifeReadyPlan: LifeReadyPlan | null;
+    lifeReadyPlan: LifeReadyPlan | '';
     lifeReadySA: number;
     rokraiChecked: boolean;
-    rokraiPlan: RokRaiSoShieldPlan | null;
+    rokraiPlan: RokRaiSoShieldPlan | '';
     dciChecked: boolean;
     dciSA: number;
 }
@@ -107,6 +108,7 @@ export interface UseCiPlannerProps {
     initialIWealthyMode?: IWealthyMode;
     initialPolicyOriginMode?: PolicyOriginMode;
     initialUseIWealthy?: boolean; // <<--- เพิ่ม Prop นี้สำหรับค่าเริ่มต้นของ Toggle iWealthy
+    onCalculationComplete?: () => void;
 }
 
 export interface UseCiPlannerReturn {
