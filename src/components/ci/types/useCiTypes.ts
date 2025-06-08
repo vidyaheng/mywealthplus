@@ -15,11 +15,11 @@ import type {
     Gender as ImportedGender, // 'male' | 'female'
 } from '@/lib/healthPlanCalculations'; // โปรดตรวจสอบและปรับ Path ให้ถูกต้อง
 
-import type {
+{/*import type {
     LifeReadyPlan as OriginalLifeReadyPlan, // 6 | 12 | 18 | 99
     IShieldPlan as OriginalIShieldPlan,     // "05" | "10" | "15" | "20"
     AllRokRaiSoShieldPremiums,
-} from '../utils/premiumCalcs'; // โปรดตรวจสอบและปรับ Path ให้ถูกต้อง
+} from '../utils/premiumCalcs'; // โปรดตรวจสอบและปรับ Path ให้ถูกต้อง*/}
 
 // ====================================================================================
 // SECTION 2: Core Types for CI Planner
@@ -31,9 +31,9 @@ export type IWealthyMode = 'manual' | 'automatic';
 export type PaymentFrequency = 'monthly' | 'annual';
 
 // --- CI Plan Specific Types ---
-export type LifeReadyPlan = OriginalLifeReadyPlan;
-export type IShieldPlan = OriginalIShieldPlan;
-export type RokRaiSoShieldPlan = keyof AllRokRaiSoShieldPremiums;
+export type LifeReadyPlan = 6 | 12 | 18 | 99;
+export type IShieldPlan = "05" | "10" | "15" | "20";
+export type RokRaiSoShieldPlan = "S" | "M" | "L" | "XL";
 export type RokraiPlan = 'S' | 'M' | 'L' | 'XL';
 
 export interface CiPlanSelections {
