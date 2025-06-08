@@ -53,16 +53,34 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                 newState.rokraiChecked = false;
                 newState.dciChecked = false;
             }
-            if (key === 'icareChecked' && !value) { newState.icareSA = 0; }
-            if (key === 'ishieldChecked' && !value) {
+            if (key === 'icareChecked') { newState.icareSA = value ? 1000000 : 0; }
+            if (key === 'ishieldChecked') {
+                if (value) { // ถ้าติ๊กเลือก
+                newState.ishieldPlan = '20'; // แผน 20 ปี
+                newState.ishieldSA = 500000; // ทุน 5 แสน
+            } else { // ถ้าเอาออก
                 newState.ishieldPlan = null;
                 newState.ishieldSA = 0;
             }
-            if (key === 'rokraiChecked' && !value) { newState.rokraiPlan = null; }
-            if (key === 'dciChecked' && !value) { newState.dciSA = 0; }
-            if (key === 'mainRiderChecked' && !value) {
+            }
+            if (key === 'rokraiChecked') {
+            newState.rokraiPlan = value ? 'XL' : null; // ถ้าติ๊กเลือก -> แผน XL, ถ้าเอาออก -> null
+            }   
+            if (key === 'dciChecked') {
+            newState.dciSA = value ? 300000 : 0; // ถ้าติ๊กเลือก -> ทุน 3 แสน, ถ้าเอาออก -> 0
+            }
+            if (key === 'mainRiderChecked') {
+                if (value) { // ถ้าติ๊กเลือก
+                newState.lifeReadyPlan = 18; // แผน 18 ปี
+                newState.lifeReadySA = 150000; // ทุน 1.5 แสน
+            } else { // ถ้าเอาออก (จะล้างค่าสัญญาเพิ่มเติมอื่นๆ ที่เกี่ยวข้องทั้งหมด)
                 newState.lifeReadyPlan = null;
                 newState.lifeReadySA = 0;
+                newState.rokraiChecked = false;
+                newState.rokraiPlan = null;
+                newState.dciChecked = false;
+                newState.dciSA = 0;
+            }
             }
             return newState;
         });

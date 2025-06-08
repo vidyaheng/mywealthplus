@@ -29,7 +29,8 @@ const tabs: TabItem[] = [
     name: "โรคร้าย", 
     to: "/ci", 
     short: "CI",
-    activePaths: ["/ci", "/ci/*"] 
+    activePaths: ["/ci", "/ci/*"],
+    logoSrc: "/images/โรคร้าย Blue.svg" 
   },
   { 
     name: "บำนาญ", 
