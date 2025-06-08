@@ -63,7 +63,7 @@ export function calculateAllCiPremiumsSchedule(
         let yearDciPremium = 0;
 
         // 1. LifeReady Premium
-        if (selections.mainRiderChecked && selections.lifeReadyPlan !== '' && selections.lifeReadySA > 0) {
+        if (selections.mainRiderChecked && selections.lifeReadyPlan !== null && selections.lifeReadySA > 0) {
             let payLifeReadyThisYear = false;
             if (selections.lifeReadyPlan === 99) {
                 if (currentAttainedAge <= LIFE_READY_TO_99_MAX_PAY_AGE && currentAttainedAge >= effectiveLifeReadyEntryAge) {
@@ -107,7 +107,7 @@ export function calculateAllCiPremiumsSchedule(
         }
 
         // 3. iShield Premium
-        if (selections.ishieldChecked && selections.ishieldPlan !== 'NONE' && selections.ishieldSA > 0) {
+        if (selections.ishieldChecked && selections.ishieldPlan !== null && selections.ishieldSA > 0) {
             const iShieldPaymentTerm = parseInt(selections.ishieldPlan, 10);
             const iShieldPolicyYear = currentAttainedAge - newComponentsEntryAge + 1;
             if (iShieldPolicyYear > 0 && iShieldPolicyYear <= iShieldPaymentTerm) {
@@ -121,7 +121,7 @@ export function calculateAllCiPremiumsSchedule(
         }
 
         // 4. RokRaiSoShield Premium
-        if (selections.mainRiderChecked && selections.rokraiChecked && selections.rokraiPlan !== '') {
+        if (selections.mainRiderChecked && selections.rokraiChecked && selections.rokraiPlan !== null) {
             if (currentAttainedAge <= ROKRAI_MAX_PAY_AGE && currentAttainedAge >= newComponentsEntryAge) {
                 yearRokraiPremium = getRokRaiSoShieldPremium(
                     currentAttainedAge,

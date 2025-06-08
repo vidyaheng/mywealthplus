@@ -25,13 +25,13 @@ const defaultInitialCiPlans: CiPlanSelections = {
     icareChecked: false,
     icareSA: 0,
     ishieldChecked: false,
-    ishieldPlan: 'NONE',
+    ishieldPlan: null,
     ishieldSA: 0,
     mainRiderChecked: false,
-    lifeReadyPlan: '',
+    lifeReadyPlan: null,
     lifeReadySA: 0,
     rokraiChecked: false,
-    rokraiPlan: '',
+    rokraiPlan: null, // Use the correct type for RokRaiSoShieldPlan
     dciChecked: false,
     dciSA: 0,
 };

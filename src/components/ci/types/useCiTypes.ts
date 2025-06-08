@@ -39,13 +39,13 @@ export interface CiPlanSelections {
     icareChecked: boolean;
     icareSA: number;
     ishieldChecked: boolean;
-    ishieldPlan: IShieldPlan | 'NONE';
+    ishieldPlan: IShieldPlan | null;
     ishieldSA: number;
     mainRiderChecked: boolean;
-    lifeReadyPlan: LifeReadyPlan | '';
+    lifeReadyPlan: LifeReadyPlan | null;
     lifeReadySA: number;
     rokraiChecked: boolean;
-    rokraiPlan: RokRaiSoShieldPlan | ''; // แก้ไขให้ใช้ชื่อ Type ที่ตรงกัน
+    rokraiPlan: RokRaiSoShieldPlan | null; // แก้ไขให้ใช้ชื่อ Type ที่ตรงกัน
     dciChecked: boolean;
     dciSA: number;
 }

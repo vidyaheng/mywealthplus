@@ -55,13 +55,13 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
             }
             if (key === 'icareChecked' && !value) { newState.icareSA = 0; }
             if (key === 'ishieldChecked' && !value) {
-                newState.ishieldPlan = 'NONE';
+                newState.ishieldPlan = null;
                 newState.ishieldSA = 0;
             }
-            if (key === 'rokraiChecked' && !value) { newState.rokraiPlan = ''; }
+            if (key === 'rokraiChecked' && !value) { newState.rokraiPlan = null; }
             if (key === 'dciChecked' && !value) { newState.dciSA = 0; }
             if (key === 'mainRiderChecked' && !value) {
-                newState.lifeReadyPlan = '';
+                newState.lifeReadyPlan = null;
                 newState.lifeReadySA = 0;
             }
             return newState;
@@ -159,7 +159,7 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                         <Separator />
                         <div className="space-y-2">
                              <div className="flex items-center space-x-2"><Checkbox id="ishieldChecked" checked={selectedCiPlans.ishieldChecked} onCheckedChange={(checked) => handleCiSelectionChange('ishieldChecked', Boolean(checked))} /><Label htmlFor="ishieldChecked" className="text-md font-semibold">iShield</Label></div>
-                             {selectedCiPlans.ishieldChecked && (<div className="pl-6 space-y-3"><Select value={selectedCiPlans.ishieldPlan ?? undefined} onValueChange={(val) => handleCiSelectionChange('ishieldPlan', val as IShieldPlan | 'NONE')}><SelectTrigger><SelectValue placeholder="-- เลือกแผนชำระเบี้ย --" /></SelectTrigger><SelectContent>{IShieldPlanOptionsData.map((plan) => (<SelectItem key={plan.value} value={plan.value}>{plan.label}</SelectItem>))}</SelectContent></Select><Input type="number" min={500000} step={100000} value={selectedCiPlans.ishieldSA} onChange={(e) => handleCiSelectionChange('ishieldSA', Number(e.target.value))} placeholder="ทุนประกัน iShield" className="h-9"/><p className="text-xs text-muted-foreground">คุ้มครองถึงอายุ 85</p></div>)}
+                             {selectedCiPlans.ishieldChecked && (<div className="pl-6 space-y-3"><Select value={selectedCiPlans.ishieldPlan ?? ''} onValueChange={(val) => handleCiSelectionChange('ishieldPlan', val as IShieldPlan | null)}><SelectTrigger><SelectValue placeholder="-- เลือกแผนชำระเบี้ย --" /></SelectTrigger><SelectContent>{IShieldPlanOptionsData.map((plan) => (<SelectItem key={plan.value} value={plan.value}>{plan.label}</SelectItem>))}</SelectContent></Select><Input type="number" min={500000} step={100000} value={selectedCiPlans.ishieldSA} onChange={(e) => handleCiSelectionChange('ishieldSA', Number(e.target.value))} placeholder="ทุนประกัน iShield" className="h-9"/><p className="text-xs text-muted-foreground">คุ้มครองถึงอายุ 85</p></div>)}
                         </div>
                         <Separator />
                         <div className="space-y-1">
@@ -183,13 +183,13 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                         <CardContent className="space-y-4">
                             <div className="p-4 space-y-3 rounded-md bg-green-50 dark:bg-green-900/20">
                                 <p className="text-md font-semibold text-green-800 dark:text-green-300">LifeReady (สัญญาประกันชีวิตหลัก)</p>
-                                <div><Label className="block mb-1 text-sm">ระยะเวลาชำระเบี้ย</Label><Select value={selectedCiPlans.lifeReadyPlan ? String(selectedCiPlans.lifeReadyPlan) : undefined} onValueChange={(val) => handleCiSelectionChange('lifeReadyPlan', Number(val) as LifeReadyPlan | '')}><SelectTrigger><SelectValue placeholder="-- เลือกระยะเวลา --" /></SelectTrigger><SelectContent>{LifeReadyPlanOptionsData.map((plan) => (<SelectItem key={plan.value} value={String(plan.value)}>{plan.label}</SelectItem>))}</SelectContent></Select></div>
+                                <div><Label className="block mb-1 text-sm">ระยะเวลาชำระเบี้ย</Label><Select value={selectedCiPlans.lifeReadyPlan ? String(selectedCiPlans.lifeReadyPlan) : ''} onValueChange={(val) => handleCiSelectionChange('lifeReadyPlan', Number(val) as LifeReadyPlan | null)}><SelectTrigger><SelectValue placeholder="-- เลือกระยะเวลา --" /></SelectTrigger><SelectContent>{LifeReadyPlanOptionsData.map((plan) => (<SelectItem key={plan.value} value={String(plan.value)}>{plan.label}</SelectItem>))}</SelectContent></Select></div>
                                 <div><Label className="block mb-1 text-sm">ทุนประกัน LifeReady</Label><Input type="number" value={selectedCiPlans.lifeReadySA} onChange={(e) => handleCiSelectionChange('lifeReadySA', Number(e.target.value))} placeholder="ทุนประกัน" min={150000} step={50000} className="h-9"/></div>
                             </div>
                             <Separator/>
                             <div className="space-y-2">
                                 <div className="flex items-center space-x-2"><Checkbox id="rokraiChecked" checked={selectedCiPlans.rokraiChecked} onCheckedChange={(checked) => handleCiSelectionChange('rokraiChecked', Boolean(checked))} /><Label htmlFor="rokraiChecked" className="text-md font-medium">RokRaiSoShield</Label></div>
-                                {selectedCiPlans.rokraiChecked && (<div className="pl-6"><Select value={selectedCiPlans.rokraiPlan ?? undefined} onValueChange={(val) => handleCiSelectionChange('rokraiPlan', val as RokRaiSoShieldPlan | '')}><SelectTrigger><SelectValue placeholder="-- เลือกแผน --" /></SelectTrigger><SelectContent>{RokRaiSoShieldPlanOptionsData.map((plan) => (<SelectItem key={plan.value} value={plan.value}>{plan.label}</SelectItem>))}</SelectContent></Select><p className="mt-1 text-xs text-muted-foreground">คุ้มครองถึง 99</p></div>)}
+                                {selectedCiPlans.rokraiChecked && (<div className="pl-6"><Select value={selectedCiPlans.rokraiPlan ?? ''} onValueChange={(val) => handleCiSelectionChange('rokraiPlan', val as RokRaiSoShieldPlan | null)}><SelectTrigger><SelectValue placeholder="-- เลือกแผน --" /></SelectTrigger><SelectContent>{RokRaiSoShieldPlanOptionsData.map((plan) => (<SelectItem key={plan.value} value={plan.value}>{plan.label}</SelectItem>))}</SelectContent></Select><p className="mt-1 text-xs text-muted-foreground">คุ้มครองถึง 99</p></div>)}
                             </div>
                             <Separator/>
                             <div className="space-y-2">
