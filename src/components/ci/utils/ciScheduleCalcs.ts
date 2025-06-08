@@ -8,7 +8,7 @@ import type {
     LifeReadyPlan,
     IShieldPlan,
     RokraiPlan
-} from '../types/useCiTypes'; 
+} from '../types/useCiTypes';
 
 import {
     getLifeReadyPremium,
@@ -20,9 +20,8 @@ import {
 import { premiumRates as iCareMainPremiumRates } from '../data/icare_main_premium';
 import { icareCriticalRates } from '../data/icare_critical_rate';
 
-// --- Constants for premium calculation logic ---
+// --- Constants ---
 const MAX_SCHEDULE_AGE_DEFAULT = 98;
-
 const LIFE_READY_TO_99_MAX_PAY_AGE = 98;
 const ICARE_MAX_PAY_AGE = 84;
 const ICARE_CRITICAL_RIDER_MAX_AGE_FOR_RATE = 84;
@@ -64,7 +63,6 @@ export function calculateAllCiPremiumsSchedule(
         let yearDciPremium = 0;
 
         // 1. LifeReady Premium
-        // 👇 แก้ไข: เปลี่ยนการเช็คจาก null เป็น '' (ค่าว่าง)
         if (selections.mainRiderChecked && selections.lifeReadyPlan !== '' && selections.lifeReadySA > 0) {
             let payLifeReadyThisYear = false;
             if (selections.lifeReadyPlan === 99) {
@@ -79,17 +77,16 @@ export function calculateAllCiPremiumsSchedule(
             }
 
             if (payLifeReadyThisYear) {
-                // TypeScript จะรู้ว่า ณ จุดนี้ selections.lifeReadyPlan เป็น number ที่ถูกต้องแล้ว
                 yearLifeReadyPremium = getLifeReadyPremium(
                     effectiveLifeReadyEntryAge,
-                    selections.lifeReadyPlan as LifeReadyPlan, // ใช้ as เพื่อยืนยัน Type
+                    selections.lifeReadyPlan as LifeReadyPlan,
                     selections.lifeReadySA,
                     gender
                 );
             }
         }
 
-        // 2. iCare Premium (ส่วนนี้ไม่มีการเปลี่ยนแปลง)
+        // 2. iCare Premium
         if (selections.icareChecked) {
             if (currentAttainedAge <= ICARE_MAX_PAY_AGE && currentAttainedAge >= newComponentsEntryAge) {
                 let iCareMainPremiumPart = 0;
@@ -110,14 +107,13 @@ export function calculateAllCiPremiumsSchedule(
         }
 
         // 3. iShield Premium
-        // 👇 แก้ไข: เปลี่ยนการเช็คจาก null เป็น '' (ค่าว่าง)
         if (selections.ishieldChecked && selections.ishieldPlan !== '' && selections.ishieldSA > 0) {
             const iShieldPaymentTerm = parseInt(selections.ishieldPlan, 10);
             const iShieldPolicyYear = currentAttainedAge - newComponentsEntryAge + 1;
             if (iShieldPolicyYear > 0 && iShieldPolicyYear <= iShieldPaymentTerm) {
                 yearIshieldPremium = getIShieldPremium(
                     newComponentsEntryAge,
-                    selections.ishieldPlan as IShieldPlan, // ใช้ as เพื่อยืนยัน Type
+                    selections.ishieldPlan as IShieldPlan,
                     selections.ishieldSA,
                     gender
                 );
@@ -125,18 +121,17 @@ export function calculateAllCiPremiumsSchedule(
         }
 
         // 4. RokRaiSoShield Premium
-        // 👇 แก้ไข: เปลี่ยนการเช็คจาก null เป็น '' (ค่าว่าง)
         if (selections.mainRiderChecked && selections.rokraiChecked && selections.rokraiPlan !== '') {
             if (currentAttainedAge <= ROKRAI_MAX_PAY_AGE && currentAttainedAge >= newComponentsEntryAge) {
                 yearRokraiPremium = getRokRaiSoShieldPremium(
                     currentAttainedAge,
-                    selections.rokraiPlan as RokraiPlan, // ใช้ as เพื่อยืนยัน Type
+                    selections.rokraiPlan as RokraiPlan,
                     gender
                 );
             }
         }
 
-        // 5. DCI Premium (ส่วนนี้ไม่มีการเปลี่ยนแปลง)
+        // 5. DCI Premium
         if (selections.mainRiderChecked && selections.dciChecked && selections.dciSA > 0) {
             if (currentAttainedAge >= DCI_MIN_AGE_FOR_PREMIUM && currentAttainedAge <= DCI_MAX_PAY_AGE && currentAttainedAge >= newComponentsEntryAge) {
                 yearDciPremium = getDCIPremium(
