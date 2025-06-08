@@ -1,6 +1,10 @@
 // src/components/ci/types/useCiTypes.ts
 
+// ====================================================================================
 // SECTION 1: Import Base Types from External Modules (Source of Truth)
+// ====================================================================================
+
+// --- Types from a shared calculation library ---
 import type {
     CalculationInput as OriginalIWealthyCalculationInput,
     AnnualCalculationOutputRow as OriginalIWealthyAnnualOutputRow,
@@ -11,21 +15,17 @@ import type {
     AddInvestmentRecord as OriginalAddInvestmentRecord,
 } from '@/lib/calculations'; // โปรดตรวจสอบและปรับ Path ให้ถูกต้อง
 
+// --- Types from another shared calculation library ---
 import type {
     Gender as ImportedGender, // 'male' | 'female'
 } from '@/lib/healthPlanCalculations'; // โปรดตรวจสอบและปรับ Path ให้ถูกต้อง
 
-{/*import type {
-    LifeReadyPlan as OriginalLifeReadyPlan, // 6 | 12 | 18 | 99
-    IShieldPlan as OriginalIShieldPlan,     // "05" | "10" | "15" | "20"
-    AllRokRaiSoShieldPremiums,
-} from '../utils/premiumCalcs'; // โปรดตรวจสอบและปรับ Path ให้ถูกต้อง*/}
 
 // ====================================================================================
 // SECTION 2: Core Types for CI Planner
 // ====================================================================================
 
-export type Gender = ImportedGender; // 'male' | 'female'
+export type Gender = ImportedGender;
 export type PolicyOriginMode = 'newPolicy' | 'existingPolicy';
 export type IWealthyMode = 'manual' | 'automatic';
 export type PaymentFrequency = 'monthly' | 'annual';
@@ -33,8 +33,7 @@ export type PaymentFrequency = 'monthly' | 'annual';
 // --- CI Plan Specific Types ---
 export type LifeReadyPlan = 6 | 12 | 18 | 99;
 export type IShieldPlan = "05" | "10" | "15" | "20";
-export type RokRaiSoShieldPlan = "S" | "M" | "L" | "XL";
-export type RokraiPlan = 'S' | 'M' | 'L' | 'XL';
+export type RokRaiSoShieldPlan = "S" | "M" | "L" | "XL"; // ใช้ชื่อนี้เป็นชื่อหลัก
 
 export interface CiPlanSelections {
     icareChecked: boolean;
@@ -46,12 +45,13 @@ export interface CiPlanSelections {
     lifeReadyPlan: LifeReadyPlan | '';
     lifeReadySA: number;
     rokraiChecked: boolean;
-    rokraiPlan: RokRaiSoShieldPlan | '';
+    rokraiPlan: RokRaiSoShieldPlan | ''; // แก้ไขให้ใช้ชื่อ Type ที่ตรงกัน
     dciChecked: boolean;
     dciSA: number;
 }
 
 // --- iWealthy Calculation Related Types ---
+// Re-exporting for use within the CI Planner context
 export type SumInsuredReductionRecord = OriginalSumInsuredReductionRecord;
 export type FrequencyChangeRecord = OriginalFrequencyChangeRecord;
 export type WithdrawalPlanRecord = OriginalWithdrawalPlanRecord;
@@ -107,12 +107,12 @@ export interface UseCiPlannerProps {
     initialSelectedCiPlans?: CiPlanSelections;
     initialIWealthyMode?: IWealthyMode;
     initialPolicyOriginMode?: PolicyOriginMode;
-    initialUseIWealthy?: boolean; // <<--- เพิ่ม Prop นี้สำหรับค่าเริ่มต้นของ Toggle iWealthy
+    initialUseIWealthy?: boolean;
     onCalculationComplete?: () => void;
 }
 
 export interface UseCiPlannerReturn {
-    // Policyholder & Policy Context Info
+    // Policyholder & Policy Context
     policyholderEntryAge: number;
     setPolicyholderEntryAge: React.Dispatch<React.SetStateAction<number>>;
     policyholderGender: Gender;
@@ -126,11 +126,9 @@ export interface UseCiPlannerReturn {
     selectedCiPlans: CiPlanSelections;
     setSelectedCiPlans: React.Dispatch<React.SetStateAction<CiPlanSelections>>;
 
-    // iWealthy Toggle
-    useIWealthy: boolean; // <<--- เพิ่ม State นี้
-    setUseIWealthy: React.Dispatch<React.SetStateAction<boolean>>; // <<--- เพิ่ม Setter นี้
-
-    // iWealthy Configuration (Consolidated shared states)
+    // iWealthy Toggle & Config
+    useIWealthy: boolean;
+    setUseIWealthy: React.Dispatch<React.SetStateAction<boolean>>;
     iWealthyMode: IWealthyMode;
     setIWealthyMode: React.Dispatch<React.SetStateAction<IWealthyMode>>;
     iWealthyInvestmentReturn: number;
@@ -139,38 +137,30 @@ export interface UseCiPlannerReturn {
     setIWealthyOwnPPT: React.Dispatch<React.SetStateAction<number>>;
     iWealthyWithdrawalStartAge: number;
     setIWealthyWithdrawalStartAge: React.Dispatch<React.SetStateAction<number>>;
-
-    // Manual Mode Specific iWealthy states
     manualRpp: number;
     setManualRpp: React.Dispatch<React.SetStateAction<number>>;
     manualRtu: number;
     setManualRtu: React.Dispatch<React.SetStateAction<number>>;
-
-    // Auto Mode Specific iWealthy states
     autoRppRtuRatio: string;
     setAutoRppRtuRatio: React.Dispatch<React.SetStateAction<string>>;
 
-    // Results and Status
+    // Results & Status
     isLoading: boolean;
     error: string | null;
     result: AnnualCiOutputRow[] | null;
     ciPremiumsSchedule: AnnualCiPremiumDetail[] | null;
-
-    // Calculated values from solver (Automatic mode)
     calculatedMinPremium?: number;
     calculatedRpp?: number;
     calculatedRtu?: number;
 
-    // Action functions
+    // Actions
     runCalculation: () => Promise<void>;
 }
 
 // ====================================================================================
-// SECTION 4: Constants (ถ้ามีค่าคงที่เฉพาะสำหรับ CI หรือจะ re-export จากที่อื่น)
+// SECTION 4: Constants
 // ====================================================================================
+
 export const MINIMUM_ALLOWABLE_SYSTEM_RPP_CI = 18000;
 export const DEFAULT_RPP_RTU_RATIO_CI = '100:0';
 export const MAX_POLICY_AGE_CI = 98;
-// คุณอาจจะต้องการ re-export ค่าคงที่จาก useLthcTypes.ts หากใช้ค่าเดียวกันและไม่อยากประกาศซ้ำ
-// import { MAX_POLICY_AGE_TYPE } from '../../hooks/useLthcTypes'; // ตัวอย่าง
-// export const MAX_POLICY_AGE_CI = MAX_POLICY_AGE_TYPE;

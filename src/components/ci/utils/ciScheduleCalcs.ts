@@ -7,7 +7,7 @@ import type {
     PolicyOriginMode,
     LifeReadyPlan,
     IShieldPlan,
-    RokraiPlan
+    RokRaiSoShieldPlan
 } from '../types/useCiTypes';
 
 import {
@@ -125,7 +125,7 @@ export function calculateAllCiPremiumsSchedule(
             if (currentAttainedAge <= ROKRAI_MAX_PAY_AGE && currentAttainedAge >= newComponentsEntryAge) {
                 yearRokraiPremium = getRokRaiSoShieldPremium(
                     currentAttainedAge,
-                    selections.rokraiPlan as RokraiPlan,
+                    selections.rokraiPlan as RokRaiSoShieldPlan,
                     gender
                 );
             }
