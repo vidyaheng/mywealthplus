@@ -21,6 +21,7 @@ import { useCiCalculations } from './useCiCalculations';
 
 // --- Initial State Definition ---
 const defaultInitialCiPlans: CiPlanSelections = {
+    // FORCED UPDATE FOR VERCEL BUILD
     icareChecked: false,
     icareSA: 0,
     ishieldChecked: false,
