@@ -1,9 +1,8 @@
 // src/components/ci/CIFormPage.tsx
 
 // --- Imports ---
-import type { UseCiPlannerReturn } from '@/components/ci/hooks/useCiPlanner'; // ปรับ Path ให้ถูกต้อง
-import type { Gender, CiPlanSelections, IShieldPlan, LifeReadyPlan, RokRaiSoShieldPlan, IWealthyMode } from '@/components/ci/types/useCiTypes'; // ปรับ Path ให้ถูกต้อง
-
+import type { UseCiPlannerReturn } from '@/components/ci/hooks/useCiPlanner';
+import type { Gender, CiPlanSelections, IShieldPlan, LifeReadyPlan, RokRaiSoShieldPlan, IWealthyMode } from '@/components/ci/types/useCiTypes';
 import { FaVenusMars, FaBirthdayCake, FaFileAlt } from "react-icons/fa";
 import { FaWandMagicSparkles } from "react-icons/fa6";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { formatNumber, CalculatorIcon } from '@/components/ci/utils/helpers'; // ปรับ Path ให้ถูกต้อง
+import { formatNumber, CalculatorIcon } from '@/components/ci/utils/helpers';
 
 // --- Data Constants ---
 const ICarePlansData = [ { label: "5 แสน", value: 500000 }, { label: "1 ล้าน", value: 1000000 }, { label: "1.5 ล้าน", value: 1500000 }, { label: "2 ล้าน", value: 2000000 }, { label: "2.5 ล้าน", value: 2500000 }, { label: "3 ล้าน", value: 3000000 }, { label: "4 ล้าน", value: 4000000 }, { label: "5 ล้าน", value: 5000000 }, ];
@@ -26,7 +25,6 @@ const ageOptionsData = Array.from({ length: (70 - 18 + 1) }, (_, i) => 18 + i);
 
 // --- Component Definition ---
 export default function CIFormPage(props: UseCiPlannerReturn) {
-    // ดึงค่าและฟังก์ชันทั้งหมดจาก props ที่ส่งมาจากหน้าหลัก
     const {
         policyholderEntryAge, setPolicyholderEntryAge,
         policyholderGender, setPolicyholderGender,
@@ -47,21 +45,25 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
         runCalculation,
     } = props;
 
-    // Logic ที่เกี่ยวกับฟอร์มยังคงอยู่ที่นี่
     const handleCiSelectionChange = <K extends keyof CiPlanSelections>(key: K, value: CiPlanSelections[K]) => {
-        setSelectedCiPlans((prev:CiPlanSelections) => {
+        // 🔥 แก้ไข: เพิ่ม Type ให้กับ prev
+        setSelectedCiPlans((prev: CiPlanSelections) => {
             const newState = { ...prev, [key]: value };
             if (key === 'mainRiderChecked' && !value) {
                 newState.rokraiChecked = false;
                 newState.dciChecked = false;
             }
-            if (key === 'icareChecked' && !value) newState.icareSA = 0;
+            if (key === 'icareChecked' && !value) { newState.icareSA = 0; }
             if (key === 'ishieldChecked' && !value) {
                 newState.ishieldPlan = '';
                 newState.ishieldSA = 0;
             }
-            if (key === 'rokraiChecked' && !value) newState.rokraiPlan = '';
-            if (key === 'dciChecked' && !value) newState.dciSA = 0;
+            if (key === 'rokraiChecked' && !value) { newState.rokraiPlan = ''; }
+            if (key === 'dciChecked' && !value) { newState.dciSA = 0; }
+            if (key === 'mainRiderChecked' && !value) {
+                newState.lifeReadyPlan = '';
+                newState.lifeReadySA = 0;
+            }
             return newState;
         });
     };
@@ -75,12 +77,14 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
             iWealthySummaryText = `โหมด Auto (แนะนำ): RPP ${formatNumber(calculatedRpp)}, RTU ${formatNumber(calculatedRtu)} (รวม ${formatNumber(calculatedMinPremium)})`;
         }
     }
-
     const isCol2Visible = selectedCiPlans.mainRiderChecked;
     const isCol3Visible = useIWealthy;
     const visibleSectionsCount = [true, isCol2Visible, isCol3Visible].filter(Boolean).length;
-    const showNumbersOnTitles = visibleSectionsCount > 1;
+    let gridColsClass = "lg:grid-cols-1";
+    if (visibleSectionsCount === 2) { gridColsClass = "lg:grid-cols-2"; } 
+    else if (visibleSectionsCount === 3) { gridColsClass = "lg:grid-cols-3"; }
     let titleOrderNumber = 0;
+    const showNumbersOnTitles = visibleSectionsCount > 1;
     const getSectionTitle = (defaultTitle: string) => {
         if (showNumbersOnTitles) {
             titleOrderNumber++;
@@ -88,13 +92,6 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
         }
         return defaultTitle;
     };
-
-    let gridColsClass = "lg:grid-cols-1";
-    if (visibleSectionsCount === 2) {
-        gridColsClass = "lg:grid-cols-2";
-    } else if (visibleSectionsCount === 3) {
-        gridColsClass = "lg:grid-cols-3";
-    }
 
     return (
         <>
