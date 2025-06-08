@@ -49,7 +49,7 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
 
     // Logic ที่เกี่ยวกับฟอร์มยังคงอยู่ที่นี่
     const handleCiSelectionChange = <K extends keyof CiPlanSelections>(key: K, value: CiPlanSelections[K]) => {
-        setSelectedCiPlans(prev => {
+        setSelectedCiPlans((prev:CiPlanSelections) => {
             const newState = { ...prev, [key]: value };
             if (key === 'mainRiderChecked' && !value) {
                 newState.rokraiChecked = false;

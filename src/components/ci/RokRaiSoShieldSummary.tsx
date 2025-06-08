@@ -3,11 +3,11 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CheckCircle2 } from 'lucide-react';
-import type { RokraiPlan } from "@/components/ci/types/useCiTypes";
+import type { RokRaiSoShieldPlan } from "@/components/ci/types/useCiTypes";
 
 // --- Props Interface ---
 interface RokRaiSoShieldSummaryProps {
-    plan: RokraiPlan | '' | null;
+    plan: RokRaiSoShieldPlan | '' | null;
     age: number;
 }
 

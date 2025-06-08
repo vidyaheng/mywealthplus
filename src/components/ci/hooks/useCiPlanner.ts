@@ -1,5 +1,7 @@
 // src/hooks/useCiPlanner.ts
 
+export type { UseCiPlannerReturn } from '../types/useCiTypes';
+
 import { useState, useCallback, useEffect } from 'react';
 
 // --- Types ---
