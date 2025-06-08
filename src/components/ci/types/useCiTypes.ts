@@ -39,7 +39,7 @@ export interface CiPlanSelections {
     icareChecked: boolean;
     icareSA: number;
     ishieldChecked: boolean;
-    ishieldPlan: IShieldPlan | '';
+    ishieldPlan: IShieldPlan | 'NONE';
     ishieldSA: number;
     mainRiderChecked: boolean;
     lifeReadyPlan: LifeReadyPlan | '';

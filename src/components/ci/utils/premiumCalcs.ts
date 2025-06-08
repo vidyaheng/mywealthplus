@@ -33,12 +33,12 @@ export function getICarePremium(age: number, gender: "male" | "female", sumInsur
 // -------- iShield --------
 export function getIShieldPremium(
     age: number,
-    plan: IShieldPlan,
+    plan: IShieldPlan | 'NONE',
     sumInsured: number,
     gender: "male" | "female"
 ) {
     // 👇 เพิ่ม Guard Clause
-    if (!plan) return 0;
+    if (plan === 'NONE') return 0;
 
     const rates = ishieldRates[plan];
     const row = rates.find((r: IShieldRateRow) => r.age === age);

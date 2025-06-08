@@ -107,7 +107,7 @@ export function calculateAllCiPremiumsSchedule(
         }
 
         // 3. iShield Premium
-        if (selections.ishieldChecked && selections.ishieldPlan !== '' && selections.ishieldSA > 0) {
+        if (selections.ishieldChecked && selections.ishieldPlan !== 'NONE' && selections.ishieldSA > 0) {
             const iShieldPaymentTerm = parseInt(selections.ishieldPlan, 10);
             const iShieldPolicyYear = currentAttainedAge - newComponentsEntryAge + 1;
             if (iShieldPolicyYear > 0 && iShieldPolicyYear <= iShieldPaymentTerm) {

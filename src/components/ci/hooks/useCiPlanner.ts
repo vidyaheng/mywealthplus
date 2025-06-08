@@ -25,7 +25,7 @@ const defaultInitialCiPlans: CiPlanSelections = {
     icareChecked: false,
     icareSA: 0,
     ishieldChecked: false,
-    ishieldPlan: '',
+    ishieldPlan: 'NONE',
     ishieldSA: 0,
     mainRiderChecked: false,
     lifeReadyPlan: '',
