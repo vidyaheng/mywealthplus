@@ -1,59 +1,67 @@
 // src/components/ci/CITablePage.tsx
 
-// --- Imports ---
 import { useState } from 'react';
-import type { AnnualCiOutputRow, AnnualCiPremiumDetail } from '@/components/ci/types/useCiTypes';
+
+// --- Imports ---
+import type { UseCiPlannerReturn } from '@/components/ci/types/useCiTypes';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { formatNumber } from '@/components/ci/utils/helpers';
 
-
-// --- Interface ---
-// 1. รับ props เข้ามาครบถ้วน
-interface CITablePageProps {
-    resultData: AnnualCiOutputRow[];
-    ciPremiumsScheduleData: AnnualCiPremiumDetail[] | null;
-    useIWealthy: boolean;
-    showCiOnlyView: boolean;
-    withdrawalStartAge: number;
-}
+// --- Props Interface ---
+type CITablePageProps = Pick<
+    UseCiPlannerReturn,
+    'isLoading' | 'error' | 'result' | 'ciPremiumsSchedule' | 'useIWealthy' | 'iWealthyWithdrawalStartAge'
+>;
 
 // --- Component Definition ---
 export default function CITablePage({
-    resultData,
-    ciPremiumsScheduleData,
+    isLoading,
+    error,
+    result,
+    ciPremiumsSchedule,
     useIWealthy,
-    showCiOnlyView,
-    withdrawalStartAge
+    iWealthyWithdrawalStartAge
 }: CITablePageProps) {
 
-    console.log("ค่า withdrawalStartAge ที่ CITablePage ได้รับ:", withdrawalStartAge);
-    // สร้างตัวแปร isIWealthyMode เพื่อให้เงื่อนไขอ่านง่ายขึ้น
-    const isIWealthyMode = useIWealthy;
-
-    // --- คำนวณผลรวมสำหรับตารางที่ 1 (ตารางเบี้ย CI) ---
-const ciPremiumTotals = (ciPremiumsScheduleData ?? []).reduce(
-    (acc, row) => {
-        acc.lifeReady += row.lifeReadyPremium ?? 0;
-        acc.icare += row.icarePremium ?? 0;
-        acc.ishield += row.ishieldPremium ?? 0;
-        acc.rokrai += row.rokraiPremium ?? 0;
-        acc.dci += row.dciPremium ?? 0;
-        acc.total += row.totalCiPremium ?? 0;
-        return acc;
-    },
-    { lifeReady: 0, icare: 0, ishield: 0, rokrai: 0, dci: 0, total: 0 }
-);
-
-    // --- 👇 ขั้นตอนที่ 1: เตรียม State และคำนวณผลรวมสำหรับตาราง iWealthy ---
-
-    // State สำหรับสลับการแสดงคอลัมน์ RPP/RTU
+    // --- State Management for UI Interaction ---
+    const [showCiOnlyView, setShowCiOnlyView] = useState(false);
     const [showRppRtu, setShowRppRtu] = useState<boolean>(false);
 
-    // คำนวณผลรวมสำหรับแถวสรุป (Footer) ใหม่ทั้งหมด
-    const iWealthyTotals = resultData.reduce(
+    // --- Render Guards ---
+    if (isLoading) {
+        return <div className="flex justify-center items-center h-full min-h-[600px]">กำลังโหลดข้อมูลตาราง...</div>;
+    }
+    if (error) {
+        return <div className="flex justify-center items-center h-full min-h-[600px] text-red-600">เกิดข้อผิดพลาด: {error}</div>;
+    }
+    if (!result) {
+        return (
+            <div className="flex justify-center items-center h-full min-h-[600px] text-muted-foreground">
+                <p>ไม่มีข้อมูลสำหรับแสดงผล กรุณากด "คำนวณ" ที่หน้ากรอกข้อมูล</p>
+            </div>
+        );
+    }
+
+    // --- Pre-render Calculations for Totals ---
+    const ciPremiumTotals = (ciPremiumsSchedule ?? []).reduce(
         (acc, row) => {
-            if (row.age < withdrawalStartAge) {
+            acc.lifeReady += row.lifeReadyPremium ?? 0;
+            acc.icare += row.icarePremium ?? 0;
+            acc.ishield += row.ishieldPremium ?? 0;
+            acc.rokrai += row.rokraiPremium ?? 0;
+            acc.dci += row.dciPremium ?? 0;
+            acc.total += row.totalCiPremium ?? 0;
+            return acc;
+        },
+        { lifeReady: 0, icare: 0, ishield: 0, rokrai: 0, dci: 0, total: 0 }
+    );
+
+    const iWealthyTotals = result.reduce(
+        (acc, row) => {
+            if (row.age < iWealthyWithdrawalStartAge) {
                 acc.totalCIPaid += row.totalCiPackagePremiumPaid ?? 0;
             }
             acc.rpp += row.iWealthyRpp ?? 0;
@@ -65,22 +73,35 @@ const ciPremiumTotals = (ciPremiumsScheduleData ?? []).reduce(
         { totalCIPaid: 0, rpp: 0, rtu: 0, totalIWealthyPaid: 0, totalWithdrawal: 0 }
     );
 
+    // --- Render Variables ---
+    const isIWealthyMode = useIWealthy;
+    const toggleLabel = showCiOnlyView ? 'แสดงตาราง iWealthy' : 'แสดงตารางเบี้ย CI';
 
     return (
-        <div className="space-y-8 mt-4">
-
-            {/* 🔥 ตารางที่ 1: สรุปเบี้ยประกันภัย CI (ฉบับอัปเดต) */}
-            {/* เงื่อนไขการแสดงผลเหมือนเดิม */}
-            {(!isIWealthyMode || showCiOnlyView) && ciPremiumsScheduleData && ciPremiumsScheduleData.length > 0 && (
-                <Card>
+        <div className="space-y-8">
+            
+            {/* ตารางที่ 1: สรุปเบี้ยประกันภัย CI */}
+            {(!isIWealthyMode || showCiOnlyView) && ciPremiumsSchedule && ciPremiumsSchedule.length > 0 && (
+                <Card className="bg-white dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
                     <CardHeader>
-                        <CardTitle>สรุปเบี้ยประกันภัยโรคร้ายแรง (CI) ต่อปี</CardTitle>
+                        <div className="flex justify-between items-center">
+                            <CardTitle className="text-blue-800 dark:text-blue-200">สรุปเบี้ยประกันภัยโรคร้ายแรง (CI) ต่อปี</CardTitle>
+                            {isIWealthyMode && (
+                                <div className="flex items-center space-x-2">
+                                    <Label htmlFor="view-toggle-ci" className="text-sm font-normal">{toggleLabel}</Label>
+                                    <Switch 
+                                        id="view-toggle-ci" 
+                                        checked={showCiOnlyView} 
+                                        onCheckedChange={setShowCiOnlyView}
+                                        className="data-[state=checked]:bg-blue-600"
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </CardHeader>
-                    {/* 1. ทำให้ CardContent scroll ได้ และกำหนดความสูง */}
-                    <CardContent className="overflow-y-auto h-[600px] relative">
+                    <CardContent className="relative h-[600px] overflow-y-auto">
                         <Table>
-                            {/* 2. ทำให้ Header ติดหนึบ (Sticky) */}
-                            <TableHeader className="sticky top-0 bg-white dark:bg-slate-900 z-10">
+                            <TableHeader className="sticky top-0 z-10 bg-blue-100/80 dark:bg-blue-900/80 backdrop-blur">
                                 <TableRow>
                                     <TableHead className="text-center">ปีที่</TableHead>
                                     <TableHead className="text-center">อายุ</TableHead>
@@ -93,7 +114,7 @@ const ciPremiumTotals = (ciPremiumsScheduleData ?? []).reduce(
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {ciPremiumsScheduleData.map(row => (
+                                {ciPremiumsSchedule.map(row => (
                                     <TableRow key={`ci-${row.policyYear}-${row.age}`}>
                                         <TableCell className="text-center">{row.policyYear}</TableCell>
                                         <TableCell className="text-center">{row.age}</TableCell>
@@ -106,8 +127,7 @@ const ciPremiumTotals = (ciPremiumsScheduleData ?? []).reduce(
                                     </TableRow>
                                 ))}
                             </TableBody>
-                            {/* 3. เพิ่มส่วนท้ายตาราง (Table Footer) สำหรับผลรวม */}
-                            <TableFooter className="sticky bottom-0 bg-white dark:bg-slate-900 font-bold">
+                            <TableFooter className="sticky bottom-0 bg-blue-100/80 dark:bg-blue-900/80 font-bold">
                                 <TableRow>
                                     <TableCell colSpan={2}>ผลรวมตลอดสัญญา</TableCell>
                                     <TableCell className="text-right">{formatNumber(ciPremiumTotals.lifeReady)}</TableCell>
@@ -123,66 +143,58 @@ const ciPremiumTotals = (ciPremiumsScheduleData ?? []).reduce(
                 </Card>
             )}
 
-           {/* 🔥 ตารางที่ 2: ภาพรวมผลประโยชน์ CI และ iWealthy (ฉบับแก้ไขใหม่ทั้งหมด) */}
-            {isIWealthyMode && !showCiOnlyView && resultData && resultData.length > 0 && (
-                <Card>
+            {/* ตารางที่ 2: ภาพรวมผลประโยชน์ CI และ iWealthy */}
+            {isIWealthyMode && !showCiOnlyView && (
+                <Card className="bg-white dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
                     <CardHeader>
-                        <CardTitle>ภาพรวมผลประโยชน์ CI และ iWealthy (รายปี)</CardTitle>
+                        <div className="flex justify-between items-center">
+                            <CardTitle className="text-blue-800 dark:text-blue-200">ภาพรวมผลประโยชน์ CI และ iWealthy</CardTitle>
+                            <div className="flex items-center space-x-2">
+                                <Label htmlFor="view-toggle-iwealthy" className="text-sm font-normal">{toggleLabel}</Label>
+                                <Switch id="view-toggle-iwealthy" checked={showCiOnlyView} onCheckedChange={setShowCiOnlyView} />
+                            </div>
+                        </div>
                     </CardHeader>
-                    {/* 2. ทำให้ CardContent scroll ได้ และสูง 600px */}
                     <CardContent className="relative h-[600px] overflow-y-auto">
                         <Table>
-                            {/* 3. ทำให้ Header ติดหนึบ และมีพื้นหลังทึบ */}
-                            <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                            <TableHeader className="sticky top-0 z-10 bg-blue-100/80 dark:bg-blue-900/80 backdrop-blur">
                                 <TableRow>
                                     <TableHead className="text-center w-[60px]">ปีที่</TableHead>
                                     <TableHead className="text-center w-[60px]">อายุ</TableHead>
                                     <TableHead className="text-right">เบี้ย CI รวม</TableHead>
-                                    
-                                    {/* 4. แสดงคอลัมน์ RPP/RTU แบบไดนามิก */}
                                     {showRppRtu && (
                                         <>
                                             <TableHead className="text-right">iWealthy RPP</TableHead>
                                             <TableHead className="text-right">iWealthy RTU</TableHead>
                                         </>
                                     )}
-
                                     <TableHead className="text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <span>เบี้ยรวม iWealthy</span>
-                                            {/* ปุ่มสำหรับ Expand/Collapse คอลัมน์ */}
-                                            <button 
-                                                onClick={() => setShowRppRtu(prev => !prev)} 
-                                                className="h-5 w-5 rounded-full border flex items-center justify-center text-blue-500 hover:bg-muted"
-                                                title={showRppRtu ? "ซ่อนรายละเอียด" : "แสดงรายละเอียด"}
-                                            >
+                                            <button onClick={() => setShowRppRtu(prev => !prev)} className="h-5 w-5 rounded-full border flex items-center justify-center text-blue-500 hover:bg-muted" title={showRppRtu ? "ซ่อนรายละเอียด" : "แสดงรายละเอียด"}>
                                                 {showRppRtu ? '−' : '+'}
                                             </button>
                                         </div>
                                     </TableHead>
-
                                     <TableHead className="text-right">ถอนจาก iWealthy</TableHead>
                                     <TableHead className="text-right font-semibold">มูลค่าบัญชี iWealthy</TableHead>
                                     <TableHead className="text-right font-semibold">ผลประโยชน์เสียชีวิตรวม</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {resultData.map(row => (
-                                    <TableRow key={`res-${row.policyYear}`}>
+                                {result.map(row => (
+                                    <TableRow key={`res-${row.policyYear}-${row.age}`}>
                                         <TableCell className="text-center">{row.policyYear}</TableCell>
                                         <TableCell className="text-center">{row.age}</TableCell>
                                         <TableCell className="text-right">
-                                            {row.age < withdrawalStartAge ? formatNumber(row.totalCiPackagePremiumPaid) : '-'}
+                                            {row.age < iWealthyWithdrawalStartAge ? formatNumber(row.totalCiPackagePremiumPaid) : '-'}
                                         </TableCell>
-                                        
-                                        {/* 5. แสดง Cell ของ RPP/RTU แบบไดนามิก */}
                                         {showRppRtu && (
                                             <>
                                                 <TableCell className="text-right text-muted-foreground">{formatNumber(row.iWealthyRpp)}</TableCell>
                                                 <TableCell className="text-right text-muted-foreground">{formatNumber(row.iWealthyRtu)}</TableCell>
                                             </>
                                         )}
-
                                         <TableCell className="text-right">{formatNumber(row.iWealthyTotalPremium)}</TableCell>
                                         <TableCell className="text-right">{formatNumber(row.iWealthyWithdrawal)}</TableCell>
                                         <TableCell className="text-right font-semibold">{formatNumber(Math.round(row.iWealthyEoyAccountValue ?? 0))}</TableCell>
@@ -190,19 +202,16 @@ const ciPremiumTotals = (ciPremiumsScheduleData ?? []).reduce(
                                     </TableRow>
                                 ))}
                             </TableBody>
-                            {/* 6. ส่วนท้ายตารางที่ติดหนึบและแสดงผลรวมไดนามิก */}
-                            <TableFooter className="sticky bottom-0 z-10 bg-background/95 font-bold">
+                            <TableFooter className="sticky bottom-0 bg-blue-100/80 dark:bg-blue-900/80 font-bold">
                                 <TableRow>
                                     <TableCell colSpan={2}>ผลรวม</TableCell>
                                     <TableCell className="text-right">{formatNumber(iWealthyTotals.totalCIPaid)}</TableCell>
-
                                     {showRppRtu && (
                                         <>
                                             <TableCell className="text-right">{formatNumber(iWealthyTotals.rpp)}</TableCell>
                                             <TableCell className="text-right">{formatNumber(iWealthyTotals.rtu)}</TableCell>
                                         </>
                                     )}
-
                                     <TableCell className="text-right">{formatNumber(iWealthyTotals.totalIWealthyPaid)}</TableCell>
                                     <TableCell className="text-right">{formatNumber(iWealthyTotals.totalWithdrawal)}</TableCell>
                                     <TableCell colSpan={2}></TableCell>

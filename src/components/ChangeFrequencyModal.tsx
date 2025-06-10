@@ -247,7 +247,7 @@ export default function ChangeFrequencyModal({
                 {/* กลุ่ม 3: เริ่มที่อายุ/ปี */}
               <div className="flex flex-col space-y-1 w-20">
                 <Label htmlFor="start-value" className="text-xs whitespace-nowrap">{refType === 'age' ? 'เริ่มที่อายุ' : 'เริ่มปีที่'}</Label>
-                <Select onValueChange={handleStartValueChange} value={(refType === 'age' ? startValue : startValue - currentAge).toString()}>
+                <Select onValueChange={handleStartValueChange} value={startValue.toString()}>
                   <SelectTrigger id="start-value" className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>{startOptions.map(opt => ( <SelectItem key={opt} value={opt.toString()} className="text-xs">{opt} {refType === 'age' ? 'ปี' : ''}</SelectItem> ))}</SelectContent>
                 </Select>
@@ -256,7 +256,7 @@ export default function ChangeFrequencyModal({
                 {/* กลุ่ม 4: ถึงอายุ/ปี */}
               <div className="flex flex-col space-y-1 w-20">
                 <Label htmlFor="end-value" className="text-xs whitespace-nowrap">{refType === 'age' ? 'ถึงอายุ' : 'ถึงปีที่'}</Label>
-                <Select onValueChange={handleEndValueChange} value={(refType === 'age' ? endValue : endValue - currentAge).toString()}>
+                <Select onValueChange={handleEndValueChange} value={endValue.toString()}>
                   <SelectTrigger id="end-value" className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>{endOptions.map(opt => ( <SelectItem key={opt} value={opt.toString()} className="text-xs">{opt} {refType === 'age' ? 'ปี' : ''}</SelectItem>))}</SelectContent>
                 </Select>

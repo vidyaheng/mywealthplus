@@ -126,14 +126,22 @@ export default function PausePremiumModal({
 
   // --- Handlers (แก้ไขให้ใช้ Setter ที่ถูกต้อง) ---
   const handleRefTypeChange = (value: string) => {
-      const newRefType = value as 'age' | 'year';
-      setRefType(newRefType);
-      // Reset start/end value (ใช้ Setter โดยตรง)
-      const defaultStartAge = firstPossibleStartAge;
-      const finalMaxAge = maxPossibleAge > defaultStartAge ? maxPossibleAge : defaultStartAge;
-      setStartValue(newRefType === 'age' ? defaultStartAge : Math.max(1, defaultStartAge - currentAge + 1)); // <<< ใช้ setStartValue
-      setEndValue(newRefType === 'age' ? finalMaxAge : Math.max(1, finalMaxAge - currentAge + 1)); // <<< ใช้ setEndValue
-  };
+  const newRefType = value as 'age' | 'year';
+  setRefType(newRefType);
+  
+  const defaultStartAge = firstPossibleStartAge;
+  const finalMaxAge = maxPossibleAge;
+  
+  if (newRefType === 'age') {
+    setStartValue(defaultStartAge);
+    setEndValue(finalMaxAge);
+  } else {
+    const startYear = Math.max(1, defaultStartAge - currentAge);
+    const endYear = Math.max(1, finalMaxAge - currentAge);
+    setStartValue(startYear);
+    setEndValue(endYear); // ให้เป็นปีสุดท้ายที่เป็นไปได้
+  }
+};
 
   const handleStartValueChange = (value: string) => {
     const numValue = parseInt(value, 10);
@@ -168,11 +176,11 @@ export default function PausePremiumModal({
     // แปลงค่าให้เป็นอายุจริง
     const startAge = refType === 'age' 
       ? startValue 
-      : currentAge + startValue - 1;
+      : currentAge + startValue;
     
     const endAge = refType === 'age' 
       ? endValue 
-      : currentAge + endValue - 1;
+      : currentAge + endValue;
   
     console.log('Adding period:', { startAge, endAge });
   
@@ -245,7 +253,8 @@ export default function PausePremiumModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>หยุดพักชำระเบี้ย</DialogTitle>
+          <DialogTitle
+            className = "text-xl text-blue-700 ml-4">หยุดพักชำระเบี้ย</DialogTitle>
         </DialogHeader>
 
         {/* ส่วนกรอกข้อมูล */}
@@ -322,11 +331,11 @@ export default function PausePremiumModal({
         <div className="border-t pt-3 mt-4">
            {/* ... โค้ดแสดง plannedPauses ... */}
            <div className='flex justify-between items-center mb-2'>
-               <h3 className="font-medium text-sm">รายการหยุดพักชำระเบี้ย</h3>
+               <h3 className="font-medium text-md text-blue-800">รายการหยุดพักชำระเบี้ย</h3>
                <span className='text-xs text-gray-500'>รายการทั้งหมด {plannedPauses.length}</span>
            </div>
             {!plannedPauses || plannedPauses.length === 0 ? (
-              <p className="text-xs text-gray-500 italic text-center py-4">ยังไม่มีรายการ</p>
+              <p className="text-sm text-gray-500 italic text-center py-4">ยังไม่มีรายการ</p>
             ) : (
               <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
                 {plannedPauses.map((record, index) => {
@@ -334,13 +343,13 @@ export default function PausePremiumModal({
       
                   // แปลงการแสดงผลตามประเภทการอ้างอิง
                   const displayText = record.type === 'age' 
-                    ? `อายุ ${record.startAge}-${record.endAge} ปี`
-                    : `ปีที่ ${record.startAge}-${record.endAge}`;
+                    ? `อายุ ${record.startAge} - ${record.endAge} ปี`
+                    : `ปีที่ ${record.startAge - currentAge} - ${record.endAge - currentAge}`;
       
                   return (
                     <div 
                       key={record.id} 
-                      className="grid grid-cols-[auto,1fr,auto] gap-2 items-center text-xs px-2 py-1 border rounded bg-gray-50"
+                      className="grid grid-cols-[auto,1fr,auto] gap-2 items-center text-sm px-2 py-1 border rounded bg-gray-50"
                     >
                       <span className='font-mono text-gray-500'>{index + 1}.</span>
                       <span className='text-left text-gray-700'>
@@ -355,7 +364,7 @@ export default function PausePremiumModal({
                             onClick={handleDeleteLastPeriod} 
                             title="ลบรายการล่าสุด"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         )}
                       </div>
@@ -372,7 +381,7 @@ export default function PausePremiumModal({
           <DialogClose asChild>
               <Button type="button" variant="outline" size="sm">ยกเลิก</Button>
           </DialogClose>
-          <Button type="button" size="sm" onClick={handleSavePlan} className='bg-blue-700'>บันทึก</Button>
+          <Button type="button" size="sm" onClick={handleSavePlan} className='bg-blue-700 hover:bg-blue-500'>บันทึก</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

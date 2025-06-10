@@ -115,7 +115,7 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
         <>
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-xl">ข้อมูลผู้เอาประกันและบริบทกรมธรรม์</CardTitle>
+                    <CardTitle className="text-xl text-blue-700">ข้อมูลผู้เอาประกัน</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-6 items-end">
@@ -165,8 +165,8 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                 </CardContent>
             </Card>
 
-            {(titleOrderNumber = 0)}
-            <div className={`grid gap-6 grid-cols-1 ${gridColsClass}`}>
+            {/*(titleOrderNumber = 0)*/}
+            <div className={`mt-8 grid gap-6 grid-cols-1 ${gridColsClass}`}>
                 <Card>
                     <CardHeader><CardTitle className="text-lg">{getSectionTitle("วางแผนดูแลโรคร้าย")}</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
@@ -322,7 +322,7 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                         <p className="text-xl font-bold text-primary">เบี้ย CI รวมปีแรก: {formatNumber(firstYearCiPremium)} บาท</p>
                         {useIWealthy && iWealthySummaryText && ( <p className="mt-1 text-md text-muted-foreground">{iWealthySummaryText}</p> )}
                     </div>
-                    <Button onClick={runCalculation} disabled={isLoading} size="lg" className="w-full md:w-auto">
+                    <Button onClick={runCalculation} disabled={isLoading} size="lg" className="w-full md:w-auto bg-blue-700 hover:bg-blue-500 text-white font-semibold">
                         {isLoading ? 'กำลังคำนวณ...' : <><CalculatorIcon /> แสดงภาพประกอบการขาย</>}
                     </Button>
                 </CardContent>

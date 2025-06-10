@@ -3,10 +3,18 @@ import { AnnualCalculationOutputRow } from "../lib/calculations";
 
 export type AnnualTableView = 'compact' | 'full';
 
+export type AnnualDataRowWithTax = AnnualCalculationOutputRow & { taxBenefit?: number };
+
+type TotalsType = Omit<AnnualCalculationOutputRow, 'policyYear' | 'age' | 'eoyAccountValue' | 'eoyDeathBenefit' | 'eoyCashSurrenderValue' | 'eoySumInsured' | 'investmentBaseYear'> & {
+  taxBenefit: number;
+};
+
+
 interface DisplayTableProps {
-  data: AnnualCalculationOutputRow[];
+  data: AnnualDataRowWithTax[];
   viewMode: AnnualTableView;
   showCsv: boolean;
+  showTaxBenefitColumn?: boolean;
   formatNumber: (num: number | undefined | null) => string;
   caption?: string;
   className?: string;
@@ -16,6 +24,7 @@ export default function DisplayTable({
   data,
   viewMode,
   showCsv,
+  showTaxBenefitColumn,
   formatNumber,
   //caption = "ตารางสรุปผลประโยชน์โดยประมาณ",
   className
@@ -29,7 +38,7 @@ export default function DisplayTable({
     );
   }
 
-  const totals = data.reduce((acc, row) => {
+  const totals = data.reduce<TotalsType>((acc, row) => {
     acc.premiumRPPYear += row.premiumRPPYear || 0;
     acc.premiumRTUYear += row.premiumRTUYear || 0;
     acc.premiumLSTUYearGross += row.premiumLSTUYearGross || 0;
@@ -43,6 +52,7 @@ export default function DisplayTable({
     acc.investmentReturnYear += row.investmentReturnYear || 0;
     acc.royaltyBonusYear += row.royaltyBonusYear || 0;
     acc.withdrawalYear += row.withdrawalYear || 0;
+    acc.taxBenefit += row.taxBenefit || 0;
     return acc;
   }, {
     premiumRPPYear: 0,
@@ -58,6 +68,7 @@ export default function DisplayTable({
     investmentReturnYear: 0,
     royaltyBonusYear: 0,
     withdrawalYear: 0,
+    taxBenefit: 0,
   });
 
   const headerCellStickyBg = "bg-slate-100 dark:bg-slate-800";
@@ -83,6 +94,9 @@ export default function DisplayTable({
               <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>เบี้ย LSTU (บาท)</th>
             )}
             <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>เบี้ยรวมปีนี้ (บาท)</th>
+            {showTaxBenefitColumn && (
+              <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg} text-teal-600`}>ผลประโยชน์ทางภาษี (บาท)</th>
+            )}
             {viewMode === 'full' && (
               <>
                 <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>Charge RPP (บาท)</th>
@@ -121,6 +135,9 @@ export default function DisplayTable({
                 <td className={`${tdBaseClass} text-right`}>{formatNumber(row.premiumLSTUYearGross)}</td>
               )}
               <td className={`${tdBaseClass} text-right`}>{formatNumber(row.totalPremiumYear)}</td>
+              {showTaxBenefitColumn && (
+                <td className={`${tdBaseClass} text-right text-teal-600`}>{formatNumber(row.taxBenefit)}</td>
+              )}
               {viewMode === 'full' && (
                 <>
                   <td className={`${tdBaseClass} text-right text-orange-600`}>{formatNumber(row.premiumChargeRPPYear)}</td>
@@ -159,6 +176,9 @@ export default function DisplayTable({
               <td className={`${tdBaseClass} text-right`}>{formatNumber(totals.premiumLSTUYearGross)}</td>
             )}
             <td className={`${tdBaseClass} text-right`}>{formatNumber(totals.totalPremiumYear)}</td>
+            {showTaxBenefitColumn && (
+              <td className={`${tdBaseClass} text-right text-teal-600`}>{formatNumber(totals.taxBenefit)}</td>
+            )}
             {viewMode === 'full' && (
               <>
                 <td className={`${tdBaseClass} text-right text-orange-600`}>{formatNumber(totals.premiumChargeRPPYear)}</td>

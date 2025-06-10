@@ -171,7 +171,7 @@ export default function ReduceSumInsuredModal({
           setSelectedAge(numValue); // ถ้าเลือกอายุ ก็ set อายุโดยตรง
       } else { // refType === 'year'
           // ถ้าเลือกปีที่ ให้คำนวณอายุที่สอดคล้องแล้ว set อายุ
-          setSelectedAge(currentAge + numValue);
+          setSelectedAge(currentAge + numValue -1);
       }
    };
 
@@ -210,16 +210,30 @@ export default function ReduceSumInsuredModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl"> {/* ขยาย Modal เล็กน้อย */}
         <DialogHeader>
-          <DialogTitle>แก้ไขจำนวนเงินเอาประกันภัยฯ</DialogTitle>
+          <DialogTitle
+            className ="text-blue-700 text-2xl font-semibold"
+            >    
+              แก้ไขจำนวนเงินเอาประกันภัยฯ
+          </DialogTitle>
         </DialogHeader>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
           <TabsList className="grid w-full grid-cols-2 h-9">
-            <TabsTrigger value="edit" className="text-xs px-2">แก้ไขจำนวนเงินเอาประกันภัยฯ</TabsTrigger>
-            <TabsTrigger value="history" className="text-xs px-2">ประวัติการแก้ไข</TabsTrigger>
+            <TabsTrigger 
+              value="edit" 
+              className="text-md px-2 data-[state=active]:text-blue-600 data-[state=active]:font-bold data-[state=active]:bg-white data-[state=active]:border-b-2"
+              >
+                แก้ไขจำนวนเงินเอาประกันภัยฯ
+            </TabsTrigger>
+            <TabsTrigger 
+              value="history" 
+              className="text-md px-2 data-[state=active]:text-blue-600 data-[state=active]:font-bold data-[state=active]:bg-white data-[state=active]:border-b-2"
+              >
+                ประวัติการแก้ไข
+            </TabsTrigger>
           </TabsList>
 
           {/* === Tab 1: ฟอร์มแก้ไข (Layout แนวนอน) === */}
-          <TabsContent value="edit" className="space-y-3 pt-4">
+          <TabsContent value="edit" className="space-y-3 pt-4 ml-4">
             <div className="text-sm font-medium text-gray-800">เพิ่ม/ลด จำนวนเงินเอาประกันภัยฯ</div>
 
             {/* แถว Input แนวนอน */}
@@ -240,11 +254,11 @@ export default function ReduceSumInsuredModal({
 
               {/* 2. เลือกอายุ/ปี เริ่มต้น */}
               <div className="flex flex-col space-y-1">
-                <Label htmlFor="start-value" className="text-xs whitespace-nowrap">{refType === 'age' ? 'เริ่มที่อายุ' : 'เริ่มปีที่'}</Label>
+                <Label htmlFor="start-value" className="text-xs ml-2 whitespace-nowrap">{refType === 'age' ? 'เริ่มที่อายุ' : 'เริ่มปีที่'}</Label>
                 {/* ค่า value ของ Select ต้องแปลงให้ถูกตาม refType */}
                 <Select
                   onValueChange={handleStartValueChange}
-                  value={(refType === 'age' ? selectedAge : selectedAge - currentAge).toString()}
+                  value={(refType === 'age' ? selectedAge : selectedAge - currentAge +1).toString()}
                 >
                   <SelectTrigger id="start-value" className="h-8 text-xs w-[90px]"> <SelectValue /> </SelectTrigger>
                   <SelectContent>
@@ -258,8 +272,8 @@ export default function ReduceSumInsuredModal({
               </div>
 
               {/* 3. จำนวนเงินเอาประกันใหม่ */}
-              <div className="flex-1 min-w-[180px]">
-                 <Label htmlFor="reduction-amount" className="text-xs mb-1 block">จำนวนเงินเอาประกันใหม่</Label>
+              <div className="min-w-[180px] ml-auto">
+                 <Label htmlFor="reduction-amount" className="text-xs mb-1 mr-2 block text-right">จำนวนเงินเอาประกันใหม่</Label>
                  <div className="flex items-center h-8">
                      <Input
                         ref={amountInputRef}
@@ -286,7 +300,7 @@ export default function ReduceSumInsuredModal({
 
             {/* --- Tab 2: ประวัติ --- */}
           <TabsContent value="history" className="pt-4 min-h-[150px] max-h-60 overflow-y-auto border-t mt-2">
-            <h3 className="mb-2 font-medium text-sm">ประวัติการแก้ไข (ลดทุน)</h3>
+            <h3 className="mb-4 font-medium text-md text-blue-700">ประวัติการแก้ไข (เพิ่ม/ลดทุนประกัน)</h3>
             {!history || history.length === 0 ? (
               <p className="text-xs text-gray-500 italic text-center py-4">ยังไม่มีข้อมูล</p>
             ) : (
@@ -305,17 +319,23 @@ export default function ReduceSumInsuredModal({
                           const isLastRecord = index === sortedHistory.length - 1;
 
                           return (
-                            <li key={record.id} className="flex justify-between items-center text-xs border-b pb-1 pr-1">
-                                <span className='flex-1 mr-2'>
-                                    {/* 4. แสดงผลเป็นช่วงอายุ */}
-                                    อายุ {record.age} - {displayEndAge} ปี: ลดเหลือ <span className="font-semibold">{record.amount.toLocaleString('en-US')}</span> บาท
+                            <li key={record.id} className="flex justify-between items-center text-sm border-b pb-1 pr-1">
+                                {/* 1. เพิ่ม flex, items-center และ gap-x-2 (หรือค่าอื่นที่ต้องการ) ที่ span ตัวแม่ */}
+                                <span className='flex flex-1 items-center mr-2 gap-x-4'>
+                                    {/* 2. ห่อแต่ละส่วนด้วย span */}
+                                    <span>ช่วงอายุ</span>
+                                    <span>{record.age} ปี - {displayEndAge} ปี:</span>                                                                
+                                    <span>ลดทุนประกันเหลือ</span>
+                                    <span className="font-semibold text-red-500">{record.amount.toLocaleString('en-US')}</span>
+                                    <span>บาท</span>
                                 </span>
+
                                 {/* ปุ่มลบ */}
                                 {onDeleteReduction && isLastRecord && (
                                     <Button variant="ghost" size="icon" className="h-5 w-5 text-red-500 hover:text-red-700 hover:bg-red-100 p-0 flex-shrink-0" onClick={() => handleDeleteClick(record.id)}>
-                                        <Trash2 className="h-3 w-3" />
+                                        <Trash2 className="h-4 w-4" />
                                     </Button>
-                                 )}
+                                )}
                             </li>
                           );
                   })}
@@ -333,7 +353,13 @@ export default function ReduceSumInsuredModal({
               <DialogClose asChild>
                 <Button type="button" variant="outline" size="sm">ยกเลิก</Button>
               </DialogClose>
-              <Button type="button" size="sm" onClick={handleUpdatePlan}>อัปเดตแผน</Button>
+              <Button 
+                type="button" 
+                size="sm" 
+                onClick={handleUpdatePlan}
+                className="bg-blue-700 text-white hover:bg-blue-500 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+                >
+                  อัปเดตแผน</Button>
             </>
           )}
 
@@ -345,7 +371,7 @@ export default function ReduceSumInsuredModal({
                 แก้ไขเพิ่มเติม
               </Button>
               {/* ปุ่ม "ยืนยัน" (ปิด Modal) */}
-              <Button type="button" size="sm" onClick={onClose}> {/* <<< เรียก onClose prop */}
+              <Button type="button" size="sm" onClick={onClose} className ="bg-blue-700 text-white hover:bg-blue-500 text-white"> {/* <<< เรียก onClose prop */}
                 ยืนยัน
               </Button>
             </>
