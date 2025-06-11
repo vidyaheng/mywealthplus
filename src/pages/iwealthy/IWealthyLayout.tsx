@@ -47,10 +47,10 @@ export default function IWealthyLayout() {
               {/* ส่วนซ้าย: TopButtons */}
               <div className="ml-4"> {/* อาจจะใส่ div ครอบ TopButtons ถ้าต้องการ styling เพิ่มเติมเฉพาะส่วนนี้ */}
                   <TopButtons
+                      onOpenPauseModal={context.openPauseModal}
                       onOpenReduceModal={context.openReduceModal}
                       onOpenChangeFreqModal={context.openChangeFreqModal}
-                      onOpenWithdrawalModal={context.openWithdrawalModal}
-                      onOpenPauseModal={context.openPauseModal}
+                      onOpenWithdrawalModal={context.openWithdrawalModal}                     
                       onOpenAddInvestmentModal={context.openAddInvestmentModal}
                   />
               </div>

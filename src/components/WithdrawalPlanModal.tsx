@@ -53,7 +53,8 @@ export default function WithdrawalPlanModal({
   useEffect(() => {
     if (isOpen) {
       // นำแผนเริ่มต้นจาก App.tsx มาใส่ใน State ของ Modal
-      setPlannedWithdrawals([...initialPlan].sort((a, b) => a.startAge - b.startAge));
+      const sortedInitialPlan = [...initialPlan].sort((a, b) => a.startAge - b.startAge); // <--- สร้างตัวแปรใหม่
+      setPlannedWithdrawals(sortedInitialPlan);
 
       // Reset ค่าในฟอร์มกรอกข้อมูล
       setCurrentType('annual'); // หรือ 'single'? ดูค่า default ที่เหมาะสม
@@ -186,31 +187,49 @@ export default function WithdrawalPlanModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl"> {/* ขยาย Modal */}
         <DialogHeader>
-          <DialogTitle>วางแผนการถอนเงิน</DialogTitle>
+          <DialogTitle
+            className ="ml-4 text-xl font-semibold text-blue-700"
+          >
+            วางแผนการถอนเงิน
+          </DialogTitle>
         </DialogHeader>
 
         {/* === ส่วนกรอกข้อมูล === */}
         <div className="space-y-4 pt-4">
           {/* แถว 1: จำนวนเงิน */}
-          <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
-            <div className="flex-1 space-y-1 min-w-[120px]">
-              <Label htmlFor="withdrawal-type" className="text-xs">ต้องการถอนเงิน</Label>
+          <div className="flex items-end gap-x-4 pt-4"> {/* 1. ปรับ container หลัก */}
+
+            {/* ส่วนที่ 1: (ซ้าย) Select Box - เหมือนเดิม */}
+            <div className="space-y-1 min-w-[120px]">
+              <Label htmlFor="withdrawal-type" className="text-sm">ต้องการถอนเงิน</Label>
               <Select value={currentType} onValueChange={handleTypeChange}>
-                <SelectTrigger id="withdrawal-type" className="h-8 text-xs"> <SelectValue /> </SelectTrigger>
+                <SelectTrigger id="withdrawal-type" className="h-6 text-sm"> <SelectValue /> </SelectTrigger>
                 <SelectContent>
                   {withdrawalTypeOptions.map(opt => (<SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="min-w-[180px]">
-              <Label htmlFor="withdrawal-amount" className="text-xs mb-1 block sr-only">จำนวนเงิน</Label>
-              <InputFieldGroup
-                inputId="withdrawal-amount"
-                value={currentAmount} onChange={setCurrentAmount}
-                step={1000} min={0} label="" inputBgColor="bg-white" compact
-              />
+
+            {/* ส่วนที่ 2: (ขวา) กลุ่มใหม่ที่ถูกผลักไปชิดขวา */}
+            <div className="flex items-end gap-x-3 ml-auto"> {/* 2. สร้างกลุ่มขวาและใช้ ml-auto */}
+              
+              {/* 3. แสดง "ปีละ" ตามเงื่อนไข */}
+              {currentType === 'annual' && ( // << ตรวจสอบ value ของ "ทุกปี" ว่าคืออะไร
+                <span className="text-md text-gray-700 pb-1">ปีละ</span>
+              )}
+
+              {/* InputFieldGroup และ "บาท" จะอยู่ในกลุ่มขวานี้ */}
+              <div className="min-w-[180px]">
+                <Label htmlFor="withdrawal-amount" className="text-xs mb-1 block sr-only">จำนวนเงิน</Label>
+                <InputFieldGroup
+                  inputId="withdrawal-amount"
+                  value={currentAmount} onChange={setCurrentAmount}
+                  step={1000} min={0} label="" inputBgColor="bg-white" compact
+                />
+              </div>
+              <span className="text-sm text-gray-700 pb-1">บาท</span>
             </div>
-            <span className="text-sm text-gray-700 pb-1">บาท</span>
+
           </div>
 
           {/* แถว 2: กำหนดเวลา */}
@@ -299,8 +318,14 @@ export default function WithdrawalPlanModal({
                         {plannedWithdrawals.map((record, index) => {
                             // คำนวณข้อความช่วงอายุ
                             const periodLabel = record.type === 'single'
-                                ? `อายุ ${record.startAge} ปี`
-                                : `อายุ ${record.startAge} - ${record.endAge} ปี`;
+                              ? (record.refType === 'age'
+                                  ? `อายุ ${record.startAge} ปี`
+                                  : `ปีที่ ${record.startAge - currentAge}`
+                                )
+                              : (record.refType === 'age'
+                                  ? `อายุ ${record.startAge} - ${record.endAge} ปี`
+                                  : `ปีที่ ${record.startAge - currentAge} - ${record.endAge - currentAge}`
+                                );
                             // เช็คว่าเป็นรายการสุดท้ายหรือไม่
                             const isLastRecord = index === plannedWithdrawals.length - 1;
 

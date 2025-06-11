@@ -12,10 +12,10 @@ import {
 
 // ข้อมูลปุ่ม พร้อม ID ที่ไม่ซ้ำกัน
 const topActions = [
-  { id: "reduceSI", label: "เพิ่ม/ลดทุน", icon: FaPlusCircle },
-  { id: "changeFreq", label: "เปลี่ยนงวดชำระ", icon: FaCalendarAlt }, // ปุ่มใหม่
   { id: "pause", label: "หยุดพักชำระ", icon: FaPauseCircle },
+  { id: "reduceSI", label: "เพิ่ม/ลดทุน", icon: FaPlusCircle },
   { id: "withdrawPlan", label: "วางแผนถอนเงิน", icon: FaHandHoldingUsd },
+  { id: "changeFreq", label: "เปลี่ยนงวดชำระ", icon: FaCalendarAlt },
   { id: "addInvest", label: "ลงทุนเพิ่ม", icon: FaMoneyBillWave },
 ];
 
