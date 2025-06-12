@@ -30,6 +30,10 @@ export default function CiPlannerPage() {
         onCalculationComplete: () => setActiveTab('table'),
     });
 
+    const effectiveWithdrawalStartAge = planner.iWealthyMode === 'automatic'
+    ? planner.policyholderEntryAge + planner.iWealthyOwnPPT // กฎของ CI: อายุแรกเข้า + PPT
+    : planner.iWealthyWithdrawalStartAge;
+
     // --- Rendering ---
     return (
         <main className="container mx-auto space-y-4 bg-blue-50 text-foreground min-h-screen">
@@ -85,7 +89,7 @@ export default function CiPlannerPage() {
                         result={planner.result}
                         ciPremiumsSchedule={planner.ciPremiumsSchedule}
                         useIWealthy={planner.useIWealthy}
-                        iWealthyWithdrawalStartAge={planner.iWealthyWithdrawalStartAge}
+                        iWealthyWithdrawalStartAge={effectiveWithdrawalStartAge}
                     />
                 </TabsContent>
 

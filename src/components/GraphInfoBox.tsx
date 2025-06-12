@@ -69,7 +69,7 @@ const GraphInfoBox: React.FC<GraphInfoBoxProps> = ({
                             className="mr-2 h-4 w-4 mb-2 mt-4 bg-white border-blue-400 data-[state=checked]:border-blue-400 data-[state=checked]:bg-white [&[data-state=checked]>span>svg]:stroke-blue-700 [&>span>svg]:!stroke-[5px]"
                         />
                         <Label htmlFor="infoBoxShowDeathBenefit" className="flex-1 text-gray-300 text-xs pt-2">ผลประโยชน์เสียชีวิต:</Label>
-                        <span className="font-semibold text-lg text-blue-300">{formatDisplayNumber(displayData.deathBenefit)}</span>
+                        <span className="font-semibold text-base md:text-lg text-blue-300">{formatDisplayNumber(displayData.deathBenefit)}</span>
                     </div>
                     {/* Account Value */}
                     <div className="flex items-center">
@@ -80,7 +80,7 @@ const GraphInfoBox: React.FC<GraphInfoBoxProps> = ({
                             className="mr-2 h-4 w-4 my-2 bg-white border-orange-400 data-[state=checked]:border-orange-400 data-[state=checked]:bg-white [&[data-state=checked]>span>svg]:stroke-orange-600 [&>span>svg]:!stroke-[5px]"
                         />
                         <Label htmlFor="infoBoxShowAccountValue" className="flex-1 text-gray-300 text-xs">มูลค่ากรมธรรม์:</Label>
-                        <span className="font-semibold text-lg text-orange-300">{formatDisplayNumber(displayData.accountValue)}</span>
+                        <span className="font-semibold text-base md:text-lg text-orange-300">{formatDisplayNumber(displayData.accountValue)}</span>
                     </div>
                     {/* Premium Cumulative */}
                     <div className="flex items-center">
@@ -91,7 +91,7 @@ const GraphInfoBox: React.FC<GraphInfoBoxProps> = ({
                             className="mr-2 h-4 w-4 my-2 bg-white border-green-500 data-[state=checked]:border-green-500 data-[state=checked]:bg-white [&[data-state=checked]>span>svg]:stroke-green-600 [&>span>svg]:!stroke-[5px]"
                         />
                         <Label htmlFor="infoBoxShowPremiumCumulative" className="flex-1 text-gray-300 text-xs">เบี้ยสะสม:</Label>
-                        <span className="font-semibold text-lg text-green-300">{formatDisplayNumber(displayData.premiumCumulative)}</span>
+                        <span className="font-semibold text-base md:text-lg text-green-300">{formatDisplayNumber(displayData.premiumCumulative)}</span>
                     </div>
                     {/* Premium Annual */}
                     <div className="flex items-center">
@@ -102,7 +102,7 @@ const GraphInfoBox: React.FC<GraphInfoBoxProps> = ({
                             className="mr-2 h-4 w-4 my-2 bg-white border-red-500 data-[state=checked]:border-red-500 data-[state=checked]:bg-white [&[data-state=checked]>span>svg]:stroke-red-700 [&>span>svg]:!stroke-[5px]"
                         />
                         <Label htmlFor="infoBoxShowPremiumAnnual" className="flex-1 text-gray-300 text-xs">เบี้ยรายปี:</Label>
-                        <span className="font-semibold text-lg text-red-300">{formatDisplayNumber(displayData.premiumAnnual)}</span>
+                        <span className="font-semibold text-base md:text-lg text-red-300">{formatDisplayNumber(displayData.premiumAnnual)}</span>
                     </div>
                 </div>
             ) : (

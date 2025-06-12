@@ -1,84 +1,104 @@
-// components/TopButtons.tsx (ฉบับเต็ม รองรับ 2 Callbacks)
+// src/components/TopButtons.tsx
 
 import React from "react";
-// Import icons ที่ต้องการใช้งาน
-import {
-  FaPlusCircle,    // สำหรับ เพิ่ม/ลดทุน
-  FaCalendarAlt,   // สำหรับ เปลี่ยนงวดชำระ (ตัวอย่าง)
-  FaPauseCircle,   // สำหรับ หยุดพักชำระ
-  FaHandHoldingUsd,// สำหรับ วางแผนถอนเงิน
-  FaMoneyBillWave  // สำหรับ ลงทุนเพิ่ม
-} from 'react-icons/fa';
+import clsx from 'clsx';
 
-// ข้อมูลปุ่ม พร้อม ID ที่ไม่ซ้ำกัน
-const topActions = [
-  { id: "pause", label: "หยุดพักชำระ", icon: FaPauseCircle },
-  { id: "reduceSI", label: "เพิ่ม/ลดทุน", icon: FaPlusCircle },
-  { id: "withdrawPlan", label: "วางแผนถอนเงิน", icon: FaHandHoldingUsd },
-  { id: "changeFreq", label: "เปลี่ยนงวดชำระ", icon: FaCalendarAlt },
-  { id: "addInvest", label: "ลงทุนเพิ่ม", icon: FaMoneyBillWave },
+// Import ไอคอนจาก Library ที่ยังใช้งานอยู่
+import { FaCalendarAlt } from 'react-icons/fa';
+
+// Import ไอคอน SVG ของคุณเป็น React Component โดยการเติม ?react
+// ตรวจสอบชื่อไฟล์และ Path ให้ถูกต้อง 100%
+import PauseIcon from '@/assets/icons/PauseIcon';       // ไม่มี .svg?react
+import AddReduceIcon from '@/assets/icons/AddReduceIcon';
+import WithdrawalIcon from '@/assets/icons/WithdrawalIcon';
+import LumpSumIcon from '@/assets/icons/LumpSumIcon';
+
+// Interface สำหรับแต่ละ Action
+interface ActionItem {
+    id: string;
+    label: string;
+    icon: React.ElementType;
+}
+
+// ข้อมูลปุ่มทั้งหมด
+const topActions: ActionItem[] = [
+    { id: "pause", label: "หยุดพักชำระ", icon: PauseIcon },
+    { id: "reduceSI", label: "เพิ่ม/ลดทุน", icon: AddReduceIcon },
+    { id: "withdrawPlan", label: "แผนถอนเงิน", icon: WithdrawalIcon },
+    { id: "changeFreq", label: "งวดชำระ", icon: FaCalendarAlt },
+    { id: "addInvest", label: "ลงทุนเพิ่ม", icon: LumpSumIcon },
 ];
 
-// --- 1. Interface สำหรับ Props ---
-// กำหนดว่า Component นี้รับฟังก์ชันอะไรมาบ้างจาก Parent (App.tsx)
+// Props Interface
 interface TopButtonsProps {
-  onOpenReduceModal: () => void;       // ฟังก์ชันเปิด Modal ลดทุน
-  onOpenChangeFreqModal: () => void;  // ฟังก์ชันเปิด Modal เปลี่ยนงวด
-  onOpenWithdrawalModal: () => void; // ฟังก์ชันเปิด Modal ถอนเงิน
-  onOpenPauseModal: () => void;  // ฟังก์ชันเปิด Modal หยุดพักชำระเบี้ย
-  onOpenAddInvestmentModal: () => void; // ฟังก์ชันเปิด Modal ลงทุนเพิ่ม
-  // สามารถเพิ่ม Props สำหรับปุ่มอื่นๆ ได้ตามต้องการ
+    onOpenReduceModal: () => void;
+    onOpenChangeFreqModal: () => void;
+    onOpenWithdrawalModal: () => void;
+    onOpenPauseModal: () => void;
+    onOpenAddInvestmentModal: () => void;
+    activeActions: Record<string, boolean>; 
 }
-// --- ---
 
-// --- 2. Component Function รับ Props ---
 export default function TopButtons({
-  onOpenReduceModal,
-  onOpenChangeFreqModal,
-  onOpenWithdrawalModal,
-  onOpenPauseModal,
-  onOpenAddInvestmentModal
+    onOpenReduceModal,
+    onOpenChangeFreqModal,
+    onOpenWithdrawalModal,
+    onOpenPauseModal,
+    onOpenAddInvestmentModal,
+    activeActions 
 }: TopButtonsProps) {
-// --- ---
 
-  // --- 3. Handler สำหรับจัดการการกดปุ่ม ---
-  const handleActionClick = (actionId: string) => {
-    // ตรวจสอบ ID ของปุ่มที่ถูกกด
-    if (actionId === "reduceSI") {onOpenReduceModal();} // เรียกฟังก์ชันเปิด Modal ลดทุนที่รับมา 
-      else if (actionId === "changeFreq") {onOpenChangeFreqModal();} // เรียกฟังก์ชันเปิด Modal เปลี่ยนงวดที่รับมา
-      else if (actionId === "withdrawPlan") { onOpenWithdrawalModal();} // เรียกฟังก์ชันเปิด Modal ถอนเงินที่รับมา
-      else if (actionId === "pause") {onOpenPauseModal();} // เรียกฟังก์ชั่นเปิด Modal หยุดพักชำระเบี้ย
-      else if (actionId === "addInvest") { onOpenAddInvestmentModal(); } // เรียกฟังก์ชั่นเปิด Modal ลงทุนเพิ่ม
-      else {
-      // จัดการ Action ของปุ่มอื่นๆ (ถ้ามี)
-      console.log("Clicked Top Button:", actionId);
-    }
-  };
-  // --- ---
+    const handleActionClick = (actionId: string) => {
+        if (actionId === "reduceSI") onOpenReduceModal();
+        else if (actionId === "changeFreq") onOpenChangeFreqModal();
+        else if (actionId === "withdrawPlan") onOpenWithdrawalModal();
+        else if (actionId === "pause") onOpenPauseModal();
+        else if (actionId === "addInvest") onOpenAddInvestmentModal();
+    };
 
-  // --- 4. JSX สำหรับ Render ปุ่ม ---
-  return (
-    // Container จัดชิดขวา, กำหนดพื้นหลัง, padding, gap
-    // (ปรับแก้ className ตามต้องการเพื่อให้ Layout สวยงามเมื่อมี 5 ปุ่ม)
-    <div className="flex justify-end gap-4 p-2 bg-blue-50"> {/* อาจจะลด p / gap */}
-      {/* วน Loop สร้างปุ่มจาก Array topActions */}
-      {topActions.map((action) => (
-        <button
-          key={action.id} // ใช้ id เป็น key
-          // กำหนด Style ของปุ่ม (อาจจะต้องปรับ w- หรือ font ให้เล็กลงถ้า 5 ปุ่มเบียดกัน)
-          className="flex flex-col items-center gap-0.5 p-1 text-[10px] sm:text-xs text-purple-700 rounded hover:bg-blue-100 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-300 w-16 text-center"
-          // กำหนด onClick ให้เรียก handler พร้อมส่ง id
-          onClick={() => handleActionClick(action.id)}
-        >
-          {/* ไอคอน */}
-          <div className="text-lg sm:text-xl text-purple-600 h-5 sm:h-6 flex items-center justify-center">
-             {React.createElement(action.icon)}
-          </div>
-          {/* ข้อความ Label */}
-          <span className="font-medium leading-tight">{action.label}</span>
-        </button>
-      ))}
-    </div>
-  );
-  // --- จบ ส่วน JSX ---
+    return (
+        <div className="flex justify-start items-center gap-2 md:gap-4">
+            {topActions.map((action) => {
+                const isActive = !!activeActions[action.id]; 
+
+                return (
+                    <button
+                        key={action.id}
+                        onClick={() => handleActionClick(action.id)}
+                        className="group flex flex-col items-center gap-1.5 w-16 sm:w-20 focus:outline-none"
+                    >
+                        <div
+                            className={clsx(
+                                'flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-all duration-200',
+                                'group-focus:ring-2 group-focus:ring-offset-2',
+                                isActive 
+                                    ? 'bg-purple-800 border-2 border-white shadow-lg group-hover:bg-purple-700 group-focus:ring-purple-500'
+                                    : 'bg-white border border-gray-200 shadow-sm group-hover:bg-blue-50 group-hover:border-blue-300 group-focus:ring-blue-400'
+                            )}
+                        >
+                            {/* 🔥 ส่วน Render ไอคอนที่แก้ไขใหม่ทั้งหมด */}
+                            {React.createElement(action.icon, {
+                                className: clsx(
+                                    // 1. กำหนดขนาดที่นี่ที่เดียว
+                                    'w-6 h-6 sm:w-7 sm:h-7', 
+                                    // 2. กำหนดสีที่นี่ที่เดียว
+                                    'transition-colors',
+                                    isActive ? 'text-white' : 'text-purple-600'
+                                )
+                            })}
+                        </div>
+
+                        <span
+                            className={clsx(
+                                'text-[10px] sm:text-xs font-semibold leading-tight text-center transition-colors',
+                                isActive ? 'text-purple-800' : 'text-gray-600 group-hover:text-black'
+                            )}
+                        >
+                            {action.label}
+                        </span>
+                    </button>
+                );
+            })}
+        </div>
+    );
 }

@@ -52,6 +52,7 @@ export default function IWealthyLayout() {
                       onOpenChangeFreqModal={context.openChangeFreqModal}
                       onOpenWithdrawalModal={context.openWithdrawalModal}                     
                       onOpenAddInvestmentModal={context.openAddInvestmentModal}
+                      activeActions={context.activeActions}
                   />
               </div>
 

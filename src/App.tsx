@@ -84,6 +84,11 @@ export interface AppContextType {
     isPauseModalOpen: boolean; openPauseModal: () => void; pausePeriods: PausePeriodRecord[]; handleSavePausePlan: (plan: PausePeriodRecord[]) => void;
     isAddInvestmentModalOpen: boolean; openAddInvestmentModal: () => void; addInvestmentPlan: AddInvestmentRecord[]; handleSaveAddInvestmentPlan: (plan: AddInvestmentRecord[]) => void;
 
+    /**
+     * Object ที่ระบุสถานะ Active ของปุ่มต่างๆ (คำนวณจาก state ที่มีอยู่)
+     */
+    activeActions: Record<string, boolean>;
+
     // State สำหรับ FullViewModal (ตัวอย่าง)
     // isFullViewModalOpen: boolean;
     // openFullViewModal: () => void;
@@ -149,6 +154,16 @@ function App() {
     const [pausePeriods, setPausePeriods] = useState<PausePeriodRecord[]>([]);
     const [isAddInvestmentModalOpen, setIsAddInvestmentModalOpen] = useState(false);
     const [addInvestmentPlan, setAddInvestmentPlan] = useState<AddInvestmentRecord[]>([]);
+
+    // --- เพิ่มส่วนนี้: คำนวณ activeActions ด้วย useMemo ---
+    const activeActions = useMemo(() => ({
+        pause: pausePeriods.length > 0,
+        reduceSI: reductionHistory.length > 0,
+        withdrawPlan: withdrawalPlan.length > 0,
+        changeFreq: frequencyChanges.length > 0,
+        addInvest: addInvestmentPlan.length > 0,
+    }), [pausePeriods, reductionHistory, withdrawalPlan, frequencyChanges, addInvestmentPlan]);
+    // --- จบส่วนที่เพิ่ม ---
 
     // --- Handlers ---
 
@@ -317,13 +332,14 @@ function App() {
         isPauseModalOpen, openPauseModal, pausePeriods, handleSavePausePlan,
         isAddInvestmentModalOpen, openAddInvestmentModal, addInvestmentPlan, handleSaveAddInvestmentPlan,
 
+        activeActions,
     }), [
         // Dependencies
         age, gender, paymentFrequency, rpp, rtu, sumInsured, rppPercent, investmentReturn,
         illustrationData,
         isReduceModalOpen, reductionHistory, isChangeFreqModalOpen, frequencyChanges,
         isWithdrawalModalOpen, withdrawalPlan, isPauseModalOpen, pausePeriods,
-        isAddInvestmentModalOpen, addInvestmentPlan,
+        isAddInvestmentModalOpen, addInvestmentPlan, activeActions,
 
         // Setters และ Handlers (รวม handleCalculate ที่อัปเดตแล้ว)
         setAge, setGender, setPaymentFrequency, setRpp, setRtu, setSumInsured, setRppPercent,

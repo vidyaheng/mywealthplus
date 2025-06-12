@@ -171,24 +171,72 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                     <CardHeader><CardTitle className="text-lg">{getSectionTitle("วางแผนดูแลโรคร้าย")}</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <div className="flex items-center space-x-2"><Checkbox id="icareChecked" checked={selectedCiPlans.icareChecked} onCheckedChange={(checked) => handleCiSelectionChange('icareChecked', Boolean(checked))} /><Label htmlFor="icareChecked" className="text-md font-semibold">iCare</Label></div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox 
+                                    id="icareChecked" 
+                                    checked={selectedCiPlans.icareChecked} 
+                                    onCheckedChange={(checked) => handleCiSelectionChange('icareChecked', Boolean(checked))} 
+                                    className="data-[state=checked]:bg-blue-600 data-[state=checked]:text-white border-gray-400"
+                                />
+                                <Label 
+                                    htmlFor="icareChecked" 
+                                    className={`text-md font-semibold transition-colors cursor-pointer ${
+                                        selectedCiPlans.icareChecked ? 'text-blue-700' : 'text-slate-800'
+                                    }`}
+                                >
+                                    iCare
+                                </Label>
+                            </div>
                             {selectedCiPlans.icareChecked && (<div className="pl-6 space-y-2"><Select value={String(selectedCiPlans.icareSA)} onValueChange={(val) => handleCiSelectionChange('icareSA', Number(val))}><SelectTrigger><SelectValue placeholder="-- เลือกทุนประกัน Rider --" /></SelectTrigger><SelectContent><SelectItem value="0">-- เลือกทุนประกัน Rider --</SelectItem>{ICarePlansData.map((plan) => (<SelectItem key={plan.value} value={String(plan.value)}>{plan.label}</SelectItem>))}</SelectContent></Select><p className="text-xs text-muted-foreground">ทุนประกันส่วนหลัก: {formatNumber(100000)} (คุ้มครองถึง 85)</p></div>)}
                         </div>
                         <Separator />
                         <div className="space-y-2">
-                             <div className="flex items-center space-x-2"><Checkbox id="ishieldChecked" checked={selectedCiPlans.ishieldChecked} onCheckedChange={(checked) => handleCiSelectionChange('ishieldChecked', Boolean(checked))} /><Label htmlFor="ishieldChecked" className="text-md font-semibold">iShield</Label></div>
+                             <div className="flex items-center space-x-2">
+                                <Checkbox 
+                                    id="ishieldChecked" 
+                                    checked={selectedCiPlans.ishieldChecked} 
+                                    onCheckedChange={(checked) => handleCiSelectionChange('ishieldChecked', Boolean(checked))} 
+                                    className="data-[state=checked]:bg-purple-600 data-[state=checked]:text-white border-gray-400"
+                                />
+                                <Label 
+                                    htmlFor="ishieldChecked" 
+                                    className={`text-md font-semibold transition-colors cursor-pointer ${
+                                        selectedCiPlans.icareChecked ? 'text-purple-600' : 'text-purple-700'
+                                    }`}
+                                >
+                                    iShield
+                                </Label>
+                            </div>
                              {selectedCiPlans.ishieldChecked && (<div className="pl-6 space-y-3"><Select value={selectedCiPlans.ishieldPlan ?? ''} onValueChange={(val) => handleCiSelectionChange('ishieldPlan', val as IShieldPlan | null)}><SelectTrigger><SelectValue placeholder="-- เลือกแผนชำระเบี้ย --" /></SelectTrigger><SelectContent>{IShieldPlanOptionsData.map((plan) => (<SelectItem key={plan.value} value={plan.value}>{plan.label}</SelectItem>))}</SelectContent></Select><Input type="number" min={500000} step={100000} value={selectedCiPlans.ishieldSA} onChange={(e) => handleCiSelectionChange('ishieldSA', Number(e.target.value))} placeholder="ทุนประกัน iShield" className="h-9"/><p className="text-xs text-muted-foreground">คุ้มครองถึงอายุ 85</p></div>)}
                         </div>
                         <Separator />
                         <div className="space-y-1">
-                            <div className="flex items-center space-x-2"><Checkbox id="mainRiderChecked" checked={selectedCiPlans.mainRiderChecked} onCheckedChange={(checked) => handleCiSelectionChange('mainRiderChecked', Boolean(checked))} /><Label htmlFor="mainRiderChecked" className="text-md font-semibold text-green-700">LifeReady และสัญญาเพิ่มเติมอื่นๆ</Label></div>
-                            <p className="pl-6 text-xs text-muted-foreground">เลือกเพื่อเปิดใช้ RokRaiSoShield, DCI หรือสัญญาหลัก LifeReady</p>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox 
+                                    id="mainRiderChecked" 
+                                    checked={selectedCiPlans.mainRiderChecked} 
+                                    onCheckedChange={(checked) => handleCiSelectionChange('mainRiderChecked', Boolean(checked))} 
+                                    className="data-[state=checked]:bg-green-600 data-[state=checked]:text-white border-gray-400"
+                                />
+                                <Label 
+                                    htmlFor="mainRiderChecked" 
+                                    className={`text-md font-semibold transition-colors cursor-pointer ${
+                                        selectedCiPlans.icareChecked ? 'text-green-600' : 'text-green-700'
+                                    }`}
+                                >
+                                    LifeReady และสัญญาเพิ่มเติมอื่นๆ
+                                </Label>
+                            </div>
+                            <p className="pl-6 text-xs text-muted-foreground">สัญญาหลักสำหรับ RokeRaiSoShield และ DCI</p>
                         </div>
                         <Separator />
                         <div>
                             <div className="flex items-center gap-1.5 mb-1"><FaWandMagicSparkles className="text-purple-600 text-sm flex-shrink-0" /><Label className="text-sm font-medium">วางแผนด้วย iWealthy</Label></div>
                             <div className="flex items-center h-9 space-x-2">
-                                <Switch id="iwealthy-mode-toggle" checked={useIWealthy} onCheckedChange={setUseIWealthy} className="data-[state=checked]:bg-purple-600 data-[state=unchecked]:bg-gray-300" />
+                                <Switch id="iwealthy-mode-toggle" 
+                                    checked={useIWealthy} 
+                                    onCheckedChange={setUseIWealthy} 
+                                    className="data-[state=checked]:bg-purple-600 data-[state=unchecked]:bg-gray-300" />
                                 <Label htmlFor="iwealthy-mode-toggle" className="text-sm">{useIWealthy ? 'ใช้ iWealthy' : 'ไม่ใช้ iWealthy'}</Label>
                             </div>
                         </div>
@@ -202,16 +250,46 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                             <div className="p-4 space-y-3 rounded-md bg-green-50 dark:bg-green-900/20">
                                 <p className="text-md font-semibold text-green-800 dark:text-green-300">LifeReady (สัญญาประกันชีวิตหลัก)</p>
                                 <div><Label className="block mb-1 text-sm">ระยะเวลาชำระเบี้ย</Label><Select value={selectedCiPlans.lifeReadyPlan ? String(selectedCiPlans.lifeReadyPlan) : ''} onValueChange={(val) => handleCiSelectionChange('lifeReadyPlan', Number(val) as LifeReadyPlan | null)}><SelectTrigger><SelectValue placeholder="-- เลือกระยะเวลา --" /></SelectTrigger><SelectContent>{LifeReadyPlanOptionsData.map((plan) => (<SelectItem key={plan.value} value={String(plan.value)}>{plan.label}</SelectItem>))}</SelectContent></Select></div>
-                                <div><Label className="block mb-1 text-sm">ทุนประกัน LifeReady</Label><Input type="number" value={selectedCiPlans.lifeReadySA} onChange={(e) => handleCiSelectionChange('lifeReadySA', Number(e.target.value))} placeholder="ทุนประกัน" min={150000} step={50000} className="h-9"/></div>
+                                <div><Label className="block mb-1 text-sm">ทุนประกัน</Label><Input type="number" value={selectedCiPlans.lifeReadySA} onChange={(e) => handleCiSelectionChange('lifeReadySA', Number(e.target.value))} placeholder="ทุนประกัน" min={150000} step={50000} className="h-9"/></div>
                             </div>
                             <Separator/>
                             <div className="space-y-2">
-                                <div className="flex items-center space-x-2"><Checkbox id="rokraiChecked" checked={selectedCiPlans.rokraiChecked} onCheckedChange={(checked) => handleCiSelectionChange('rokraiChecked', Boolean(checked))} /><Label htmlFor="rokraiChecked" className="text-md font-medium">RokRaiSoShield</Label></div>
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox 
+                                        id="rokraiChecked" 
+                                        checked={selectedCiPlans.rokraiChecked} 
+                                        onCheckedChange={(checked) => handleCiSelectionChange('rokraiChecked', Boolean(checked))} 
+                                        className="data-[state=checked]:bg-orange-600 data-[state=checked]:text-white border-gray-400"
+                                    />
+                                    <Label 
+                                        htmlFor="rokraiChecked" 
+                                        className={`text-md font-semibold transition-colors cursor-pointer ${
+                                        selectedCiPlans.icareChecked ? 'text-orange-600' : 'text-orange-700'
+                                    }`}
+                                    >
+                                        RokeRaiSoShield
+                                    </Label>
+                                </div>
                                 {selectedCiPlans.rokraiChecked && (<div className="pl-6"><Select value={selectedCiPlans.rokraiPlan ?? ''} onValueChange={(val) => handleCiSelectionChange('rokraiPlan', val as RokRaiSoShieldPlan | null)}><SelectTrigger><SelectValue placeholder="-- เลือกแผน --" /></SelectTrigger><SelectContent>{RokRaiSoShieldPlanOptionsData.map((plan) => (<SelectItem key={plan.value} value={plan.value}>{plan.label}</SelectItem>))}</SelectContent></Select><p className="mt-1 text-xs text-muted-foreground">คุ้มครองถึง 99</p></div>)}
                             </div>
                             <Separator/>
                             <div className="space-y-2">
-                                <div className="flex items-center space-x-2"><Checkbox id="dciChecked" checked={selectedCiPlans.dciChecked} onCheckedChange={(checked) => handleCiSelectionChange('dciChecked', Boolean(checked))} /><Label htmlFor="dciChecked" className="text-md font-medium">DCI</Label></div>
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox 
+                                        id="dciChecked" 
+                                        checked={selectedCiPlans.dciChecked} 
+                                        onCheckedChange={(checked) => handleCiSelectionChange('dciChecked', Boolean(checked))} 
+                                        className="data-[state=checked]:bg-teal-600 data-[state=checked]:text-white border-gray-400"
+                                    />
+                                    <Label 
+                                        htmlFor="dciChecked" 
+                                        className={`text-md font-semibold transition-colors cursor-pointer ${
+                                        selectedCiPlans.icareChecked ? 'text-teal-600' : 'text-teal-700'
+                                    }`}
+                                    >
+                                        DCI
+                                    </Label>
+                                </div>
                                 {selectedCiPlans.dciChecked && (<div className="pl-6"><Input type="number" value={selectedCiPlans.dciSA} onChange={(e) => handleCiSelectionChange('dciSA', Number(e.target.value))} placeholder="ทุนประกัน DCI" min={100000} step={50000} className="h-9"/><p className="mt-1 text-xs text-muted-foreground">คุ้มครองถึงอายุ 74</p></div>)}
                             </div>
                         </CardContent>

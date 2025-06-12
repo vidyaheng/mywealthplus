@@ -110,14 +110,18 @@ export function useCiPlanner({
             if (!useIWealthy) {
                 if (currentCiScheduleForCalc.length > 0) {
                     const ciOnlyIllustration: AnnualCiOutputRow[] = currentCiScheduleForCalc.map(ciRow => {
-                        const lifeReadySAForCombinedDB = (selectedCiPlans.mainRiderChecked && selectedCiPlans.lifeReadySA > 0) ? selectedCiPlans.lifeReadySA : 0;
+                        const totalDeathBenefit = 
+                            (selectedCiPlans.mainRiderChecked ? selectedCiPlans.lifeReadySA : 0) +
+                            (selectedCiPlans.icareChecked ? 100000 : 0) + // iCare จ่าย 1 แสนเสมอ
+                            (selectedCiPlans.ishieldChecked ? selectedCiPlans.ishieldSA : 0) +
+                            (selectedCiPlans.dciChecked ? selectedCiPlans.dciSA : 0);
                         return {
                             policyYear: ciRow.policyYear,
                             age: ciRow.age,
                             lifeReadyPremiumPaid: ciRow.lifeReadyPremium,
                             ciRidersPremiumPaid: Math.round((ciRow.icarePremium || 0) + (ciRow.ishieldPremium || 0) + (ciRow.rokraiPremium || 0) + (ciRow.dciPremium || 0)),
                             totalCiPackagePremiumPaid: Math.round(ciRow.totalCiPremium),
-                            totalCombinedDeathBenefit: lifeReadySAForCombinedDB,
+                            totalCombinedDeathBenefit: totalDeathBenefit,
                             iWealthyRpp: undefined, iWealthyRtu: undefined, iWealthyTotalPremium: undefined,
                             iWealthyWithdrawal: undefined, iWealthyEoyAccountValue: undefined,
                             iWealthyEoyDeathBenefit: undefined, iWealthySumAssured: undefined,

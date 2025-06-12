@@ -187,7 +187,13 @@ export const useCiCalculations = () => {
             if (applicableReductions.length > 0) {
                 currentActualIWealthySA = applicableReductions[applicableReductions.length - 1].newSumInsured;
             }
-            const lifeReadySAForCombinedDB = (ciSelections.mainRiderChecked && ciSelections.lifeReadySA > 0) ? ciSelections.lifeReadySA : 0;
+            //const lifeReadySAForCombinedDB = (ciSelections.mainRiderChecked && ciSelections.lifeReadySA > 0) ? ciSelections.lifeReadySA : 0;
+            const ciRidersDeathBenefit =
+            (ciSelections.mainRiderChecked ? ciSelections.lifeReadySA : 0) +
+            (ciSelections.icareChecked ? 100000 : 0) +
+            (ciSelections.ishieldChecked ? ciSelections.ishieldSA : 0) +
+            (ciSelections.dciChecked ? ciSelections.dciSA : 0);
+            
             illustration.push({
                 policyYear: ciRow.policyYear, age: ciRow.age,
                 lifeReadyPremiumPaid: ciRow.lifeReadyPremium,
@@ -203,7 +209,7 @@ export const useCiCalculations = () => {
                 iWealthyAdminFee: iWealthyYearData?.totalAdminFeeYear, iWealthyTotalFees: iWealthyYearData?.totalFeesYear,
                 iWealthyInvestmentBase: iWealthyYearData?.investmentBaseYear, iWealthyInvestmentReturn: iWealthyYearData?.investmentReturnYear,
                 iWealthyRoyaltyBonus: iWealthyYearData?.royaltyBonusYear,
-                totalCombinedDeathBenefit: (iWealthyYearData?.eoyDeathBenefit ?? 0) + lifeReadySAForCombinedDB,
+                totalCombinedDeathBenefit: (iWealthyYearData?.eoyDeathBenefit ?? 0) + ciRidersDeathBenefit,
             });
         }
         return illustration;

@@ -49,18 +49,18 @@ export default function LthcTablePage() {
 
     // คำนวณอายุที่เริ่มถอนเงินจาก iWealthy
     const withdrawalStartAge = useMemo(() => {
-        if (iWealthyMode === 'manual') {
-            return manualWithdrawalStartAge;
-        } else { // automatic
-            // Logic การคำนวณอายุเริ่มถอนอัตโนมัติ (เหมือนใน useLthcCalculations)
-            let startAge = 61;
-            const iWealthyPTTEndAge = policyholderEntryAge + autoIWealthyPPT -1;
-            if (iWealthyPTTEndAge >= 61) {
-                startAge = iWealthyPTTEndAge + 1;
-            }
-            return startAge;
-        }
-    }, [iWealthyMode, manualWithdrawalStartAge, policyholderEntryAge, autoIWealthyPPT]);
+    if (iWealthyMode === 'manual') {
+        return manualWithdrawalStartAge;
+    }
+
+    // โหมด Auto: คำนวณอายุที่จะจ่ายเบี้ย iWealthy ครบ
+    const iWealthyEndAge = policyholderEntryAge + autoIWealthyPPT;
+
+    // 🔥 เลือกค่าที่มากกว่าระหว่าง 61 กับ ปีที่จ่ายเบี้ยครบ
+    // โดยอายุที่เริ่มถอนคือปีถัดไป ดังนั้นเราจะใช้ endAge โดยตรง
+    return Math.max(61, iWealthyEndAge);
+
+}, [iWealthyMode, manualWithdrawalStartAge, policyholderEntryAge, autoIWealthyPPT]);
 
     // ⭐⭐⭐ คำนวณค่าสำหรับส่วนสรุป ⭐⭐⭐
     const summaryValues = useMemo(() => {

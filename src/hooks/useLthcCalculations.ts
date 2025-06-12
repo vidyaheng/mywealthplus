@@ -236,9 +236,8 @@ export const useLthcCalculations = () => {
 
         let totalExpectedWithdrawal = 0;
         const withdrawalPlanAuto: WithdrawalPlanRecord[] = [];
-        let autoWithdrawalStartAge = 61;
-        const iWealthyPTTEndAge = entryAge + iWealthyPPT - 1;
-        if (iWealthyPTTEndAge >= 61) autoWithdrawalStartAge = iWealthyPTTEndAge + 1;
+        const iWealthyEndAge = entryAge + iWealthyPPT;
+        const autoWithdrawalStartAge = Math.max(61, iWealthyEndAge);
         allHealthPremiums.forEach(hp => {
             if (hp.age >= autoWithdrawalStartAge && hp.age <= MAX_POLICY_AGE_TYPE && hp.totalPremium > 0) {
                 totalExpectedWithdrawal += hp.totalPremium;

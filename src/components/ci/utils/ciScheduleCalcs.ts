@@ -49,6 +49,11 @@ export function calculateAllCiPremiumsSchedule(
 
     const newComponentsEntryAge = currentPlanningAge;
 
+    const effectiveCiRiderEntryAge = 
+    policyOriginMode === 'existingPolicy' && existingOriginalEntryAge !== undefined
+        ? existingOriginalEntryAge
+        : currentPlanningAge;
+
     for (let policyYear = 1; ; policyYear++) {
         const currentAttainedAge = currentPlanningAge + policyYear - 1;
 
@@ -90,7 +95,7 @@ export function calculateAllCiPremiumsSchedule(
         if (selections.icareChecked) {
             if (currentAttainedAge <= ICARE_MAX_PAY_AGE && currentAttainedAge >= newComponentsEntryAge) {
                 let iCareMainPremiumPart = 0;
-                const mainRateEntry = iCareMainPremiumRates.find(r => r.age === newComponentsEntryAge);
+                const mainRateEntry = iCareMainPremiumRates.find(r => r.age === effectiveCiRiderEntryAge);
                 if (mainRateEntry) {
                     iCareMainPremiumPart = mainRateEntry[gender] * (FIXED_ICARE_MAIN_SA / 1_000_000);
                 }
@@ -109,10 +114,10 @@ export function calculateAllCiPremiumsSchedule(
         // 3. iShield Premium
         if (selections.ishieldChecked && selections.ishieldPlan !== null && selections.ishieldSA > 0) {
             const iShieldPaymentTerm = parseInt(selections.ishieldPlan, 10);
-            const iShieldPolicyYear = currentAttainedAge - newComponentsEntryAge + 1;
-            if (iShieldPolicyYear > 0 && iShieldPolicyYear <= iShieldPaymentTerm) {
+            const actualIShieldPolicyYear = currentAttainedAge - effectiveCiRiderEntryAge + 1;
+            if (actualIShieldPolicyYear > 0 && actualIShieldPolicyYear <= iShieldPaymentTerm) {
                 yearIshieldPremium = getIShieldPremium(
-                    newComponentsEntryAge,
+                    effectiveCiRiderEntryAge,
                     selections.ishieldPlan as IShieldPlan,
                     selections.ishieldSA,
                     gender
