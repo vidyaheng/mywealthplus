@@ -101,7 +101,18 @@ export default function FormInputSection() {
                 id="age-select"
                 value={age}
                 onChange={handleAgeChange}
-                className="w-12 h-8 border-b-2 border-gray-600 px-2 py-1 text-sm text-blue-600 font-semibold bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="w-12 h-8 border-b-2 border-gray-600 px-2 py-1 
+                text-sm text-blue-600 font-semibold bg-white 
+                focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-50
+                appearance-none /* 👈 1. ลบสไตล์ของ OS ออก */
+                rounded-none    /* 👈 2. กำหนดให้ขอบไม่มน (เพื่อความชัวร์) */
+
+                /* 3. เพิ่มลูกศร (Dropdown Arrow) กลับเข้ามาเอง */
+                bg-no-repeat
+                bg-right
+                pr-8 /* เพิ่มช่องว่างด้านขวาเผื่อที่ให้ลูกศร */
+                bg-[url('data:image/svg+xml,%3csvg%20xmlns%3d%22http%3a//www.w3.org/2000/svg%22%20fill%3d%22none%22%20viewBox%3d%220%200%2020%2020%22%3e%3cpath%20stroke%3d%22%236b7280%22%20stroke-linecap%3d%22round%22%20stroke-linejoin%3d%22round%22%20stroke-width%3d%221.5%22%20d%3d%22m6%208%204%204%204-4%22/%3e%3c/svg%3e')]
+                "
               >
                 {ageOptions.map(ageValue => ( <option key={ageValue} value={ageValue}>{ageValue} ปี</option> ))}
               </select>
