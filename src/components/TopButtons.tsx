@@ -4,7 +4,7 @@ import React from "react";
 import clsx from 'clsx';
 
 // Import ไอคอนจาก Library ที่ยังใช้งานอยู่
-import { FaCalendarAlt } from 'react-icons/fa';
+//import { FaCalendarAlt } from 'react-icons/fa';
 
 // Import ไอคอน SVG ของคุณเป็น React Component โดยการเติม ?react
 // ตรวจสอบชื่อไฟล์และ Path ให้ถูกต้อง 100%
@@ -12,6 +12,7 @@ import PauseIcon from '@/assets/icons/PauseIcon';       // ไม่มี .svg?
 import AddReduceIcon from '@/assets/icons/AddReduceIcon';
 import WithdrawalIcon from '@/assets/icons/WithdrawalIcon';
 import LumpSumIcon from '@/assets/icons/LumpSumIcon';
+import CalendarSwapIcon from '@/assets/icons/CalendarSwapIcon'; // ใช้ไอคอนนี้แทน FaCalendarAlt
 
 // Interface สำหรับแต่ละ Action
 interface ActionItem {
@@ -25,7 +26,7 @@ const topActions: ActionItem[] = [
     { id: "pause", label: "หยุดพักชำระ", icon: PauseIcon },
     { id: "reduceSI", label: "เพิ่ม/ลดทุน", icon: AddReduceIcon },
     { id: "withdrawPlan", label: "แผนถอนเงิน", icon: WithdrawalIcon },
-    { id: "changeFreq", label: "งวดชำระ", icon: FaCalendarAlt },
+    { id: "changeFreq", label: "งวดชำระ", icon: CalendarSwapIcon },
     { id: "addInvest", label: "ลงทุนเพิ่ม", icon: LumpSumIcon },
 ];
 
@@ -67,6 +68,15 @@ export default function TopButtons({
                         onClick={() => handleActionClick(action.id)}
                         className="group flex flex-col items-center gap-1.5 w-16 sm:w-20 focus:outline-none"
                     >
+                        <span
+                            className={clsx(
+                                'text-[10px] sm:text-xs leading-tight text-center transition-colors',
+                                isActive ? 'text-purple-800' : 'text-gray-600 group-hover:text-black'
+                            )}
+                        >
+                            {action.label}
+                        </span>
+
                         <div
                             className={clsx(
                                 'flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-all duration-200',
@@ -88,14 +98,7 @@ export default function TopButtons({
                             })}
                         </div>
 
-                        <span
-                            className={clsx(
-                                'text-[10px] sm:text-xs leading-tight text-center transition-colors',
-                                isActive ? 'text-purple-800' : 'text-gray-600 group-hover:text-black'
-                            )}
-                        >
-                            {action.label}
-                        </span>
+                        
                     </button>
                 );
             })}

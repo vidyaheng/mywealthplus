@@ -105,10 +105,10 @@ export default function InvestmentReturnInput({
     
     // ✨✨✨ จุดที่แก้ไข ✨✨✨
     const inputFieldClasses = cn(
-        "h-7 text-center outline-none transition-colors focus:bg-opacity-20 appearance-none rounded-none",
+        "h-8 text-center outline-none transition-colors focus:bg-opacity-20 appearance-none rounded-none",
         isFullScreenView ?
-        "w-[50px] bg-blue-800 text-white border-b-2 border-blue-600 focus:border-sky-400 focus:bg-blue-700" :
-        "w-[50px] sm:w-[60px] bg-blue-50 text-md sm:text-lg text-blue-700 font-semibold border-b-2 border-gray-600 focus:border-blue-600 focus:bg-blue-100"
+        "w-[50px] bg-blue-800 text-white border-b border-blue-600 focus:border-sky-400 focus:bg-blue-700" :
+        "w-[50px] sm:w-[60px] bg-blue-50 text-md sm:text-lg text-blue-700 font-semibold border-b border-gray-600 focus:border-blue-600 focus:bg-blue-100"
     );
     
     const percentSignClasses = cn("text-xs sm:text-sm", isFullScreenView ? "text-gray-300" : "text-gray-700");

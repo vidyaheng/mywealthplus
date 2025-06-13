@@ -101,7 +101,7 @@ export default function FormInputSection() {
                 id="age-select"
                 value={age}
                 onChange={handleAgeChange}
-                className="w-18 h-8 border-b-2 border-gray-600 px-2 py-1 
+                className="w-18 h-8 border-b border-gray-600 px-2 py-1 
                 text-sm text-blue-600 font-semibold bg-white 
                 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-50
                 appearance-none /* 👈 1. ลบสไตล์ของ OS ออก */
@@ -109,10 +109,11 @@ export default function FormInputSection() {
 
                 /* 3. เพิ่มลูกศร (Dropdown Arrow) กลับเข้ามาเอง */
                 bg-no-repeat
-                bg-right
+                bg-[url('data:image/svg+xml,%3csvg%20xmlns%3d%22http%3a//www.w3.org/2000/svg%22%20viewBox%3d%220%200%2016%2016%22%20fill%3d%22currentColor%22%3e%3cpath%20d%3d%22M4.5%206.5l3.5%203.5%203.5-3.5h-7z%22/%3e%3c/svg%3e')]
+                bg-[length:1.5em_1.5em] /* ขนาดลูกศร */
+                bg-[position:right_0.05rem_center] /* ตำแหน่งลูกศร */
                 pr-8 /* เพิ่มช่องว่างด้านขวาเผื่อที่ให้ลูกศร */
-                bg-[url('data:image/svg+xml,%3csvg%20xmlns%3d%22http%3a//www.w3.org/2000/svg%22%20fill%3d%22none%22%20viewBox%3d%220%200%2020%2020%22%3e%3cpath%20stroke%3d%22%236b7280%22%20stroke-linecap%3d%22round%22%20stroke-linejoin%3d%22round%22%20stroke-width%3d%221.5%22%20d%3d%22m6%208%204%204%204-4%22/%3e%3c/svg%3e')]
-                "
+              "
               >
                 {ageOptions.map(ageValue => ( <option key={ageValue} value={ageValue}>{ageValue} ปี</option> ))}
               </select>
