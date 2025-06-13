@@ -101,7 +101,7 @@ export default function FormInputSection() {
                 id="age-select"
                 value={age}
                 onChange={handleAgeChange}
-                className="w-12 h-8 border-b-2 border-gray-600 px-2 py-1 
+                className="w-18 h-8 border-b-2 border-gray-600 px-2 py-1 
                 text-sm text-blue-600 font-semibold bg-white 
                 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-50
                 appearance-none /* 👈 1. ลบสไตล์ของ OS ออก */
