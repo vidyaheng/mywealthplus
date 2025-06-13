@@ -385,6 +385,8 @@ export const useCiCalculations = () => {
             iWealthyInvReturn, iWealthyRppRtuRatio, ciWithdrawalStartAge
         );
 
+        console.log('[useCiCalculations] Solver Result Object:', solverResult);
+
         // Solver จะคืน finalIWealthyAnnualData มาด้วยเสมอ (แม้จะไม่ solvent ตามเกณฑ์)
         // เพื่อให้สามารถแสดงผลการคำนวณที่ดีที่สุดที่ Solver หาได้ พร้อมกับ errorMessage
         const initialSA = Math.max(1, Math.round(getSumInsuredFactor(iWealthyEntryAgeForSolver) * (solverResult.solvedRpp ?? 0)));

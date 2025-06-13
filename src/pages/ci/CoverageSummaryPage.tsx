@@ -38,28 +38,28 @@ export default function CoverageSummaryPage({
     };
 
     // --- Calculations for Grand Totals ---
-    const summaryData = useMemo(() => {
-        const { 
-            lifeReadySA, mainRiderChecked, 
-            icareChecked, icareSA, 
-            ishieldChecked, ishieldSA, 
-            dciChecked, dciSA, 
-            rokraiPlan 
-        } = selectedCiPlans;
+   const summaryData = useMemo(() => {
+    // ถ้ายังไม่มี result ให้ return ค่าเริ่มต้นเป็น 0
+    if (!result || result.length === 0) {
+        return { totalLifeBenefit: 0, ciMaxPossibleBenefit: 0, rokraiLifetimeLimit: 0 };
+    }
 
-        const totalLifeBenefit = (mainRiderChecked ? lifeReadySA : 0) +
-            (icareChecked ? 100000 : 0) +
-            (ishieldChecked ? ishieldSA : 0) +
-            (dciChecked ? dciSA : 0);
+    // 🔥 แก้ไข: ดึงค่าความคุ้มครองชีวิตรวมจาก "แถวแรก" ของ result
+    const firstYearData = result[0];
+    const totalLifeBenefit = firstYearData.totalCombinedDeathBenefit ?? 0;
 
-        const ciMaxPossibleBenefit = (icareChecked ? icareSA * 5 : 0) +
-            (ishieldChecked ? ishieldSA : 0) +
-            (dciChecked ? dciSA : 0);
-        
-        const rokraiLifetimeLimit = { S: 1500000, M: 3000000, L: 9000000, XL: 30000000, '': 0, null: 0 }[rokraiPlan || ''];
+    // ส่วนที่เหลือยังคำนวณจาก selectedCiPlans เหมือนเดิม
+    const { icareChecked, icareSA, ishieldChecked, ishieldSA, dciChecked, dciSA, rokraiPlan } = selectedCiPlans;
+    
+    const ciMaxPossibleBenefit = (icareChecked ? icareSA * 5 : 0) +
+        (ishieldChecked ? ishieldSA : 0) +
+        (dciChecked ? dciSA : 0);
+    
+    const rokraiLifetimeLimit = { S: 1500000, M: 3000000, L: 9000000, XL: 30000000, '': 0, null: 0 }[rokraiPlan || ''];
 
-        return { totalLifeBenefit, ciMaxPossibleBenefit, rokraiLifetimeLimit };
-    }, [selectedCiPlans]);
+    return { totalLifeBenefit, ciMaxPossibleBenefit, rokraiLifetimeLimit };
+
+}, [result, selectedCiPlans]);
 
     // --- Render Guards ---
     if (isLoading) {
@@ -94,7 +94,7 @@ export default function CoverageSummaryPage({
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                     <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                        <p className="text-sm text-muted-foreground">รวมความคุ้มครองชีวิตทั้งหมด</p>
+                        <p className="text-sm text-muted-foreground">รวมความคุ้มครองชีวิตทั้งหมด (ปีแรก)</p>
                         <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">{formatNumber(summaryData.totalLifeBenefit)}</p>
                     </div>
                     <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg">

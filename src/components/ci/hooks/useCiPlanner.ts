@@ -105,6 +105,9 @@ export function useCiPlanner({
         setCalculatedRtu(undefined);
 
         try {
+
+            console.log('[useCiPlanner] Starting calculation. useIWealthy =', useIWealthy);
+
             const currentCiScheduleForCalc = ciPremiumsSchedule || [];
 
             if (!useIWealthy) {
@@ -138,6 +141,8 @@ export function useCiPlanner({
                 }
                 return;
             }
+
+            console.log('[useCiPlanner] Entering iWealthy calculation path...');
 
             if (!ciCalculations.calculateManualPlanCi || !ciCalculations.calculateAutomaticPlanCi) {
                 setError("Calculation services for iWealthy are not available.");

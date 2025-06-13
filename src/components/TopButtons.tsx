@@ -90,7 +90,7 @@ export default function TopButtons({
 
                         <span
                             className={clsx(
-                                'text-[10px] sm:text-xs font-semibold leading-tight text-center transition-colors',
+                                'text-[10px] sm:text-xs leading-tight text-center transition-colors',
                                 isActive ? 'text-purple-800' : 'text-gray-600 group-hover:text-black'
                             )}
                         >
