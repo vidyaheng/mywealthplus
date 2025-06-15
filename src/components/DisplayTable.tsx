@@ -5,7 +5,7 @@ export type AnnualTableView = 'compact' | 'full';
 
 export type AnnualDataRowWithTax = AnnualCalculationOutputRow & { taxBenefit?: number };
 
-type TotalsType = Omit<AnnualCalculationOutputRow, 'policyYear' | 'age' | 'eoyAccountValue' | 'eoyDeathBenefit' | 'eoyCashSurrenderValue' | 'eoySumInsured' | 'investmentBaseYear'> & {
+type TotalsType = Omit<AnnualCalculationOutputRow, 'policyYear' | 'age' | 'eoyAccountValue' | 'eoyDeathBenefit' | 'eoyCashSurrenderValue' | 'eoySumInsured' | 'investmentBaseYear' | 'eoyInflationAdjustedValue'> & {
   taxBenefit: number;
 };
 
@@ -116,6 +116,9 @@ export default function DisplayTable({
             )}
             <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>Bonus (บาท)</th>
             <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>มูลค่ากรมธรรม์สิ้นปี (บาท)</th>
+            {/*viewMode === 'full' && (
+                <th className={`${thBaseClass} text-right text-teal-700 sticky top-0 z-10 ${headerCellStickyBg}`}>มูลค่ากรมธรรม์ (ปรับเงินเฟ้อ)</th>
+            )*/}
             {showCsv && (
               <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>มูลค่าเวนคืนสิ้นปี (บาท)</th>
             )}
@@ -156,7 +159,10 @@ export default function DisplayTable({
                 </>
               )}
               <td className={`${tdBaseClass} text-right text-green-600`}>{formatNumber(row.royaltyBonusYear)}</td>
-              <td className={`${tdBaseClass} text-right font-semibold`}>{formatNumber(row.eoyAccountValue)}</td>
+              <td className={`${tdBaseClass} text-right font-semibold`}>{formatNumber(row.eoyInflationAdjustedValue)}</td>
+              {/*viewMode === 'full' && (
+                    <td className={`${tdBaseClass} text-right text-teal-700`}>{formatNumber(row.eoyInflationAdjustedValue)}</td>
+                )*/}
               {showCsv && (
                 <td className={`${tdBaseClass} text-right`}>{formatNumber(row.eoyCashSurrenderValue)}</td>
               )}
@@ -198,6 +204,9 @@ export default function DisplayTable({
             )}
             <td className={`${tdBaseClass} text-right text-green-600`}>{formatNumber(totals.royaltyBonusYear)}</td>
             <td className={`${tdBaseClass} text-right font-semibold`}>-</td>
+            {/*viewMode === 'full' && (
+                    <td className={`${tdBaseClass} text-right`}>-</td>
+                )*/}
             {showCsv && (
               <td className={`${tdBaseClass} text-right`}>-</td>
             )}

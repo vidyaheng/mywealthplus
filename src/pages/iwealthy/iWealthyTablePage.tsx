@@ -165,7 +165,8 @@ export default function IWealthyTablePage() {
             return {
                 age: row.age,
                 deathBenefit: row.eoyDeathBenefit,
-                accountValue: row.eoyAccountValue,
+                //accountValue: row.eoyAccountValue,
+                accountValue: row.eoyInflationAdjustedValue,
                 premiumAnnual: row.totalPremiumYear,
                 premiumCumulative: cumulativePremium,
             };
