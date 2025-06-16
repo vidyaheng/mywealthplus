@@ -5,7 +5,7 @@ export type AnnualTableView = 'compact' | 'full';
 
 export type AnnualDataRowWithTax = AnnualCalculationOutputRow & { taxBenefit?: number };
 
-type TotalsType = Omit<AnnualCalculationOutputRow, 'policyYear' | 'age' | 'eoyAccountValue' | 'eoyDeathBenefit' | 'eoyCashSurrenderValue' | 'eoySumInsured' | 'investmentBaseYear' | 'eoyInflationAdjustedValue'> & {
+type TotalsType = Omit<AnnualCalculationOutputRow, 'policyYear' | 'age' | 'eoyAccountValue' | 'eoyDeathBenefit' | 'eoyCashSurrenderValue' | 'eoySumInsured' | 'investmentBaseYear'> & {
   taxBenefit: number;
 };
 
@@ -159,7 +159,7 @@ export default function DisplayTable({
                 </>
               )}
               <td className={`${tdBaseClass} text-right text-green-600`}>{formatNumber(row.royaltyBonusYear)}</td>
-              <td className={`${tdBaseClass} text-right font-semibold`}>{formatNumber(row.eoyInflationAdjustedValue)}</td>
+              <td className={`${tdBaseClass} text-right font-semibold`}>{formatNumber(row.eoyAccountValue)}</td>
               {/*viewMode === 'full' && (
                     <td className={`${tdBaseClass} text-right text-teal-700`}>{formatNumber(row.eoyInflationAdjustedValue)}</td>
                 )*/}

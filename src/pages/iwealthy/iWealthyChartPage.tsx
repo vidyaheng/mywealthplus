@@ -84,8 +84,8 @@ const IWealthyChartPage = () => {
             const firstRecord = illustrationData.annual[0];
             return {
                 age: firstRecord.age,
-                deathBenefit: firstRecord.eoyDeathBenefit,
-                accountValue: firstRecord.eoyInflationAdjustedValue,
+                deathBenefit: firstRecord.eoyDeathBenefit / Math.pow(1.0035, firstRecord.policyYear),
+                accountValue: firstRecord.eoyAccountValue,
                 premiumCumulative: firstRecord.totalPremiumYear, 
                 premiumAnnual: firstRecord.totalPremiumYear,
             };
@@ -103,7 +103,7 @@ const IWealthyChartPage = () => {
                 return {
                     age: row.age,
                     deathBenefit: row.eoyDeathBenefit,
-                    accountValue: row.eoyInflationAdjustedValue,
+                    accountValue: row.eoyAccountValue,
                     premiumAnnual: row.totalPremiumYear,
                     premiumCumulative: cumulativePremium,
                 };

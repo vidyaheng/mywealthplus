@@ -170,7 +170,7 @@ export interface AnnualCalculationOutputRow {
     eoyDeathBenefit: number;
     eoyCashSurrenderValue: number;
     eoySumInsured?: number; // ทุนประกัน ณ สิ้นปีกรมธรรม์ (ทำให้เป็น optional ถ้าบางกรณีอาจจะไม่มี)
-    eoyInflationAdjustedValue: number; 
+    //eoyInflationAdjustedValue: number; 
 }
 
 export interface MonthlyCalculationInternalResult {
@@ -557,7 +557,7 @@ export function calculateBenefitIllustrationMonthly(
 // เช่น MonthlyCalculationOutputRow มี policyStatusThisMonth
 // และ AnnualCalculationOutputRow (ถ้าต้องการ) อาจจะมี eoySumInsured และ annualPolicyStatus
 
-const INFLATION_RATE = 0.0035; // อัตราเงินเฟ้อ 0.35%
+const ANNUAL_INFLATION_RATE: number = 0.0034; // อัตราเงินเฟ้อ 4% ต่อปี
 
 export function aggregateToAnnual(
     monthlyData: MonthlyCalculationOutputRow[],
@@ -568,15 +568,15 @@ export function aggregateToAnnual(
     }
 
     const annualResultsMap = new Map<number, Partial<AnnualCalculationOutputRow>>();
-    const finalizedAnnualResults: AnnualCalculationOutputRow[] = []; // ประกาศที่นี่ครั้งเดียว
 
+    // Loop 1: รวมยอดรายเดือน (Summation)
     for (const monthRow of monthlyData) {
         let yearData = annualResultsMap.get(monthRow.policyYear);
 
         if (!yearData) {
             yearData = {
                 policyYear: monthRow.policyYear,
-                age: monthRow.age,
+                age: monthRow.age, // จะถูกอัปเดตเป็นอายุสิ้นปีทีหลัง
                 premiumRPPYear: 0,
                 premiumRTUYear: 0,
                 premiumLSTUYearGross: 0,
@@ -586,23 +586,17 @@ export function aggregateToAnnual(
                 totalPremiumChargeYear: 0,
                 totalCOIYear: 0,
                 totalAdminFeeYear: 0,
-                //investmentBaseYear: 0,
                 royaltyBonusYear: 0,
                 withdrawalYear: 0,
                 investmentReturnYear: 0,
-                totalFeesYear: 0,
-                eoyAccountValue: monthRow.eomValue,
-                eoyDeathBenefit: monthRow.deathBenefit,
-                eoyCashSurrenderValue: monthRow.cashSurrenderValue,
-                eoySumInsured: monthRow.currentSumAssured,
             };
             annualResultsMap.set(monthRow.policyYear, yearData);
-
-            if (monthRow.monthInYear === 1) {
-                yearData.investmentBaseYear = monthRow.investmentBase;
-            }
         }
 
+        // --- [ลบออก] ลบ Logic เก่าของ investmentBaseYear และ eoySumInsured ---
+        // if (monthRow.monthInYear === 1) { ... }
+        
+        // การบวกรวมค่าต่างๆ ทำเหมือนเดิม
         yearData.premiumRPPYear! += monthRow.rppPaid;
         yearData.premiumRTUYear! += monthRow.rtuPaid;
         yearData.premiumLSTUYearGross! += monthRow.lstuPaidGross;
@@ -615,44 +609,62 @@ export function aggregateToAnnual(
         yearData.royaltyBonusYear! += monthRow.royaltyBonusAmount;
         yearData.withdrawalYear! += monthRow.withdrawalAmount;
         yearData.investmentReturnYear! += monthRow.investmentReturnEarned;
-
-        if (monthRow.monthInYear === 1 && yearData.investmentBaseYear === 0) {
-            yearData.investmentBaseYear = monthRow.investmentBase;
-        }
     }
 
+    const finalizedAnnualResults: AnnualCalculationOutputRow[] = [];
+    
+    // Loop 2: คำนวณค่าสุดท้ายของแต่ละปี (Finalization & Transformation)
     for (const yearDataPartial of annualResultsMap.values()) {
-        const monthlyForYear: MonthlyCalculationOutputRow[] = monthlyData.filter(
+        const monthlyForYear = monthlyData.filter(
             (m: MonthlyCalculationOutputRow) => m.policyYear === yearDataPartial.policyYear
         );
 
         if (monthlyForYear.length > 0) {
             const lastMonthOfYearData = monthlyForYear[monthlyForYear.length - 1];
+            
+            // อัปเดต age และ sum insured ให้เป็นของเดือนสุดท้าย
             yearDataPartial.age = lastMonthOfYearData.age;
-             // 1. คำนวณมูลค่าปลายปีแบบปกติ (Nominal Value)
-            yearDataPartial.eoyAccountValue = lastMonthOfYearData.eomValue;
-            // 2. คำนวณมูลค่าปลายปีแบบปรับเงินเฟ้อ (Inflation Adjusted Value)
-            yearDataPartial.eoyInflationAdjustedValue = lastMonthOfYearData.eomValue / Math.pow(1 + INFLATION_RATE, lastMonthOfYearData.policyYear - 1);
-            yearDataPartial.eoyDeathBenefit = lastMonthOfYearData.deathBenefit;
-            yearDataPartial.eoyCashSurrenderValue = lastMonthOfYearData.cashSurrenderValue;
             yearDataPartial.eoySumInsured = lastMonthOfYearData.currentSumAssured;
+
+            // --- LOGIC ใหม่ทั้งหมด ---
+            const nominalEoyAccountValue = lastMonthOfYearData.eomValue; // ถ้าต้องการ factor 1.00107 ให้คูณตรงนี้
+            
+            const realEoyAccountValue = (ANNUAL_INFLATION_RATE === 0)
+                ? nominalEoyAccountValue
+                : nominalEoyAccountValue / Math.pow(1 + (ANNUAL_INFLATION_RATE / 12), (yearDataPartial.policyYear ?? 1) * 12);
+            
+            yearDataPartial.eoyAccountValue = realEoyAccountValue;
+
+            const nominalSumAssured = yearDataPartial.eoySumInsured ?? 0;
+            const hybridDeathBenefit = Math.max(
+                nominalSumAssured * 1.2,
+                realEoyAccountValue * 1.2,
+                nominalSumAssured
+            );
+            yearDataPartial.eoyDeathBenefit = hybridDeathBenefit;
+
+            const surrenderRate = (yearDataPartial.policyYear ?? 1) <= SURRENDER_CHARGE_RATES.length 
+                ? SURRENDER_CHARGE_RATES[(yearDataPartial.policyYear ?? 1) - 1] 
+                : 0;
+            yearDataPartial.eoyCashSurrenderValue = nominalEoyAccountValue * (1 - surrenderRate);
+
+            // --- [แก้ไข] ย้ายโค้ดส่วนนี้เข้ามาใน if block ---
+            const withdrawalFeeYear = monthlyForYear.reduce((sum: number, m: MonthlyCalculationOutputRow) => sum + (m.withdrawalFee || 0), 0);
+            yearDataPartial.totalFeesYear =
+                (yearDataPartial.totalPremiumChargeYear || 0) +
+                (yearDataPartial.totalCOIYear || 0) +
+                (yearDataPartial.totalAdminFeeYear || 0) +
+                withdrawalFeeYear;
+
+            if (assumedInvestmentReturnRate > 0) {
+                yearDataPartial.investmentBaseYear = (yearDataPartial.investmentReturnYear || 0) / assumedInvestmentReturnRate;
+            } else {
+                yearDataPartial.investmentBaseYear = 0;
+            }
+            // --- สิ้นสุดส่วนที่ย้าย ---
+
+            finalizedAnnualResults.push(yearDataPartial as AnnualCalculationOutputRow);
         }
-
-        const withdrawalFeeYear = monthlyForYear.reduce((sum: number, m: MonthlyCalculationOutputRow) => sum + (m.withdrawalFee || 0), 0);
-
-        yearDataPartial.totalFeesYear =
-            (yearDataPartial.totalPremiumChargeYear || 0) +
-            (yearDataPartial.totalCOIYear || 0) +
-            (yearDataPartial.totalAdminFeeYear || 0) +
-            withdrawalFeeYear;
-
-        if (assumedInvestmentReturnRate > 0) {
-            yearDataPartial.investmentBaseYear = (yearDataPartial.investmentReturnYear || 0) / assumedInvestmentReturnRate;
-        } else {
-            yearDataPartial.investmentBaseYear = 0; // กรณีอัตราผลตอบแทนเป็น 0
-        }
-
-        finalizedAnnualResults.push(yearDataPartial as AnnualCalculationOutputRow);
     }
 
     finalizedAnnualResults.sort((a, b) => a.policyYear - b.policyYear);
