@@ -187,7 +187,7 @@ export default function CITablePage({
                                         <TableCell className="text-center">{row.policyYear}</TableCell>
                                         <TableCell className="text-center">{row.age}</TableCell>
                                         <TableCell className="text-right">
-                                            {row.age < iWealthyWithdrawalStartAge ? formatNumber(row.totalCiPackagePremiumPaid) : '-'}
+                                            {row.age < iWealthyWithdrawalStartAge ? formatNumber(row.totalCiPackagePremiumPaid) : '0'}
                                         </TableCell>
                                         {showRppRtu && (
                                             <>
@@ -198,7 +198,7 @@ export default function CITablePage({
                                         <TableCell className="text-right">{formatNumber(row.iWealthyTotalPremium)}</TableCell>
                                         <TableCell className="text-right">{formatNumber(row.iWealthyWithdrawal)}</TableCell>
                                         <TableCell className="text-right font-semibold">{formatNumber(Math.round(row.iWealthyEoyAccountValue ?? 0))}</TableCell>
-                                        <TableCell className="text-right font-semibold">{formatNumber(row.totalCombinedDeathBenefit)}</TableCell>
+                                        <TableCell className="text-right font-semibold">{formatNumber(Math.round(row.totalCombinedDeathBenefit ?? 0))}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
