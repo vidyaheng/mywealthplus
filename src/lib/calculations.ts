@@ -381,7 +381,21 @@ export function calculateBenefitIllustrationMonthly(
         else { const lc = sortedFrequencyChanges.filter(fc => currentAge > fc.endAge).pop(); if (lc) effectivePaymentFrequency = lc.frequency; }
 
         let isPaused = false;
-        if (m >= (MIN_PAID_MONTHS_FOR_PAUSE + 1)) { const mp = sortedPausePeriods.find(p => currentAge >= p.startAge && currentAge <= p.endAge); isPaused = !!mp; }
+        if (m >= (MIN_PAID_MONTHS_FOR_PAUSE + 1)) {
+            const mp = sortedPausePeriods.find(p => {
+                // ---- START: โค้ดที่แก้ไข ----
+                if (p.type === 'year') {
+                    // ถ้า type เป็น 'year', ให้เทียบกับ policyYear
+                    // สมมติว่า p.startAge และ p.endAge ในกรณีนี้เก็บ "ปีกรมธรรม์" (เช่น 11, 12, ...)
+                    return policyYear >= p.startAge && policyYear <= p.endAge;
+                } else { // Default to 'age' if type is not specified or is 'age'
+                    // ถ้า type เป็น 'age', ให้เทียบกับ currentAge เหมือนเดิม
+                    return currentAge >= p.startAge && currentAge <= p.endAge;
+                }
+                // ---- END: โค้ดที่แก้ไข ----
+            });
+            isPaused = !!mp;
+        }
 
         if (policyYear <= premiumPayingTermYears && !isPaused && isPaymentMonth(monthInYear, effectivePaymentFrequency)) {
             const paymentsPerYear = getPaymentsPerYear(effectivePaymentFrequency);
@@ -477,7 +491,13 @@ export function calculateBenefitIllustrationMonthly(
                 // เปลี่ยนจาก paidMonthsCount >= 72 เป็น paidPeriodsCount >= 6
                 const paid6Y = paidPeriodsCount >= ROYALTY_BONUS_ELIGIBILITY_YEARS;
                 const eligible6Y = paid6Y && !wasWithdrawalInFirst6Years;
-                const pausedThisY = sortedPausePeriods.some(p => p.startAge === currentAge || (p.startAge < currentAge && p.endAge >= currentAge));
+                const pausedThisY = sortedPausePeriods.some(p => {
+                    if (p.type === 'year') {
+                        return policyYear >= p.startAge && policyYear <= p.endAge;
+                    } else { // 'age' หรือ default
+                        return currentAge >= p.startAge && currentAge <= p.endAge;
+                    }
+                });
                 const withdrewThisY = withdrawal_month > 0;
                 if (eligible6Y && (policyYear <= premiumPayingTermYears) && !pausedThisY && !withdrewThisY) {
                     if (eomValuesLast12Months.length === 12) {

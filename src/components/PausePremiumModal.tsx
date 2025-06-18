@@ -114,7 +114,7 @@ export default function PausePremiumModal({
     if (refType === 'age') {
       return Array.from({ length: maxPossibleAge - firstPossibleEndAge + 1 }, (_, i) => firstPossibleEndAge + i);
     } else { // 'year'
-      const maxPolicyYear = maxPossibleAge - currentAge;
+      const maxPolicyYear = maxPossibleAge - currentAge+1;
       const currentStartYear = refType === 'year' ? startValue : startValue - currentAge; // หาปีเริ่มต้นที่เลือก
       const firstPossibleEndYear = Math.max(1, currentStartYear, firstPossibleEndAge - currentAge);
       if (firstPossibleEndYear > maxPolicyYear) return [];
@@ -137,7 +137,7 @@ export default function PausePremiumModal({
     setEndValue(finalMaxAge);
   } else {
     const startYear = Math.max(1, defaultStartAge - currentAge);
-    const endYear = Math.max(1, finalMaxAge - currentAge);
+    const endYear = Math.max(1, finalMaxAge - currentAge + 1);
     setStartValue(startYear);
     setEndValue(endYear); // ให้เป็นปีสุดท้ายที่เป็นไปได้
   }
@@ -174,47 +174,64 @@ export default function PausePremiumModal({
   // Handler ปุ่ม "+ เพิ่มช่วงเวลา"
   const handleAddPeriod = useCallback(() => {
     // แปลงค่าให้เป็นอายุจริง
-    const startAge = refType === 'age' 
-      ? startValue 
-      : currentAge + startValue;
+    //const startAge = refType === 'age' 
+      //? startValue 
+      //: currentAge + startValue;
     
-    const endAge = refType === 'age' 
-      ? endValue 
-      : currentAge + endValue;
-  
-    console.log('Adding period:', { startAge, endAge });
-  
+    //const endAge = refType === 'age' 
+    //  ? endValue 
+    //  : currentAge + endValue;
+
+        // ตรวจสอบความถูกต้อง
     // ตรวจสอบความถูกต้อง
-    if (startAge >= endAge) {
-      alert("อายุเริ่มต้นต้องน้อยกว่าอายุสิ้นสุด");
+    if (startValue >= endValue) {
+      // Logic การแสดงผลอาจจะต้องปรับปรุงเล็กน้อยตาม refType
+      const unit = refType === 'age' ? 'อายุ' : 'ปีที่';
+      alert(`${unit}เริ่มต้นต้องน้อยกว่า${unit}สิ้นสุด`);
       return;
     }
+    
+    // สร้าง record ใหม่โดยใช้ค่าจาก State โดยตรง
+    const newPause: PausePeriodRecord = {
+      id: uuidv4(),
+      startAge: startValue,
+      endAge: endValue,
+      type: refType,
+    };
   
-    if (startAge > maxPossibleAge || endAge > maxPossibleAge) {
+    console.log('Adding period:', { startValue, endValue });
+  
+
+  
+    if (startValue > maxPossibleAge || endValue > maxPossibleAge) {
       alert(`สามารถหยุดพักได้สูงสุดถึงอายุ ${maxPossibleAge} ปี`);
       return;
     }
   
     // สร้าง record ใหม่
-    const newPause: PausePeriodRecord = {
-      id: uuidv4(),
-      startAge,
-      endAge,
-      type: refType
-    };
+    //const newPause: PausePeriodRecord = {
+    //  id: uuidv4(),
+    //  sraerValue,
+    //  endAge,
+   //   type: refType
+   // };
   
     // อัปเดตรายการ
     setPlannedPauses(prev => [...prev, newPause].sort((a, b) => a.startAge - b.startAge));
   
-    // Reset form
-    const nextStartAge = endAge + 1;
-    if (nextStartAge <= maxPossibleAge) {
-      setStartValue(refType === 'age' ? nextStartAge : Math.max(1, nextStartAge - currentAge + 1));
-      setEndValue(refType === 'age' ? maxPossibleAge : Math.max(1, maxPossibleAge - currentAge + 1));
+    // --- ส่วน Reset Form อาจจะต้องปรับปรุงตาม Logic ใหม่ ---
+    // การหา nextStartValue จะง่ายขึ้น
+    const nextStartValue = endValue + 1;
+    const maxEndValue = refType === 'age' ? maxPossibleAge : maxPossibleAge - currentAge;
+
+    if (nextStartValue <= maxEndValue) {
+      setStartValue(nextStartValue);
+      setEndValue(maxEndValue);
     } else {
       setCanAddNewPeriod(false);
     }
-  }, [refType, startValue, endValue, currentAge, maxPossibleAge]);
+
+  }, [refType, startValue, endValue, currentAge, maxPossibleAge, setPlannedPauses]);
   
   
   // Handler ปุ่มลบรายการล่าสุด
@@ -344,7 +361,7 @@ export default function PausePremiumModal({
                   // แปลงการแสดงผลตามประเภทการอ้างอิง
                   const displayText = record.type === 'age' 
                     ? `อายุ ${record.startAge} - ${record.endAge} ปี`
-                    : `ปีที่ ${record.startAge - currentAge} - ${record.endAge - currentAge}`;
+                    : `ปีที่ ${record.startAge} - ${record.endAge}`;
       
                   return (
                     <div 
