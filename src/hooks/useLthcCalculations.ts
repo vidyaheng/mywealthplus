@@ -1,4 +1,5 @@
 // src/hooks/useLthcCalculations.ts
+
 import { useCallback } from 'react';
 
 // Functions from original calculation engines
@@ -6,7 +7,6 @@ import {
     generateIllustrationTables,
     getSumInsuredFactor,
     type AnnualCalculationOutputRow as OriginalIWealthyAnnualOutputRow,
-    // CalculationInput type will be imported from useLthcTypes
 } from '../lib/calculations'; // Verify path
 import {
     calculateLifeReadyPremium,
@@ -21,16 +21,12 @@ import type {
     SumInsuredReductionRecord,
     FrequencyChangeRecord,
     WithdrawalPlanRecord,
-    CalculationInput,           // Type re-exported from useLthcTypes
-    IHealthyUltraPlan,          // Type for actual IHU plan names (Smart, Bronze, etc.)
-    MEBPlan,                    // Type for actual MEB plan values (500, 1000, etc.)
-    //LifeReadyPaymentTerm,
+    CalculationInput,
+    IHealthyUltraPlan,
+    MEBPlan,
     AnnualLTHCOutputRow,
     AnnualHealthPremiumDetail,
     PolicyOriginMode,
-    //IWealthyAnnualOutputRow,    // This is the re-exported OriginalIWealthyAnnualOutputRow
-    // IHealthyUltraPlanSelection, // Not directly used here if HealthPlanSelections uses it
-    // MEBPlanSelection,           // Not directly used here if HealthPlanSelections uses it
 } from './useLthcTypes'; // Verify path
 
 // Import Constants from useLthcTypes.ts
@@ -43,14 +39,14 @@ import { IHEALTHY_ULTRA_RATES } from '../data/iHealthyUltraRates'; // Verify pat
 
 // Type for the result of the solver function
 interface OptimalSolverResult {
-    solvedTotalPremium: number | null; // The lowest total iWealthy premium found by the solver for the given ratio
-    solvedRpp: number | null;          // RPP part of solvedTotalPremium
-    solvedRtu: number | null;          // RTU part of solvedTotalPremium
-    finalIWealthyAnnualData?: OriginalIWealthyAnnualOutputRow[]; // Raw iWealthy output for the best solution
-    errorMessage?: string;             // Error message if solver fails
+    solvedTotalPremium: number | null;
+    solvedRpp: number | null;
+    solvedRtu: number | null;
+    finalIWealthyAnnualData?: OriginalIWealthyAnnualOutputRow[];
+    errorMessage?: string;
 }
 
-// Helper function for rounding (can be outside the hook if preferred)
+// Helper function for rounding
 const roundUpToNearestThousand = (num: number): number => {
     if (num <= 0) return 0;
     return Math.ceil(num / 1000) * 1000;
@@ -61,7 +57,7 @@ export const useLthcCalculations = () => {
     const calculateAllHealthPremiums = useCallback((
         currentPolicyholderAge: number,
         gender: Gender,
-        plans: HealthPlanSelections, // plans.iHealthyUltraPlan is IHealthyUltraPlanSelection, plans.mebPlan is MEBPlanSelection
+        plans: HealthPlanSelections,
         policyOrigin: PolicyOriginMode,
         originalEntryAgeForLR?: number
     ): AnnualHealthPremiumDetail[] => {
@@ -77,7 +73,7 @@ export const useLthcCalculations = () => {
             let lrPremium = 0;
             const lrSaFromSelection = plans.lifeReadySA;
             const lrPptFromSelection = plans.lifeReadyPPT;
-            let entryAgeForLrCalc: number = currentPolicyholderAge; // Default to current age
+            let entryAgeForLrCalc: number = currentPolicyholderAge;
             let stillPayingLrThisLthcYear = false;
 
             if (policyOrigin === 'existingPolicy' && originalEntryAgeForLR !== undefined && originalEntryAgeForLR < currentPolicyholderAge) {
@@ -89,12 +85,12 @@ export const useLthcCalculations = () => {
                     if (currentOriginalLrPolicyYear <= lrPptFromSelection && entryAgeForLrCalc <= 70) {
                         stillPayingLrThisLthcYear = true;
                     }
-                } else { // PPT is to age 99
+                } else {
                     if (attainedAge <= MAX_POLICY_AGE_TYPE && entryAgeForLrCalc <= 80) {
                         stillPayingLrThisLthcYear = true;
                     }
                 }
-            } else { // New Policy or invalid existing policy data
+            } else {
                 entryAgeForLrCalc = currentPolicyholderAge;
                 if (lrPptFromSelection === 99) {
                     if (attainedAge <= MAX_POLICY_AGE_TYPE && entryAgeForLrCalc <= 80) {
@@ -112,12 +108,12 @@ export const useLthcCalculations = () => {
             }
 
             let ihuPremium = 0;
-            if (plans.iHealthyUltraPlan !== null && plans.iHealthyUltraPlan !== null && attainedAge <= MAX_IHU_PREMIUM_AGE && attainedAge <= MAX_POLICY_AGE_TYPE) {
+            if (plans.iHealthyUltraPlan !== null && attainedAge <= MAX_IHU_PREMIUM_AGE && attainedAge <= MAX_POLICY_AGE_TYPE) {
                 ihuPremium = calculateIHealthyUltraPremium(attainedAge, gender, plans.iHealthyUltraPlan as IHealthyUltraPlan);
             }
 
             let mebPremium = 0;
-            if (plans.mebPlan !== null && plans.mebPlan !== null && attainedAge <= MEB_TERMINATION_AGE_TYPE) {
+            if (plans.mebPlan !== null && attainedAge <= MEB_TERMINATION_AGE_TYPE) {
                 mebPremium = calculateMEBPremium(attainedAge, plans.mebPlan as MEBPlan);
             }
 
@@ -130,9 +126,15 @@ export const useLthcCalculations = () => {
         return premiums;
     }, []);
 
-    const generateSAReductionsForIWealthy = useCallback((entryAge: number, rpp: number): SumInsuredReductionRecord[] => {
+    // 1. ปรับปรุงฟังก์ชันนี้ให้รับ reductionAges ที่เป็น optional ได้
+    const generateSAReductionsForIWealthy = useCallback((
+        entryAge: number, 
+        rpp: number, 
+        reductionAges?: number[]
+    ): SumInsuredReductionRecord[] => {
         const reductions: SumInsuredReductionRecord[] = [];
         if (rpp <= 0) return reductions;
+        
         const getFactor = (milestoneAge: number, currentEntryAge: number): number => {
             if (milestoneAge === currentEntryAge + 1) {
                 if (currentEntryAge <= 40) return 40; if (currentEntryAge <= 50) return 30;
@@ -141,7 +143,9 @@ export const useLthcCalculations = () => {
             if (milestoneAge === 41) return 30; if (milestoneAge === 51) return 20;
             if (milestoneAge === 61) return 15; if (milestoneAge === 66) return 5; return 0;
         };
-        const milestones = [entryAge + 1, 41, 51, 61, 66];
+
+        const milestones = reductionAges ?? [entryAge + 1, 41, 51, 61, 66];
+        
         const reductionMap = new Map<number, number>();
         milestones.forEach(age => {
             if (age > entryAge && age <= MAX_POLICY_AGE_TYPE) {
@@ -157,9 +161,9 @@ export const useLthcCalculations = () => {
         reductionMap.forEach((newSumInsured, age) => reductions.push({ age, newSumInsured }));
         return reductions.sort((a, b) => a.age - b.age);
     }, []);
-
+    
     const checkIWealthySolvency = useCallback((
-        iWealthyAnnualData: OriginalIWealthyAnnualOutputRow[] | undefined, // Expects raw output
+        iWealthyAnnualData: OriginalIWealthyAnnualOutputRow[] | undefined,
         plannedWithdrawals: WithdrawalPlanRecord[]
     ): boolean => {
         if (!iWealthyAnnualData || iWealthyAnnualData.length === 0) return false;
@@ -192,7 +196,7 @@ export const useLthcCalculations = () => {
 
     const processIWealthyResultsToLTHC = useCallback((
         healthPremiumsLocal: AnnualHealthPremiumDetail[],
-        iWealthyAnnualDataLocal: OriginalIWealthyAnnualOutputRow[] | undefined, // Expects raw output
+        iWealthyAnnualDataLocal: OriginalIWealthyAnnualOutputRow[] | undefined,
         currentSelectedHealthPlansLocal: HealthPlanSelections,
         iWealthyInitialSALocal: number,
         iWealthyReductionsLocal: SumInsuredReductionRecord[]
@@ -226,9 +230,11 @@ export const useLthcCalculations = () => {
         return illustration;
     }, []);
 
+    // 2. แก้ไข findOptimalIWealthyPremium ให้รับ customReductionAges
     const findOptimalIWealthyPremium = useCallback(async (
         entryAge: number, gender: Gender, allHealthPremiums: AnnualHealthPremiumDetail[],
-        iWealthyPPT: number, investmentReturnRate: number, targetRppRtuRatio: string
+        iWealthyPPT: number, investmentReturnRate: number, targetRppRtuRatio: string,
+        customReductionAges?: number[]
     ): Promise<OptimalSolverResult> => {
         const [rppPercStr, rtuPercStr] = targetRppRtuRatio.split('/');
         const rppRatio = parseFloat(rppPercStr) / 100;
@@ -258,7 +264,9 @@ export const useLthcCalculations = () => {
             const rtuTrial = Math.round(totalPremiumTrial * rtuRatio);
             if (rppRatio > 0 && rppTrial < MINIMUM_RPP) { divisor -= ds; if (divisor < md) break; continue; }
             const initialSA = Math.round(getSumInsuredFactor(entryAge) * rppTrial);
-            const saReductions = generateSAReductionsForIWealthy(entryAge, rppTrial);
+            
+            const saReductions = generateSAReductionsForIWealthy(entryAge, rppTrial, customReductionAges);
+
             const inputTrial: CalculationInput = {
                 policyholderAge: entryAge, policyholderGender: gender, initialPaymentFrequency: 'annual', initialSumInsured: initialSA,
                 rppPerYear: rppTrial, rtuPerYear: rtuTrial, assumedInvestmentReturnRate: investmentReturnRate / 100,
@@ -266,7 +274,7 @@ export const useLthcCalculations = () => {
                 additionalInvestments: [], frequencyChanges: frequencyChangesAuto, withdrawalPlan: withdrawalPlanAuto,
             };
             try {
-                const resultFromEngine = await generateIllustrationTables(inputTrial); // resultFromEngine.annual is OriginalIWealthyAnnualOutputRow[]
+                const resultFromEngine = await generateIllustrationTables(inputTrial);
                 if (checkIWealthySolvency(resultFromEngine.annual, withdrawalPlanAuto)) { totalPremiumThatWorksHeuristic = totalPremiumTrial; break; }
                 else { divisor -= ds; if (divisor < md) break; }
             } catch (e) { divisor -= ds; if (divisor < md) break; }
@@ -287,7 +295,9 @@ export const useLthcCalculations = () => {
             const rppBin = Math.round(mid * rppRatio); const rtuBin = Math.round(mid * rtuRatio);
             if (rppRatio > 0 && rppBin < MINIMUM_RPP) { searchLow = mid; continue; }
             const initialSAMid = Math.round(getSumInsuredFactor(entryAge) * rppBin);
-            const saReductionsMid = generateSAReductionsForIWealthy(entryAge, rppBin);
+            
+            const saReductionsMid = generateSAReductionsForIWealthy(entryAge, rppBin, customReductionAges);
+
             const inputMid: CalculationInput = {
                 policyholderAge: entryAge, policyholderGender: gender, initialPaymentFrequency: 'annual', initialSumInsured: initialSAMid,
                 rppPerYear: rppBin, rtuPerYear: rtuBin, assumedInvestmentReturnRate: investmentReturnRate / 100,
@@ -296,7 +306,7 @@ export const useLthcCalculations = () => {
             };
             let isSolvent = false;
             try {
-                const resMid = await generateIllustrationTables(inputMid); // resMid.annual is OriginalIWealthyAnnualOutputRow[]
+                const resMid = await generateIllustrationTables(inputMid);
                 isSolvent = checkIWealthySolvency(resMid.annual, withdrawalPlanAuto);
             }
             catch (e) { isSolvent = false; }
@@ -311,7 +321,9 @@ export const useLthcCalculations = () => {
         if (rppRatio > 0 && finalSolvedRpp < MINIMUM_RPP) return { solvedTotalPremium: null, solvedRpp: null, solvedRtu: null, errorMessage: `Final RPP ${finalSolvedRpp} below min.` };
 
         const finalInitialSA = Math.round(getSumInsuredFactor(entryAge) * finalSolvedRpp);
-        const finalSaReductions = generateSAReductionsForIWealthy(entryAge, finalSolvedRpp);
+        
+        const finalSaReductions = generateSAReductionsForIWealthy(entryAge, finalSolvedRpp, customReductionAges);
+
         const finalInput: CalculationInput = {
              policyholderAge: entryAge, policyholderGender: gender, initialPaymentFrequency: 'annual', initialSumInsured: finalInitialSA,
             rppPerYear: finalSolvedRpp, rtuPerYear: finalSolvedRtu, assumedInvestmentReturnRate: investmentReturnRate / 100,
@@ -319,17 +331,17 @@ export const useLthcCalculations = () => {
             additionalInvestments: [], frequencyChanges: frequencyChangesAuto, withdrawalPlan: withdrawalPlanAuto,
         };
         try {
-            const finalIWealthyResult = await generateIllustrationTables(finalInput); // finalIWealthyResult.annual is OriginalIWealthyAnnualOutputRow[]
+            const finalIWealthyResult = await generateIllustrationTables(finalInput);
             if (checkIWealthySolvency(finalIWealthyResult.annual, withdrawalPlanAuto)) {
                 return {
-                    solvedTotalPremium: finalSolvedRpp + finalSolvedRtu, // Return sum of rounded parts
+                    solvedTotalPremium: finalSolvedRpp + finalSolvedRtu,
                     solvedRpp: finalSolvedRpp,
                     solvedRtu: finalSolvedRtu,
                     finalIWealthyAnnualData: finalIWealthyResult.annual
                 };
             } else {
                 return {
-                    solvedTotalPremium: finalSolvedRpp + finalSolvedRtu, // Still return what was calculated
+                    solvedTotalPremium: finalSolvedRpp + finalSolvedRtu,
                     solvedRpp: finalSolvedRpp,
                     solvedRtu: finalSolvedRtu,
                     errorMessage: `Final check with rounded RPP/RTU (${targetRppRtuRatio}) failed solvency.`
@@ -340,64 +352,75 @@ export const useLthcCalculations = () => {
         }
     }, [generateSAReductionsForIWealthy, checkIWealthySolvency]);
 
-
+    // 3. แก้ไข calculateManualPlan ให้รับ SumInsuredReductionRecord[]
     const calculateManualPlan = useCallback(async (
         currentEntryAge: number, gender: Gender, plans: HealthPlanSelections,
         rpp: number, rtu: number, invReturn: number, ppt: number, withdrawalStartAge: number,
+        sumInsuredReductions: SumInsuredReductionRecord[],
         policyOrigin: PolicyOriginMode, originalEntryAgeForLR?: number
-    ): Promise<AnnualLTHCOutputRow[]> => { // Consider returning { data: AnnualLTHCOutputRow[], errorMsg?: string }
+    ): Promise<AnnualLTHCOutputRow[]> => {
         const rppActual = Math.max(rpp, MINIMUM_RPP);
         const allHealthPremiumsData = calculateAllHealthPremiums(currentEntryAge, gender, plans, policyOrigin, originalEntryAgeForLR);
         const withdrawalPlan: WithdrawalPlanRecord[] = [];
         allHealthPremiumsData.forEach(hp => { if (hp.age >= withdrawalStartAge && hp.age <= MAX_POLICY_AGE_TYPE && hp.totalPremium > 0) withdrawalPlan.push({id: `wd-m-${hp.age}`, type: 'annual', amount: hp.totalPremium, startAge: hp.age, endAge: hp.age, refType: 'age' }); });
-        const sumInsuredReductions = generateSAReductionsForIWealthy(currentEntryAge, rppActual);
+        
         const frequencyChanges: FrequencyChangeRecord[] = [{ id: 'lthc-m-mth-y2', startAge: currentEntryAge + 1, endAge: MAX_POLICY_AGE_TYPE, frequency: 'monthly', type: 'age' }];
         const initialSA = Math.round(getSumInsuredFactor(currentEntryAge) * rppActual);
         const input: CalculationInput = {
             policyholderAge: currentEntryAge, policyholderGender: gender, initialPaymentFrequency: 'annual', initialSumInsured: initialSA,
             rppPerYear: rppActual, rtuPerYear: rtu, assumedInvestmentReturnRate: invReturn / 100,
-            premiumPayingTermYears: ppt, pausePeriods: [], sumInsuredReductions: sumInsuredReductions,
+            premiumPayingTermYears: ppt, pausePeriods: [], 
+            sumInsuredReductions: sumInsuredReductions,
             additionalInvestments: [], frequencyChanges: frequencyChanges, withdrawalPlan: withdrawalPlan,
         };
         try {
-            const iWealthyResult = await generateIllustrationTables(input); // iWealthyResult.annual is OriginalIWealthyAnnualOutputRow[]
+            const iWealthyResult = await generateIllustrationTables(input);
             if (!checkIWealthySolvency(iWealthyResult.annual, withdrawalPlan)) {
-                console.warn("Manual plan might not be solvent for all withdrawals. LTHC illustration will be generated but may show issues.");
-                // It's better if this function could return an error status to useLthcPlanner
+                console.warn("Manual plan might not be solvent.");
             }
             return processIWealthyResultsToLTHC(allHealthPremiumsData, iWealthyResult.annual, plans, initialSA, sumInsuredReductions);
         } catch (error) {
-            console.error("Error in calculateManualPlan within useLthcCalculations:", error);
-            throw error; // Re-throw for useLthcPlanner to catch and set error state
+            console.error("Error in calculateManualPlan:", error);
+            throw error;
         }
-    }, [calculateAllHealthPremiums, generateSAReductionsForIWealthy, processIWealthyResultsToLTHC, checkIWealthySolvency]);
+    }, [calculateAllHealthPremiums, processIWealthyResultsToLTHC, checkIWealthySolvency]);
 
+    // 4. แก้ไข calculateAutomaticPlan ให้ส่ง customReductionAges
     const calculateAutomaticPlan = useCallback(async (
         currentEntryAge: number, gender: Gender, plans: HealthPlanSelections,
         invReturn: number, currentAutoPPT: number, currentRppRtuRatio: string,
+        customReductionAges: number[] | undefined,
         policyOrigin: PolicyOriginMode, originalEntryAgeForLR?: number
     ): Promise<{
         outputIllustration: AnnualLTHCOutputRow[] | null;
-        minPremiumResult?: number; // This is the solvedTotalPremium (sum of rounded RPP+RTU)
+        minPremiumResult?: number;
         rppResult?: number;
         rtuResult?: number;
         errorMsg?: string;
     }> => {
         const allHealthPremiumsData = calculateAllHealthPremiums(currentEntryAge, gender, plans, policyOrigin, originalEntryAgeForLR);
+        
         const solverResult = await findOptimalIWealthyPremium(
-            currentEntryAge, gender, allHealthPremiumsData, currentAutoPPT, invReturn, currentRppRtuRatio
+            currentEntryAge, gender, allHealthPremiumsData, currentAutoPPT, invReturn, currentRppRtuRatio,
+            customReductionAges
         );
 
-        if (solverResult.finalIWealthyAnnualData) { // Check if illustration data exists
+        if (solverResult.finalIWealthyAnnualData) {
             const initialSAForDisplay = Math.round(getSumInsuredFactor(currentEntryAge) * (solverResult.solvedRpp || 0));
-            const saReductionsForDisplay = generateSAReductionsForIWealthy(currentEntryAge, (solverResult.solvedRpp || 0));
+            
+            const saReductionsForDisplay = generateSAReductionsForIWealthy(
+                currentEntryAge, 
+                (solverResult.solvedRpp || 0), 
+                customReductionAges
+            );
+            
             const processedOutput = processIWealthyResultsToLTHC(
-                allHealthPremiumsData, solverResult.finalIWealthyAnnualData, // Pass OriginalIWealthyAnnualOutputRow[]
+                allHealthPremiumsData, solverResult.finalIWealthyAnnualData,
                 plans, initialSAForDisplay, saReductionsForDisplay
             );
             return {
                 outputIllustration: processedOutput,
-                minPremiumResult: solverResult.solvedTotalPremium ?? undefined, // This is now sum of rounded RPP & RTU
+                minPremiumResult: solverResult.solvedTotalPremium ?? undefined,
                 rppResult: solverResult.solvedRpp ?? undefined,
                 rtuResult: solverResult.solvedRtu ?? undefined,
                 errorMsg: solverResult.errorMessage ?? undefined,
@@ -405,7 +428,7 @@ export const useLthcCalculations = () => {
         } else {
             return {
                 outputIllustration: null,
-                minPremiumResult: solverResult.solvedTotalPremium ?? undefined, // Could still be non-null if solver found a premium but final sim failed
+                minPremiumResult: solverResult.solvedTotalPremium ?? undefined,
                 rppResult: solverResult.solvedRpp ?? undefined,
                 rtuResult: solverResult.solvedRtu ?? undefined,
                 errorMsg: solverResult.errorMessage || "Automatic calculation failed (no illustration data).",
@@ -415,7 +438,7 @@ export const useLthcCalculations = () => {
 
     return {
         calculateAllHealthPremiums,
-        // generateSAReductions: generateSAReductionsForIWealthy, // Only if needed by planner UI
+        generateSAReductionsForIWealthy,
         calculateManualPlan,
         calculateAutomaticPlan,
     };

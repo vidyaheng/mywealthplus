@@ -1,7 +1,6 @@
 // src/hooks/useLthcPlanner.ts
-import { useState, useCallback, useEffect, useMemo } from 'react';
 
-// Import Types from useLthcTypes.ts
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import type {
     Gender,
     HealthPlanSelections,
@@ -11,13 +10,9 @@ import type {
     PolicyOriginMode,
     IWealthyMode,
     AnnualHealthPremiumDetail,
-    // Types ที่ LthcPage อาจจะใช้ในการ cast (ถ้ายังจำเป็น)
-    //LifeReadyPaymentTerm,
-    //IHealthyUltraPlan,
-    //MEBPlan,
+    SAReductionStrategy,
+    SumInsuredReductionRecord,
 } from './useLthcTypes';
-
-// Import the calculation hook
 import { useLthcCalculations } from './useLthcCalculations';
 
 export function useLthcPlanner({
@@ -51,6 +46,9 @@ export function useLthcPlanner({
         return 10;
     });
     const [autoRppRtuRatio, setAutoRppRtuRatio] = useState<string>('100/0');
+    
+    // State ใหม่สำหรับเก็บ "กลยุทธ์" การลดทุน (ค่าเริ่มต้นคือ auto)
+    const [saReductionStrategy, setSaReductionStrategy] = useState<SAReductionStrategy>({ type: 'auto' });
 
     // Calculated Results from Automatic Mode
     const [calculatedMinPremium, setCalculatedMinPremium] = useState<number | undefined>();
@@ -62,7 +60,6 @@ export function useLthcPlanner({
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Effect to update autoIWealthyPPT when entryAge or mode changes
     useEffect(() => {
         if (iWealthyMode === 'automatic') {
             let newPpt: number;
@@ -73,10 +70,8 @@ export function useLthcPlanner({
         }
     }, [policyholderEntryAge, iWealthyMode]);
 
-    // --- Instantiate Calculation Hook ---
-    const lthcCalculations = useLthcCalculations(); // Hook นี้จะคืน object ที่มีฟังก์ชันคำนวณ
+    const lthcCalculations = useLthcCalculations();
 
-    // Memoized health premiums (using the function from lthcCalculations hook)
     const healthPremiums = useMemo<AnnualHealthPremiumDetail[]>(() => {
         if (lthcCalculations && typeof lthcCalculations.calculateAllHealthPremiums === 'function') {
             return lthcCalculations.calculateAllHealthPremiums(
@@ -87,12 +82,9 @@ export function useLthcPlanner({
                 existingPolicyEntryAge
             );
         }
-        console.warn("useLthcPlanner: lthcCalculations.calculateAllHealthPremiums is not available. Returning empty array.");
         return [];
     }, [policyholderEntryAge, policyholderGender, selectedHealthPlans, policyOriginMode, existingPolicyEntryAge, lthcCalculations]);
 
-
-    // --- Main Calculation Function ---
     const runCalculation = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -101,55 +93,51 @@ export function useLthcPlanner({
         setCalculatedRpp(undefined);
         setCalculatedRtu(undefined);
 
-        if (!lthcCalculations || !lthcCalculations.calculateManualPlan || !lthcCalculations.calculateAutomaticPlan) {
+        if (!lthcCalculations.calculateManualPlan || !lthcCalculations.calculateAutomaticPlan || !lthcCalculations.generateSAReductionsForIWealthy) {
             setError("Calculation service is not properly initialized.");
             setIsLoading(false);
             return;
         }
-            const commonCalcParams = {
-            currentEntryAge: policyholderEntryAge, // อายุ ณ ปัจจุบัน
-            gender: policyholderGender,
-            plans: selectedHealthPlans,
-            originMode: policyOriginMode,
-            originalEntryAge: existingPolicyEntryAge,
-        };
 
         try {
             if ( iWealthyMode === 'manual') {
+                // สำหรับโหมด Manual เรารู้ RPP ที่แน่นอน จึงคำนวณ List การลดทุนที่สมบูรณ์ได้เลย
+                let reductionsForManual: SumInsuredReductionRecord[];
+                if (saReductionStrategy.type === 'auto') {
+                    // ถ้ากลยุทธ์เป็น auto ให้ใช้ค่า default ของระบบ
+                    reductionsForManual = lthcCalculations.generateSAReductionsForIWealthy(policyholderEntryAge, manualRpp);
+                } else {
+                    // ถ้ากลยุทธ์เป็น manual ให้ส่ง ages ที่ผู้ใช้เลือกเข้าไป
+                    reductionsForManual = lthcCalculations.generateSAReductionsForIWealthy(policyholderEntryAge, manualRpp, saReductionStrategy.ages);
+                }
+
                 const manualResultData = await lthcCalculations.calculateManualPlan(
-                    policyholderEntryAge,
-                    policyholderGender,
-                    selectedHealthPlans,
-                    manualRpp,
-                    manualRtu,
-                    manualInvestmentReturn,
-                    manualIWealthyPPT,
-                    manualWithdrawalStartAge,
-                    commonCalcParams.originMode,
-                    commonCalcParams.originalEntryAge
+                    policyholderEntryAge, policyholderGender, selectedHealthPlans,
+                    manualRpp, manualRtu, manualInvestmentReturn,
+                    manualIWealthyPPT, manualWithdrawalStartAge,
+                    reductionsForManual, // << ส่ง list ที่คำนวณแล้วเข้าไป
+                    policyOriginMode, existingPolicyEntryAge
                 );
                 setResult(manualResultData);
-                // if (manualResultData.errorMsg) setError(manualResultData.errorMsg); // If calculateManualPlan returns errorMsg
 
-            } else { // mode === 'automatic'
+            } else { // iWealthyMode === 'automatic'
+                // สำหรับโหมด Auto เรายังไม่รู้ RPP จึงส่งแค่ "ความตั้งใจ" (รายชื่ออายุ) เข้าไป
+                const customAgesForAuto = saReductionStrategy.type === 'manual' 
+                    ? saReductionStrategy.ages 
+                    : undefined; // ถ้าเป็น 'auto' ให้ส่ง undefined เพื่อให้ engine ใช้ค่า default
+
                 const autoResult = await lthcCalculations.calculateAutomaticPlan(
-                    policyholderEntryAge,
-                    policyholderGender,
-                    selectedHealthPlans,
-                    autoInvestmentReturn,
-                    autoIWealthyPPT,
-                    autoRppRtuRatio,
-                    commonCalcParams.originMode, 
-                    commonCalcParams.originalEntryAge
+                    policyholderEntryAge, policyholderGender, selectedHealthPlans,
+                    autoInvestmentReturn, autoIWealthyPPT, autoRppRtuRatio,
+                    customAgesForAuto, // << ส่ง "รายชื่ออายุ" หรือ undefined เข้าไป
+                    policyOriginMode, existingPolicyEntryAge
                 );
 
-                setResult(autoResult.outputIllustration); // Can be null if solver fails
+                setResult(autoResult.outputIllustration);
                 setCalculatedMinPremium(autoResult.minPremiumResult ?? undefined);
                 setCalculatedRpp(autoResult.rppResult ?? undefined);
                 setCalculatedRtu(autoResult.rtuResult ?? undefined);
-                if (autoResult.errorMsg) {
-                    setError(autoResult.errorMsg);
-                }
+                if (autoResult.errorMsg) setError(autoResult.errorMsg);
             }
         } catch (err) {
             console.error("LTHC Calculation Error in useLthcPlanner Hook:", err);
@@ -158,35 +146,29 @@ export function useLthcPlanner({
             setIsLoading(false);
         }
     }, [
+        saReductionStrategy, // Dependency ใหม่
         iWealthyMode, policyholderEntryAge, policyholderGender, selectedHealthPlans,
         manualRpp, manualRtu, manualInvestmentReturn, manualIWealthyPPT, manualWithdrawalStartAge,
         autoInvestmentReturn, autoIWealthyPPT, autoRppRtuRatio, policyOriginMode, existingPolicyEntryAge,
-        lthcCalculations // Dependency on the calculation hook instance
+        lthcCalculations
     ]);
 
     const recalculate = useCallback(async (options?: {
         entryAge?: number;
         gender?: Gender;
         healthPlans?: HealthPlanSelections;
-        policyOriginMode?: PolicyOriginMode;
-        existingPolicyEntryAge?: number;
     }) => {
         if (options?.entryAge !== undefined) setPolicyholderEntryAge(options.entryAge);
         if (options?.gender) setPolicyholderGender(options.gender);
         if (options?.healthPlans) setSelectedHealthPlans(options.healthPlans);
-        // Consider using useEffect to trigger runCalculation after state updates
-        // or pass options directly to a modified runCalculation.
         await runCalculation();
-    }, [runCalculation, setPolicyholderEntryAge, setPolicyholderGender, setSelectedHealthPlans, setPolicyOriginMode, setExistingPolicyEntryAge]);
+    }, [runCalculation]);
 
     return {
-        policyOriginMode, // ⭐ เพิ่ม
-        setPolicyOriginMode, // ⭐ เพิ่ม
-        existingPolicyEntryAge, // ⭐ เพิ่ม
-        setExistingPolicyEntryAge, // ⭐ เพิ่ม
-        iWealthyMode, // ⭐ เปลี่ยนชื่อ
-        setIWealthyMode, // ⭐ เปลี่ยนชื่อ
-        isLoading: isLoading, // Consistent with UseLthcPlannerReturn
+        policyOriginMode, setPolicyOriginMode,
+        existingPolicyEntryAge, setExistingPolicyEntryAge,
+        iWealthyMode, setIWealthyMode,
+        isLoading,
         error,
         result,
         healthPremiums,
@@ -206,5 +188,9 @@ export function useLthcPlanner({
         policyholderEntryAge, setPolicyholderEntryAge,
         policyholderGender, setPolicyholderGender,
         selectedHealthPlans, setSelectedHealthPlans,
+
+        // ส่ง state และ setter ของ "กลยุทธ์" ใหม่ออกไป
+        saReductionStrategy,
+        setSaReductionStrategy,
     };
 }
