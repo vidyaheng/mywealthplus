@@ -1,68 +1,49 @@
-// src/pages/lthc/LthcTablePage.tsx
+// src/pages/lthc/LthcTablePage.tsx (Refactored to use Zustand store)
+
 import { useState, useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import type { UseLthcPlannerReturn, AnnualLTHCOutputRow } from '../../hooks/useLthcTypes';
+// 1. ลบ import ที่ไม่ใช้ออกไป
+// import { useOutletContext } from 'react-router-dom';
+// import type { UseLthcPlannerReturn, AnnualLTHCOutputRow } from '../../hooks/useLthcTypes';
+import type { AnnualLTHCOutputRow } from '../../hooks/useLthcTypes';
+
+// 2. เพิ่ม import ของ useAppStore
+import { useAppStore } from '../../stores/appStore';
 import { PlusCircle, MinusCircle } from 'lucide-react';
-// (SVG Icons - คุณสามารถหา SVG icons ที่เหมาะสม หรือใช้ตัวอักษรไปก่อน)
-// const PlusCircleIcon = () => <svg className="w-4 h-4" ...>+</svg>;
-// const MinusCircleIcon = () => <svg className="w-4 h-4" ...>-</svg>;
 
 export default function LthcTablePage() {
-    const context = useOutletContext<UseLthcPlannerReturn>();
-    if (!context) {
-        return <div className="p-4 text-center text-gray-600">กำลังโหลด Context...</div>;
-    }
-
+    // 3. เปลี่ยนจากการใช้ useOutletContext มาเป็น useAppStore
     const {
         result, isLoading, error,
-        selectedHealthPlans, // สำหรับ getPlanDisplayName
-        policyOriginMode,    // สำหรับ getPlanDisplayName และ logic อื่นๆ
-        iWealthyMode,        // สำหรับหา withdrawal start age ถ้าเป็น auto
-        manualWithdrawalStartAge, // สำหรับ manual mode
-        autoIWealthyPPT,          // สำหรับคำนวณ withdrawal start age ใน auto mode
-        policyholderEntryAge      // สำหรับคำนวณ withdrawal start age ใน auto mode
-    } = context;
+        selectedHealthPlans,
+        policyOriginMode,
+        iWealthyMode,
+        manualWithdrawalStartAge,
+        autoIWealthyPPT,
+        policyholderEntryAge
+    } = useAppStore();
 
     const [isHealthDetailsExpanded, setIsHealthDetailsExpanded] = useState<boolean>(false);
-    // ⭐ State ใหม่สำหรับตารางที่ 2 ⭐
     const [isIWealthyPremiumExpanded, setIsIWealthyPremiumExpanded] = useState<boolean>(false);
     const [isIWealthyValueDetailsExpanded, setIsIWealthyValueDetailsExpanded] = useState<boolean>(false);
 
-    // ฟังก์ชันสร้างชื่อแผนสำหรับหัวตาราง
     const getPlanDisplayName = () => {
         let lrDisplay = `LR ${selectedHealthPlans.lifeReadySA.toLocaleString()}/${selectedHealthPlans.lifeReadyPPT === 99 ? '99' : selectedHealthPlans.lifeReadyPPT + 'ปี'}`;
         if (policyOriginMode === 'existingPolicy') {
             lrDisplay += " (แผนเดิม)";
         }
-
-        const ihuDisplay = selectedHealthPlans.iHealthyUltraPlan && selectedHealthPlans.iHealthyUltraPlan !== null
-            ? `${selectedHealthPlans.iHealthyUltraPlan}` // แสดงเฉพาะชื่อแผน IHU
-            : "";
-
-        const mebDisplay = selectedHealthPlans.mebPlan && selectedHealthPlans.mebPlan !== null && selectedHealthPlans.mebPlan !== null
-            ? `MEB ${selectedHealthPlans.mebPlan.toLocaleString()}`
-            : "";
-
-        const parts = [lrDisplay, ihuDisplay, mebDisplay].filter(Boolean); // กรองค่าว่างออก
-        return parts.join(' + ');
+        const ihuDisplay = selectedHealthPlans.iHealthyUltraPlan ? `${selectedHealthPlans.iHealthyUltraPlan}` : "";
+        const mebDisplay = selectedHealthPlans.mebPlan ? `MEB ${selectedHealthPlans.mebPlan.toLocaleString()}` : "";
+        return [lrDisplay, ihuDisplay, mebDisplay].filter(Boolean).join(' + ');
     };
 
-    // คำนวณอายุที่เริ่มถอนเงินจาก iWealthy
     const withdrawalStartAge = useMemo(() => {
-    if (iWealthyMode === 'manual') {
-        return manualWithdrawalStartAge;
-    }
+        if (iWealthyMode === 'manual') {
+            return manualWithdrawalStartAge;
+        }
+        const iWealthyEndAge = policyholderEntryAge + autoIWealthyPPT;
+        return Math.max(61, iWealthyEndAge);
+    }, [iWealthyMode, manualWithdrawalStartAge, policyholderEntryAge, autoIWealthyPPT]);
 
-    // โหมด Auto: คำนวณอายุที่จะจ่ายเบี้ย iWealthy ครบ
-    const iWealthyEndAge = policyholderEntryAge + autoIWealthyPPT;
-
-    // 🔥 เลือกค่าที่มากกว่าระหว่าง 61 กับ ปีที่จ่ายเบี้ยครบ
-    // โดยอายุที่เริ่มถอนคือปีถัดไป ดังนั้นเราจะใช้ endAge โดยตรง
-    return Math.max(61, iWealthyEndAge);
-
-}, [iWealthyMode, manualWithdrawalStartAge, policyholderEntryAge, autoIWealthyPPT]);
-
-    // ⭐⭐⭐ คำนวณค่าสำหรับส่วนสรุป ⭐⭐⭐
     const summaryValues = useMemo(() => {
         if (!result || result.length === 0) {
             return {
@@ -73,24 +54,19 @@ export default function LthcTablePage() {
                 lthcTotalWithdrawalFromIWealthy: 0,
             };
         }
-
         let totalHealthPremiumIfPaidAlone = 0;
         let lthcHealthPremiumPaidByUser = 0;
         let lthcTotalIWealthyPremiumPaid = 0;
         let lthcTotalWithdrawalFromIWealthy = 0;
-
         result.forEach(row => {
             totalHealthPremiumIfPaidAlone += (row.totalHealthPremium || 0);
-
             if (row.age < withdrawalStartAge) {
                 lthcHealthPremiumPaidByUser += (row.totalHealthPremium || 0);
             }
             lthcTotalIWealthyPremiumPaid += (row.iWealthyTotalPremium || 0);
             lthcTotalWithdrawalFromIWealthy += (row.iWealthyWithdrawal || 0);
         });
-
         const lthcTotalCombinedPremiumPaid = lthcHealthPremiumPaidByUser + lthcTotalIWealthyPremiumPaid;
-
         return {
             totalHealthPremiumIfPaidAlone,
             lthcHealthPremiumPaidByUser,
@@ -99,82 +75,44 @@ export default function LthcTablePage() {
             lthcTotalWithdrawalFromIWealthy,
         };
     }, [result, withdrawalStartAge]);
-    // ⭐⭐⭐ จบส่วนคำนวณค่าสรุป ⭐⭐⭐
 
     if (isLoading) return <div className="p-4 text-center">กำลังโหลดข้อมูลตาราง...</div>;
     if (error) return <div className="p-4 text-red-600">เกิดข้อผิดพลาด: {error}</div>;
     if (!result || result.length === 0) return <div className="p-4 text-center text-gray-500">ไม่มีข้อมูลผลประโยชน์สำหรับแสดงผล กรุณากลับไปหน้ากรอกข้อมูลแล้วกดคำนวณ</div>;
 
-    // 1. ดึงชื่อแผน iHealthy Ultra (ถ้ายังไม่มีใน scope)
     const iHealthyPlanName = selectedHealthPlans?.iHealthyUltraPlan;
-
-    // 2. คำนวณ colSpans สำหรับแถวบนสุด
     const healthPlanHeaderColSpan = isHealthDetailsExpanded ? 5 : 2;
-
-    let lthcHeaderColSpan = 1; // เบี้ยสุขภาพ (iWealthy text)
-    lthcHeaderColSpan += isIWealthyPremiumExpanded ? 3 : 1; // กลุ่ม เบี้ย iW
-    lthcHeaderColSpan += 1; // เงินถอน
-    lthcHeaderColSpan += isIWealthyValueDetailsExpanded ? 6 : 1; // กลุ่ม มูลค่า กธ
-    lthcHeaderColSpan += 1; // คุ้มครองชีวิตรวม
-
-    // สร้าง Suffix สำหรับชื่อแผน
+    let lthcHeaderColSpan = 1;
+    lthcHeaderColSpan += isIWealthyPremiumExpanded ? 3 : 1;
+    lthcHeaderColSpan += 1;
+    lthcHeaderColSpan += isIWealthyValueDetailsExpanded ? 6 : 1;
+    lthcHeaderColSpan += 1;
     const planNameSuffix = iHealthyPlanName ? ` (${iHealthyPlanName})` : "";
 
     return (
         <div className="space-y-8">
-            {/* ⭐⭐⭐ ตารางเดียวใหญ่ ⭐⭐⭐ */}
             <div>
-                <h2 className="text-xl font-semibold mb-1 text-sky-700">
-                    ตารางผลประโยชน์แผนสุขภาพครบวงจร (LTHC Planner)
-                </h2>
-                <p className="text-sm text-gray-600 mb-3">
-                    แผนสุขภาพพที่เลือก: {getPlanDisplayName()}
-                </p>
+                <h2 className="text-xl font-semibold mb-1 text-sky-700">ตารางผลประโยชน์แผนสุขภาพครบวงจร (LTHC Planner)</h2>
+                <p className="text-sm text-gray-600 mb-3">แผนสุขภาพที่เลือก: {getPlanDisplayName()}</p>
                 <div className="overflow-x-auto shadow-md sm:rounded-lg border border-gray-200" style={{ maxHeight: '70vh' }}>
                     <table className="min-w-full divide-y divide-gray-200 text-xs">
                         <thead className="bg-gray-100 sticky top-0 z-10">
-                            {/* แถวที่ 1: หัวข้อแบบ Spanning ตามที่ขอ */}
                             <tr>
-                                {/* ช่องว่างสำหรับ "ปีที่" */}
                                 <th scope="col" className="px-2 py-3 bg-gray-50"></th>
-                                {/* ช่องว่างสำหรับ "อายุ" */}
                                 <th scope="col" className="px-2 py-3 bg-gray-50"></th>
-
-                                {/* SPACER COLUMN ในแถวที่ 1 (ไม่มีสีพื้นหลัง) */}
-                                <th scope="col" className="px-1 py-3"></th> {/* ลด padding แนวนอนเล็กน้อยเพื่อให้ดูเป็น spacer */}
-
-                                {/* หัวข้อ "แผน สุขภาพ (ชื่อแผนที่เลือก)" */}
-                                <th
-                                    scope="col"
-                                    colSpan={healthPlanHeaderColSpan}
-                                    className="px-2 py-3 text-center text-sm font-semibold text-sky-700 uppercase tracking-wider bg-sky-50" // ปรับสีตามต้องการ
-                                >
+                                <th scope="col" className="px-1 py-3"></th>
+                                <th scope="col" colSpan={healthPlanHeaderColSpan} className="px-2 py-3 text-center text-sm font-semibold text-sky-700 uppercase tracking-wider bg-sky-50">
                                     แผน สุขภาพ{planNameSuffix}
                                 </th>
-
-                                {/* SPACER COLUMN ในแถวที่ 1 (ไม่มีสีพื้นหลัง) */}
-                                <th scope="col" className="px-1 py-3"></th> {/* ลด padding แนวนอนเล็กน้อยเพื่อให้ดูเป็น spacer */}
-
-                                {/* หัวข้อ "แผนสุขภาพ LTHC" */}
-                                <th
-                                    scope="col"
-                                    colSpan={lthcHeaderColSpan}
-                                    className="px-2 py-3 text-center text-sm font-semibold text-purple-700 uppercase tracking-wider bg-purple-50" // ปรับสีตามต้องการ
-                                >
+                                <th scope="col" className="px-1 py-3"></th>
+                                <th scope="col" colSpan={lthcHeaderColSpan} className="px-2 py-3 text-center text-sm font-semibold text-purple-700 uppercase tracking-wider bg-purple-50">
                                     แผนสุขภาพ LTHC
                                 </th>
                             </tr>
-
-                            {/* แถวที่ 2: หัวคอลัมน์เดิม */}
                             <tr>
-                                {/* Common Columns */}
                                 <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-gray-50">ปีที่</th>
                                 <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">อายุ</th>
-                                
-                                {/* SPACER COLUMN ในแถวที่ 2 (ไม่มีสีพื้นหลัง) */}
-                                <th scope="col" className="px-1 py-3 bg-gray-100"></th> {/* ลด padding แนวนอนเล็กน้อย */}
-
-                                {/* Health Premium Details (Expandable) */}
+                                <th scope="col" className="px-1 py-3 bg-gray-100"></th>
                                 {isHealthDetailsExpanded && (
                                     <>
                                         <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-sky-50">เบี้ย LR</th>
@@ -183,7 +121,6 @@ export default function LthcTablePage() {
                                     </>
                                 )}
                                 <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-red-600 uppercase tracking-wider whitespace-nowrap bg-sky-50">
-                                    {/*</th><th scope="col" className="relative px-1 py-3 text-center sticky right-[564px] md:right-[calc(3*100px+2*80px)] bg-gray-100 z-20"> {/* Adjust 'right' value based on actual width of subsequent fixed columns */}
                                     <div className="flex flex-col items-center">
                                         <span>เบี้ยสุขภาพ</span>
                                         <button onClick={() => setIsHealthDetailsExpanded(!isHealthDetailsExpanded)} className="p-0.5 rounded-full hover:bg-gray-300 focus:outline-none" title={isHealthDetailsExpanded ? "ยุบ" : "ขยาย"}>
@@ -191,19 +128,13 @@ export default function LthcTablePage() {
                                         </button>
                                     </div>
                                 </th>
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-purple-600 uppercase tracking-wider whitespace-nowrap bg-sky-50">คุ้มครองชีวิต</th>    
-
-                                {/* SPACER COLUMN ในแถวที่ 2 (ไม่มีสีพื้นหลัง) */}
-                                <th scope="col" className="px-1 py-3 bg-gray-100"></th> {/* ลด padding แนวนอนเล็กน้อย */}
-
-                                {/* iWealthy Section */}
+                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-purple-600 uppercase tracking-wider whitespace-nowrap bg-sky-50">คุ้มครองชีวิต</th>
+                                <th scope="col" className="px-1 py-3 bg-gray-100"></th>
                                 <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-red-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">เบี้ยสุขภาพ</th>
-
                                 {isIWealthyPremiumExpanded && (
                                     <>
                                         <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">RPP (iW)</th>
                                         <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">RTU (iW)</th>
-                                        {/* LSTU column can be added here if iWealthyTotalPremium doesn't include it */}
                                     </>
                                 )}
                                 <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-blue-600 uppercase tracking-wider whitespace-nowrap bg-purple-50">
@@ -214,11 +145,7 @@ export default function LthcTablePage() {
                                         </button>
                                     </div>
                                 </th>
-                                
-
-
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-orange-600 uppercase tracking-wider whitespace-nowrap bg-purple-50 sticky right-[156px] md:right-[80px] z-20">เงินถอน</th>
-
+                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-orange-600 uppercase tracking-wider whitespace-nowrap bg-purple-50">เงินถอน</th>
                                 {isIWealthyValueDetailsExpanded && (
                                     <>
                                         <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">ค่าธรรมเนียม</th>
@@ -228,7 +155,7 @@ export default function LthcTablePage() {
                                         <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">Bonus</th>
                                     </>
                                 )}
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-green-600 uppercase tracking-wider whitespace-nowrap bg-purple-50 sticky right-[80px] md:right-0 z-20">
+                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-green-600 uppercase tracking-wider whitespace-nowrap bg-purple-50">
                                     <div className="flex flex-col items-center">
                                         <span>มูลค่า กธ</span>
                                         <button onClick={() => setIsIWealthyValueDetailsExpanded(!isIWealthyValueDetailsExpanded)} className="p-0.5 rounded-full hover:bg-gray-300 focus:outline-none" title={isIWealthyValueDetailsExpanded ? "ยุบ" : "ขยาย"}>
@@ -246,10 +173,7 @@ export default function LthcTablePage() {
                                     <tr key={`lthc-${row.policyYear}`} className="hover:bg-slate-50">
                                         <td className="px-2 py-2 whitespace-nowrap text-center">{row.policyYear}</td>
                                         <td className="px-2 py-2 whitespace-nowrap text-center">{row.age}</td>
-                                        
-                                        {/* SPACER CELL in tbody */}
-                                        <td className="px-1 py-2 bg-gray-100"></td> {/* ใช้ padding แนวนอนเท่ากับ spacer ใน header */}
-
+                                        <td className="px-1 py-2 bg-gray-100"></td>
                                         {isHealthDetailsExpanded && (
                                             <>
                                                 <td className="px-2 py-2 whitespace-nowrap text-center">{Math.round(row.lifeReadyPremium).toLocaleString()}</td>
@@ -259,25 +183,16 @@ export default function LthcTablePage() {
                                         )}
                                         <td className="px-2 py-2 whitespace-nowrap text-center font-semibold text-red-500">{Math.round(row.totalHealthPremium).toLocaleString()}</td>
                                         <td className="px-2 py-2 whitespace-nowrap text-center font-semibold text-purple-500">{Math.round(row.lifeReadyDeathBenefit).toLocaleString()}</td>
-                                        
-                                        {/* SPACER CELL in tbody */}
-                                        <td className="px-1 py-2 bg-gray-100"></td> {/* ใช้ padding แนวนอนเท่ากับ spacer ใน header */}
-
+                                        <td className="px-1 py-2 bg-gray-100"></td>
                                         <td className="px-2 py-2 whitespace-nowrap text-center font-semibold text-red-500">{Math.round(healthPremiumPaidByUser).toLocaleString()}</td>
-
                                         {isIWealthyPremiumExpanded && (
                                             <>
                                                 <td className="px-2 py-2 whitespace-nowrap text-center">{row.iWealthyRpp !== undefined ? Math.round(row.iWealthyRpp).toLocaleString() : '-'}</td>
                                                 <td className="px-2 py-2 whitespace-nowrap text-center">{row.iWealthyRtu !== undefined ? Math.round(row.iWealthyRtu).toLocaleString() : '-'}</td>
-                                                {/* LSTU data cell */}
                                             </>
                                         )}
                                         <td className="px-2 py-2 whitespace-nowrap text-center font-medium text-blue-500">{row.iWealthyTotalPremium !== undefined ? Math.round(row.iWealthyTotalPremium).toLocaleString() : '-'}</td>
-                                        
-
-
                                         <td className="px-2 py-2 whitespace-nowrap text-center text-orange-500">{row.iWealthyWithdrawal !== undefined ? Math.round(row.iWealthyWithdrawal).toLocaleString() : '-'}</td>
-
                                         {isIWealthyValueDetailsExpanded && (
                                             <>
                                                 <td className="px-2 py-2 whitespace-nowrap text-center">{row.iWealthyPremChargeTotal !== undefined ? Math.round(row.iWealthyPremChargeTotal).toLocaleString() : '-'}</td>
@@ -296,9 +211,7 @@ export default function LthcTablePage() {
                     </table>
                 </div>
             </div>
-
-            {/* ⭐⭐⭐ ส่วนสรุปท้ายตาราง ⭐⭐⭐ */}
-            {result && result.length > 0 && ( // แสดงส่วนสรุปเมื่อมีผลลัพธ์
+            {result && result.length > 0 && (
                 <section className="mt-8 p-6 border-t-2 border-sky-600 bg-slate-50 rounded-lg shadow-lg">
                     <h2 className="text-xl font-semibold mb-4 text-slate-700">สรุปผลประโยชน์โดยรวม:</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
@@ -310,7 +223,6 @@ export default function LthcTablePage() {
                                 </span>
                             </p>
                         </div>
-
                         <div className="p-4 bg-white rounded shadow border border-gray-200 space-y-1">
                             <h3 className="font-semibold text-gray-600 mb-1">กรณีใช้แผน LTHC (iWealthy ช่วยจ่ายเบี้ยสุขภาพ):</h3>
                             <p>เบี้ยสุขภาพที่จ่ายเอง (ถึงปีก่อนเริ่มถอนจาก iWealthy):
@@ -337,8 +249,6 @@ export default function LthcTablePage() {
                     </div>
                 </section>
             )}
-            {/* ⭐⭐⭐ จบส่วนสรุปท้ายตาราง ⭐⭐⭐ */}
         </div>
     );
 }
-

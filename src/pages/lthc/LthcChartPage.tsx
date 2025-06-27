@@ -1,50 +1,21 @@
-// src/pages/lthc/LthcChartPage.tsx
-import { useState, useMemo, useCallback } from 'react'; // เพิ่ม useCallback ถ้า onAgeChange ต้อง memoized
-import { useOutletContext, useNavigate } from 'react-router-dom';
-import type {
-    UseLthcPlannerReturn,
-    //AnnualLTHCOutputRow,
-    // Import Types ที่จำเป็นสำหรับ InfoBoxAndControlsLTHC (เช่น Gender, HealthPlanSelections) ถ้าต้องการแสดงข้อมูลเหล่านั้น
-} from '../../hooks/useLthcTypes';
+// src/pages/lthc/LthcChartPage.tsx (Refactored to use Zustand store)
 
-// Import Recharts components
-{/*import {
-    ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Label
-} from 'recharts'*/}
+import { useState, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+// 1. ลบ import ที่ไม่ใช้ออกไป
+// import { useOutletContext } from 'react-router-dom';
+// import type { UseLthcPlannerReturn } from '../../hooks/useLthcTypes';
 
-// Import Custom Components (คุณจะต้องสร้างหรือปรับปรุง Components เหล่านี้)
-import GraphComponentLTHC, { type LthcChartDataType } from '../../components/GraphComponentLTHC'; // สร้างใหม่สำหรับ LTHC
-import InfoBoxAndControlsLTHC from '../../components/InfoBoxAndControlsLTHC'; // สร้างใหม่สำหรับ LTHC
-// ❌ ไม่ต้อง import FullScreenDisplayModal, ModalTableViewLTHC, ModalChartViewLTHC ❌
+// 2. เพิ่ม import ของ useAppStore
+import { useAppStore } from '../../stores/appStore';
 
+// Import Custom Components
+import GraphComponentLTHC, { type LthcChartDataType } from '../../components/GraphComponentLTHC';
+import InfoBoxAndControlsLTHC from '../../components/InfoBoxAndControlsLTHC';
 import { Button } from "@/components/ui/button";
-// import { ZoomIn } from 'lucide-react'; // ❌ ไม่ต้องใช้ ZoomIn ถ้าไม่มี Fullscreen ❌
-
-// Custom Tooltip (ถ้าต้องการ)
-{/*const CustomLthcTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-        return (
-            <div className="p-2 bg-white border rounded shadow-lg text-xs">
-                <p className="label font-semibold">{`อายุ: ${label}`}</p>
-                {payload.map((entry: any, index: number) => (
-                    <p key={`item-${index}`} style={{ color: entry.stroke || entry.color }}>
-                        {`${entry.name}: ${entry.value?.toLocaleString() ?? '-'}`}
-                    </p>
-                ))}
-            </div>
-        );
-    }
-    return null;*/}
-
 
 export default function LthcChartPage() {
-    const context = useOutletContext<UseLthcPlannerReturn>();
-    const navigate = useNavigate();
-
-    if (!context) {
-        return <div className="p-4 text-center text-gray-600">กำลังโหลด Context...</div>;
-    }
-
+    // 3. เปลี่ยนจากการใช้ useOutletContext มาเป็น useAppStore
     const {
         result,
         isLoading,
@@ -53,7 +24,12 @@ export default function LthcChartPage() {
         manualWithdrawalStartAge,
         policyholderEntryAge,
         autoIWealthyPPT,
-    } = context;
+    } = useAppStore();
+
+    const navigate = useNavigate();
+
+    // ไม่จำเป็นต้องมี if (!context) แล้ว เพราะ useAppStore จะมีข้อมูลเสมอ
+    // if (!context) { ... }
 
     // States for LTHC Graph interactions and controls
     const [hoveredLthcData, setHoveredLthcData] = useState<LthcChartDataType | null>(null);
@@ -64,12 +40,7 @@ export default function LthcChartPage() {
     const [showIWealthyAV, setShowIWealthyAV] = useState(false);
     const [currentAgeForInfoBox, setCurrentAgeInfoBox] = useState<number | undefined>(policyholderEntryAge);
 
-    // ❌ ลบ State isFullScreenModalOpen และ functions ที่เกี่ยวข้องออก ❌
-    // const [isFullScreenModalOpen, setIsFullScreenModalOpen] = useState(false);
-    // const openFullScreenModal = () => setIsFullScreenModalOpen(true);
-    // const closeFullScreenModal = () => { /* ... */ };
-
-    const withdrawalStartAge = useMemo(() => { /* ... (เหมือนเดิม) ... */
+    const withdrawalStartAge = useMemo(() => {
         if (iWealthyMode === 'manual') return manualWithdrawalStartAge;
         let startAge = 61;
         const iWealthyPTTEndAge = policyholderEntryAge + autoIWealthyPPT - 1;
@@ -117,10 +88,10 @@ export default function LthcChartPage() {
     }, [chartDataFormatted, initialDataForInfoBox, policyholderEntryAge]);
 
     const formatNumberForInfoBox = (num: number | undefined | null): string => {
-        if (num === undefined || num === null || isNaN(num)) { // เพิ่มการตรวจสอบ isNaN
-            return '0 บาท'; // หรือ '-' หรือ 'N/A บาท' ตามต้องการ
+        if (num === undefined || num === null || isNaN(num)) {
+            return '0 บาท';
         }
-        return `${Math.round(num).toLocaleString()} บาท`; // <--- ⭐ เพิ่ม " บาท" ตรงนี้ ⭐
+        return `${Math.round(num).toLocaleString()} บาท`;
     };
 
     if (isLoading) return <div className="p-4 text-center">กำลังโหลดข้อมูล...</div>;
@@ -134,10 +105,6 @@ export default function LthcChartPage() {
         );
     }
 
-    // ❌ ลบ Content Node สำหรับ Modal ออก ❌
-    // const tableTabContentNodeLTHC = ( ... );
-    // const graphTabContentNodeLTHC = ( ... );
-
     return (
         <div className="p-4 md:p-6 space-y-4 min-h-screen">
             <div className="flex justify-between items-center mb-4">
@@ -148,10 +115,6 @@ export default function LthcChartPage() {
                     <Button variant="outline" size="sm" onClick={() => navigate('/lthc/table')}>
                         ไปที่ตาราง
                     </Button>
-                    {/* ❌ ลบปุ่ม Fullscreen ออก ❌ */}
-                    {/* <Button variant="outline" size="icon" className="h-8 w-8" title="แสดงผลเต็มหน้าจอ" onClick={openFullScreenModal}>
-                        <ZoomIn size={16} />
-                    </Button> */}
                 </div>
             </div>
 
@@ -162,8 +125,7 @@ export default function LthcChartPage() {
                 </p>
             </div>
 
-            {/* On-page graph display */}
-            <div className="flex flex-col md:flex-row w-full h-[calc(100vh-280px)]"> {/* ปรับความสูงตามต้องการ */}
+            <div className="flex flex-col md:flex-row w-full h-[calc(100vh-280px)]">
                 <div className="flex-grow md:w-3/4 border border-gray-300 rounded-md shadow-md p-1 overflow-hidden relative">
                     <div className="absolute inset-0">
                         <GraphComponentLTHC
@@ -195,14 +157,10 @@ export default function LthcChartPage() {
                             setShowCumulativeWithdrawal={setShowCumulativeWithdrawal}
                             showIWealthyAV={showIWealthyAV}
                             setShowIWealthyAV={setShowIWealthyAV}
-                            //isFullScreenView={false} // ระบุว่าเป็น on-page view
                         />
                     </div>
                 </div>
             </div>
-
-            {/* ❌ ลบ FullScreenDisplayModal ออก ❌ */}
-            {/* {isFullScreenModalOpen && result && ( ... )} */}
         </div>
     );
 };

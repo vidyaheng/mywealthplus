@@ -38,6 +38,7 @@ interface TopButtonsProps {
     onOpenPauseModal: () => void;
     onOpenAddInvestmentModal: () => void;
     activeActions: Record<string, boolean>; 
+    needsReviewActions?: Record<string, boolean>; // <<< Prop ใหม่ (optional)
 }
 
 export default function TopButtons({
@@ -46,7 +47,8 @@ export default function TopButtons({
     onOpenWithdrawalModal,
     onOpenPauseModal,
     onOpenAddInvestmentModal,
-    activeActions 
+    activeActions, 
+    needsReviewActions // <<< รับ Prop ใหม่เข้ามาใช้งาน
 }: TopButtonsProps) {
 
     const handleActionClick = (actionId: string) => {
@@ -61,6 +63,8 @@ export default function TopButtons({
         <div className="flex justify-start items-center gap-2 md:gap-4">
             {topActions.map((action) => {
                 const isActive = !!activeActions[action.id]; 
+                // --- จุดที่แก้ไข 2: เช็คสถานะ "ต้องตรวจสอบ" จาก Prop ใหม่ ---
+                const needsReview = !!needsReviewActions?.[action.id];
 
                 return (
                     <button
@@ -71,7 +75,10 @@ export default function TopButtons({
                         <span
                             className={clsx(
                                 'text-[10px] sm:text-xs leading-tight text-center transition-colors',
-                                isActive ? 'text-purple-800' : 'text-gray-600 group-hover:text-black'
+                                // --- จุดที่แก้ไข 3: เพิ่ม Logic การเปลี่ยนสี Label ---
+                                isActive && needsReview ? 'text-orange-600 font-bold' // <<< สีส้มเมื่อต้องตรวจสอบ
+                                : isActive ? 'text-purple-800' // <<< สีม่วงเมื่อ Active ปกติ
+                                : 'text-gray-600 group-hover:text-black'
                             )}
                         >
                             {action.label}
@@ -81,24 +88,22 @@ export default function TopButtons({
                             className={clsx(
                                 'flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-all duration-200',
                                 'group-focus:ring-2 group-focus:ring-offset-2',
-                                isActive 
-                                    ? 'bg-purple-800 border-2 border-white shadow-lg group-hover:bg-purple-700 group-focus:ring-purple-500'
-                                    : 'bg-white border border-gray-200 shadow-sm group-hover:bg-blue-50 group-hover:border-blue-300 group-focus:ring-blue-400'
+                                // --- จุดที่แก้ไข 4: เพิ่ม Logic การเปลี่ยนสีพื้นหลังไอคอน ---
+                                isActive && needsReview 
+                                    ? 'bg-orange-500 border-2 border-white shadow-lg group-hover:bg-orange-600 group-focus:ring-orange-500' // <<< สีส้ม
+                                    : isActive 
+                                    ? 'bg-purple-800 border-2 border-white shadow-lg group-hover:bg-purple-700 group-focus:ring-purple-500' // <<< สีม่วง
+                                    : 'bg-white border border-gray-200 shadow-sm group-hover:bg-blue-50 group-hover:border-blue-300 group-focus:ring-blue-400' // <<< สีขาว
                             )}
                         >
-                            {/* 🔥 ส่วน Render ไอคอนที่แก้ไขใหม่ทั้งหมด */}
                             {React.createElement(action.icon, {
                                 className: clsx(
-                                    // 1. กำหนดขนาดที่นี่ที่เดียว
                                     'w-6 h-6 sm:w-7 sm:h-7', 
-                                    // 2. กำหนดสีที่นี่ที่เดียว
                                     'transition-colors',
                                     isActive ? 'text-white' : 'text-purple-600'
                                 )
                             })}
                         </div>
-
-                        
                     </button>
                 );
             })}

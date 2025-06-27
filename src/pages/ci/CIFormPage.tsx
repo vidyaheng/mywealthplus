@@ -302,8 +302,12 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                         <CardContent className="space-y-4">
                             <Tabs value={iWealthyMode} onValueChange={(value) => setIWealthyMode(value as IWealthyMode)} className="w-full">
                                 <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="automatic">โหมด Auto</TabsTrigger>
-                                    <TabsTrigger value="manual">โหมด Manual</TabsTrigger>
+                                    <TabsTrigger value="automatic"
+                                    className="transition-colors duration-200 hover:bg-blue-200/60 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:hover:bg-blue-700"
+                                    >Auto</TabsTrigger>
+                                    <TabsTrigger value="manual"
+                                    className="transition-colors duration-200 hover:bg-green-200/60 data-[state=active]:bg-green-600 data-[state=active]:text-white data-[state=active]:hover:bg-blue-700"
+                                    >Manual</TabsTrigger>
                                 </TabsList>
                             </Tabs>
 

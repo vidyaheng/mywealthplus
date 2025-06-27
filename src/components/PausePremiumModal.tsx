@@ -1,79 +1,49 @@
-// src/components/PausePremiumModal.tsx (ฉบับเต็ม แก้ไขการเรียก State Setter)
+// src/components/modals/PausePremiumModal.tsx
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+
+// +++ STEP 1: เปลี่ยนมา Import Store แทนการรับ Props +++
+import { useAppStore } from '@/stores/appStore';
+import type { PausePeriodRecord } from '@/lib/calculations';
+
+// --- UI Component Imports (เหมือนเดิม) ---
 import { Button } from "@/components/ui/button";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose
-} from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+//import { Label } from "@/components/ui/label";
 import { AlertCircle, Plus, Trash2 } from 'lucide-react';
-// Import Type จาก App.tsx (ตรวจสอบ Path และการ Export)
-import type { PausePeriodRecord } from '../lib/calculations';
-import { v4 as uuidv4 } from 'uuid'; // Import uuid
 
-// --- Props Interface ---
-interface PausePremiumModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (plan: PausePeriodRecord[]) => void;
-  initialPlan: PausePeriodRecord[];
-  currentAge: number;
-  maxPossibleAge?: number;
-  minPauseAge?: number; // อายุต่ำสุดที่อนุญาตให้หยุดพัก
-}
-
-// --- Component หลัก ---
-export default function PausePremiumModal({
-  isOpen,
-  onClose,
-  onSave,
-  initialPlan = [],
-  currentAge,
-  maxPossibleAge = 98,
+export default function PausePremiumModal() {
+  // +++ STEP 2: ดึง State และ Actions ทั้งหมดมาจาก useAppStore (ถูกต้องแล้ว) +++
+  const {
+    isPauseModalOpen,
+    closePauseModal,
+    iWealthyPausePeriods,
+    iWealthyAge,
+    setIWealthyPausePeriods,
+  } = useAppStore();
   
-}: PausePremiumModalProps) {
+  const maxPossibleAge = 98;
 
-  // --- State ภายใน Modal ---
+  // --- State ภายใน Modal (Local State) (ถูกต้องแล้ว) ---
   const [refType, setRefType] = useState<'age' | 'year'>('age');
-  const [startValue, setStartValue] = useState<number>(Math.max(currentAge + 1)); // ค่าเริ่มต้นสำหรับช่อง "เริ่มที่"
-  const [endValue, setEndValue] = useState<number>(maxPossibleAge);   // ค่าเริ่มต้นสำหรับช่อง "ถึง"
-  const [plannedPauses, setPlannedPauses] = useState<PausePeriodRecord[]>([]); // State เก็บรายการที่เพิ่มชั่วคราว
-  const [canAddNewPeriod, setCanAddNewPeriod] = useState(true); // Flag ว่ายังเพิ่มช่วงใหม่ได้ไหม
-  // --- ---
-
-  // --- คำนวณอายุเริ่มต้นที่เป็นไปได้ครั้งถัดไป (พิจารณาจาก plannedPauses ล่าสุด) ---
-  const firstPossibleStartAge = useMemo(() => {
-    const lastEndAge = plannedPauses.length > 0 
-      ? Math.max(...plannedPauses.map(p => p.endAge)) 
-      : currentAge;
-    
-    // คำนวณอายุเริ่มต้นที่เป็นไปได้ โดยไม่ให้เกิน maxPossibleAge
-    const calculatedStartAge = Math.max(lastEndAge + 1, currentAge + 1, 1);
-    return Math.min(calculatedStartAge, maxPossibleAge);
-  }, [plannedPauses, currentAge, maxPossibleAge]);
-  // --- ---
-
-
-  // --- Effect: ตั้งค่าเริ่มต้นเมื่อ Modal เปิด หรือ initialPlan เปลี่ยน ---
+  const [startValue, setStartValue] = useState<number>(iWealthyAge + 1);
+  const [endValue, setEndValue] = useState<number>(maxPossibleAge);
+  const [plannedPauses, setPlannedPauses] = useState<PausePeriodRecord[]>([]);
+  const [canAddNewPeriod, setCanAddNewPeriod] = useState(true);
+  
+  // +++ STEP 3: ปรับแก้ useEffect ให้ Sync ข้อมูลจาก Store (ถูกต้องแล้ว) +++
   useEffect(() => {
-    if (isOpen) {
-      const sortedInitialPlan = [...initialPlan].sort((a, b) => a.startAge - b.startAge);
-      setPlannedPauses(sortedInitialPlan);
-  
-      const lastEndAge = sortedInitialPlan.length > 0 
-        ? Math.max(...sortedInitialPlan.map(p => p.endAge)) 
-        : currentAge;
+    if (isPauseModalOpen) {
+      const sortedPlan = [...iWealthyPausePeriods].sort((a, b) => a.startAge - b.startAge);
+      setPlannedPauses(sortedPlan);
+
+      const lastEndAge = sortedPlan.length > 0 ? Math.max(...sortedPlan.map(p => p.endAge)) : iWealthyAge;
+      const defaultStartAge = Math.min(Math.max(lastEndAge + 1, iWealthyAge + 1), maxPossibleAge);
       
-      const defaultStartAge = Math.min(
-        Math.max(lastEndAge + 1, currentAge + 1, 1),
-        maxPossibleAge
-      );
-  
       setRefType('age');
-      if (defaultStartAge > maxPossibleAge) { // เปลี่ยนจาก >= เป็น >
+      if (defaultStartAge >= maxPossibleAge) {
         setCanAddNewPeriod(false);
         setStartValue(maxPossibleAge);
         setEndValue(maxPossibleAge);
@@ -83,320 +53,198 @@ export default function PausePremiumModal({
         setEndValue(maxPossibleAge);
       }
     }
-  }, [isOpen, initialPlan, currentAge, maxPossibleAge]);// ไม่ต้องใส่ Setter ใน Dependencies
-  // --- ---
+  }, [isPauseModalOpen, iWealthyPausePeriods, iWealthyAge]);
 
-
-  // --- คำนวณ Options สำหรับ Dropdown ---
-  // Options เริ่มต้น (ใช้ firstPossibleStartAge ที่คำนวณไว้)
+  const firstPossibleStartAge = useMemo(() => {
+    const lastEndAge = plannedPauses.length > 0 ? Math.max(...plannedPauses.map(p => p.endAge)) : iWealthyAge;
+    return Math.min(Math.max(lastEndAge + 1, iWealthyAge + 1), maxPossibleAge);
+  }, [plannedPauses, iWealthyAge, maxPossibleAge]);
+  
   const startOptions = useMemo(() => {
-    if (!canAddNewPeriod) return [];
-    
-    const start = Math.min(firstPossibleStartAge, maxPossibleAge);
-    if (start >= maxPossibleAge) return []; // ใช้ >= แทน >
-    
+    if (!canAddNewPeriod || firstPossibleStartAge >= maxPossibleAge) return [];
     if (refType === 'age') {
-      return Array.from({ length: maxPossibleAge - start + 1 }, (_, i) => start + i);
-    } else {
-      const maxPolicyYear = maxPossibleAge - currentAge;
-      const firstPossiblePolicyYear = Math.max(1, start - currentAge);
+      return Array.from({ length: maxPossibleAge - firstPossibleStartAge + 1 }, (_, i) => firstPossibleStartAge + i);
+    } else { // 'year'
+      const maxPolicyYear = maxPossibleAge - iWealthyAge + 1;
+      const firstPossiblePolicyYear = Math.max(1, firstPossibleStartAge - iWealthyAge + 1);
+      if (firstPossiblePolicyYear > maxPolicyYear) return [];
       return Array.from({ length: maxPolicyYear - firstPossiblePolicyYear + 1 }, (_, i) => firstPossiblePolicyYear + i);
     }
-  }, [firstPossibleStartAge, maxPossibleAge, currentAge, refType, canAddNewPeriod]);
+  }, [firstPossibleStartAge, maxPossibleAge, iWealthyAge, refType, canAddNewPeriod]);
 
-  // Options สิ้นสุด
   const endOptions = useMemo(() => {
-     if (!canAddNewPeriod) return [];
-    // ค่าเริ่มต้นที่เป็นไปได้สำหรับ End (คำนวณเป็น Age ก่อน)
-    const firstPossibleEndAge = refType === 'age' ? startValue : currentAge + startValue;
-    if (firstPossibleEndAge > maxPossibleAge) return [];
-
+    if (!canAddNewPeriod) return [];
+    const firstPossibleEnd = refType === 'age' ? startValue : iWealthyAge + startValue -1;
+    if (firstPossibleEnd >= maxPossibleAge) return [];
     if (refType === 'age') {
-      return Array.from({ length: maxPossibleAge - firstPossibleEndAge + 1 }, (_, i) => firstPossibleEndAge + i);
+      return Array.from({ length: maxPossibleAge - firstPossibleEnd + 1 }, (_, i) => firstPossibleEnd + i);
     } else { // 'year'
-      const maxPolicyYear = maxPossibleAge - currentAge+1;
-      const currentStartYear = refType === 'year' ? startValue : startValue - currentAge; // หาปีเริ่มต้นที่เลือก
-      const firstPossibleEndYear = Math.max(1, currentStartYear, firstPossibleEndAge - currentAge);
-      if (firstPossibleEndYear > maxPolicyYear) return [];
+      const maxPolicyYear = maxPossibleAge - iWealthyAge + 1;
+      const firstPossibleEndYear = Math.max(1, firstPossibleEnd - iWealthyAge + 2);
+       if (firstPossibleEndYear > maxPolicyYear) return [];
       return Array.from({ length: maxPolicyYear - firstPossibleEndYear + 1 }, (_, i) => firstPossibleEndYear + i);
     }
-  }, [startValue, maxPossibleAge, currentAge, refType, canAddNewPeriod]);
-  // --- ---
+  }, [startValue, maxPossibleAge, iWealthyAge, refType, canAddNewPeriod]);
 
-
-  // --- Handlers (แก้ไขให้ใช้ Setter ที่ถูกต้อง) ---
+  // +++ STEP 4: เติม Logic ใน Handlers ที่ย่อไว้ให้สมบูรณ์ +++
   const handleRefTypeChange = (value: string) => {
-  const newRefType = value as 'age' | 'year';
-  setRefType(newRefType);
-  
-  const defaultStartAge = firstPossibleStartAge;
-  const finalMaxAge = maxPossibleAge;
-  
-  if (newRefType === 'age') {
-    setStartValue(defaultStartAge);
-    setEndValue(finalMaxAge);
-  } else {
-    const startYear = Math.max(1, defaultStartAge - currentAge);
-    const endYear = Math.max(1, finalMaxAge - currentAge + 1);
-    setStartValue(startYear);
-    setEndValue(endYear); // ให้เป็นปีสุดท้ายที่เป็นไปได้
-  }
-};
+    const newRefType = value as 'age' | 'year';
+    setRefType(newRefType);
+    
+    // Reset start/end value to defaults based on the new type
+    const defaultStartAge = firstPossibleStartAge;
+    const finalMaxAge = maxPossibleAge;
+
+    if (newRefType === 'age') {
+        setStartValue(defaultStartAge);
+        setEndValue(finalMaxAge);
+    } else { // 'year'
+        const startYear = Math.max(1, defaultStartAge - iWealthyAge + 1);
+        const endYear = Math.max(1, finalMaxAge - iWealthyAge + 1);
+        setStartValue(startYear);
+        setEndValue(endYear);
+    }
+  };
 
   const handleStartValueChange = (value: string) => {
     const numValue = parseInt(value, 10);
-    if (isNaN(numValue)) return;
-    
     setStartValue(numValue);
-  
-    // แปลงค่าเป็นอายุจริง
-    const effectiveStartAge = refType === 'age' 
-      ? numValue 
-      : currentAge + numValue;
-  
-    // ไม่ต้องปรับ endValue อัตโนมัติ แต่ตรวจสอบว่าไม่น้อยกว่า startValue
-    const currentEndAge = refType === 'age' 
-      ? endValue 
-      : currentAge + endValue;
-  
-    if (currentEndAge < effectiveStartAge) {
-      const newEndValue = refType === 'age' 
-        ? effectiveStartAge 
-        : effectiveStartAge - currentAge;
-      setEndValue(newEndValue);
+
+    // If the current end value is now less than the new start value, reset the end value
+    if (endValue < numValue) {
+        setEndValue(numValue);
     }
   };
 
-  const handleEndValueChange = (value: string) => {
-    setEndValue(parseInt(value, 10)); // <<< ใช้ Setter โดยตรง
-  };
+  const handleEndValueChange = (value: string) => setEndValue(parseInt(value, 10));
 
-  // Handler ปุ่ม "+ เพิ่มช่วงเวลา"
   const handleAddPeriod = useCallback(() => {
-    // แปลงค่าให้เป็นอายุจริง
-    //const startAge = refType === 'age' 
-      //? startValue 
-      //: currentAge + startValue;
-    
-    //const endAge = refType === 'age' 
-    //  ? endValue 
-    //  : currentAge + endValue;
+    const startAge = refType === 'age' ? startValue : iWealthyAge + startValue - 1;
+    const endAge = refType === 'age' ? endValue : iWealthyAge + endValue - 1;
 
-        // ตรวจสอบความถูกต้อง
-    // ตรวจสอบความถูกต้อง
-    if (startValue >= endValue) {
-      // Logic การแสดงผลอาจจะต้องปรับปรุงเล็กน้อยตาม refType
-      const unit = refType === 'age' ? 'อายุ' : 'ปีที่';
-      alert(`${unit}เริ่มต้นต้องน้อยกว่า${unit}สิ้นสุด`);
+    if (startAge >= endAge) {
+      alert("อายุเริ่มต้นต้องน้อยกว่าอายุสิ้นสุด");
       return;
     }
-    
-    // สร้าง record ใหม่โดยใช้ค่าจาก State โดยตรง
-    const newPause: PausePeriodRecord = {
-      id: uuidv4(),
-      startAge: startValue,
-      endAge: endValue,
-      type: refType,
-    };
-  
-    console.log('Adding period:', { startValue, endValue });
-  
-
-  
-    if (startValue > maxPossibleAge || endValue > maxPossibleAge) {
-      alert(`สามารถหยุดพักได้สูงสุดถึงอายุ ${maxPossibleAge} ปี`);
-      return;
-    }
-  
-    // สร้าง record ใหม่
-    //const newPause: PausePeriodRecord = {
-    //  id: uuidv4(),
-    //  sraerValue,
-    //  endAge,
-   //   type: refType
-   // };
-  
-    // อัปเดตรายการ
+    const newPause: PausePeriodRecord = { id: uuidv4(), startAge, endAge, type: 'age' };
     setPlannedPauses(prev => [...prev, newPause].sort((a, b) => a.startAge - b.startAge));
-  
-    // --- ส่วน Reset Form อาจจะต้องปรับปรุงตาม Logic ใหม่ ---
-    // การหา nextStartValue จะง่ายขึ้น
-    const nextStartValue = endValue + 1;
-    const maxEndValue = refType === 'age' ? maxPossibleAge : maxPossibleAge - currentAge;
-
-    if (nextStartValue <= maxEndValue) {
-      setStartValue(nextStartValue);
-      setEndValue(maxEndValue);
-    } else {
+    
+    const nextStartAge = endAge + 1;
+    if (nextStartAge >= maxPossibleAge) {
       setCanAddNewPeriod(false);
+    } else {
+        if (refType === 'age') {
+            setStartValue(nextStartAge);
+            setEndValue(maxPossibleAge);
+        } else {
+            setStartValue(nextStartAge - iWealthyAge + 1);
+            setEndValue(maxPossibleAge - iWealthyAge + 1);
+        }
     }
+  }, [refType, startValue, endValue, iWealthyAge, maxPossibleAge]);
 
-  }, [refType, startValue, endValue, currentAge, maxPossibleAge, setPlannedPauses]);
-  
-  
-  // Handler ปุ่มลบรายการล่าสุด
   const handleDeleteLastPeriod = useCallback(() => {
-      if (plannedPauses.length > 0) {
-          if (window.confirm("คุณต้องการลบรายการหยุดพักล่าสุดใช่หรือไม่?")) {
-              const newList = plannedPauses.slice(0, -1);
-              setPlannedPauses(newList);
+    if (window.confirm("คุณต้องการลบรายการล่าสุดใช่หรือไม่?")) {
+        const newList = plannedPauses.slice(0, -1);
+        setPlannedPauses(newList);
+        
+        const lastEndAge = newList.length > 0 ? Math.max(...newList.map(p => p.endAge)) : iWealthyAge;
+        const nextStartAge = Math.max(lastEndAge + 1, iWealthyAge + 1);
 
-              // Reset ค่าใน Form โดยใช้ Setter โดยตรง
-              const lastEndAge = newList.length > 0 ? Math.max(...newList.map(p => p.endAge)) : currentAge;
-              const nextStartAge = Math.max(firstPossibleStartAge, lastEndAge + 1); // ใช้ firstPossibleStartAge
-              setStartValue(refType === 'age' ? nextStartAge : Math.max(1, nextStartAge-currentAge));
-              setEndValue(refType === 'age' ? maxPossibleAge : Math.max(1, maxPossibleAge-currentAge));
-              setCanAddNewPeriod(nextStartAge <= maxPossibleAge);
-          }
-      }
-  }, [plannedPauses, setPlannedPauses, currentAge, refType, maxPossibleAge, firstPossibleStartAge, setStartValue, setEndValue]); // อัปเดต Dependencies
+        if (refType === 'age') {
+            setStartValue(nextStartAge);
+            setEndValue(maxPossibleAge);
+        } else {
+            setStartValue(nextStartAge - iWealthyAge + 1);
+            setEndValue(maxPossibleAge - iWealthyAge + 1);
+        }
+        setCanAddNewPeriod(nextStartAge < maxPossibleAge);
+    }
+  }, [plannedPauses, iWealthyAge, refType]);
 
-   // Handler ปุ่ม "บันทึก"
   const handleSavePlan = () => {
-    onSave(plannedPauses); // ส่ง Array แผนทั้งหมดกลับ
+    setIWealthyPausePeriods(plannedPauses);
+    closePauseModal();
   };
-  // --- ---
+  
+  const handleClose = () => {
+    closePauseModal();
+  };
 
-  console.log('[PausePremiumModal Render] refType:', refType, 'startValue:', startValue, 'endValue:', endValue);
-  console.log('[PausePremiumModal Render] firstPossibleStartAge:', firstPossibleStartAge);
-  console.log('[PausePremiumModal Render] canAddNewPeriod:', canAddNewPeriod);
-  console.log('[PausePremiumModal Render] startOptions:', JSON.stringify(startOptions));
-  console.log('[PausePremiumModal Render] endOptions:', JSON.stringify(endOptions));
-
-
-
-  // --- ส่วน JSX ---
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isPauseModalOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle
-            className = "text-xl text-blue-700 ml-4">หยุดพักชำระเบี้ย</DialogTitle>
+          <DialogTitle className="text-xl text-blue-700 ml-4">หยุดพักชำระเบี้ย</DialogTitle>
         </DialogHeader>
-
-        {/* ส่วนกรอกข้อมูล */}
+        
         <div className="space-y-3 pt-4">
-           <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
-              <span className='text-sm text-gray-700 pb-1'>ตั้งแต่</span>
-              {/* ประเภทอ้างอิง */}
-              <div className="flex flex-col space-y-1">
-                <Label htmlFor="ref-type-pause" className="text-xs sr-only">อ้างอิง</Label>
+          <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
+            <span className='text-sm text-gray-700 pb-1'>ตั้งแต่</span>
+            <div className="flex flex-col space-y-1">
                 <Select onValueChange={handleRefTypeChange} value={refType} disabled={!canAddNewPeriod}>
-                  <SelectTrigger id="ref-type-pause" className="h-8 text-xs w-[100px]" disabled={!canAddNewPeriod}> <SelectValue /> </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="age" className="text-xs">ที่อายุ</SelectItem>
-                    <SelectItem value="year" className="text-xs">ปีที่</SelectItem> 
-                  </SelectContent>
+                    <SelectTrigger className="h-8 text-xs w-[100px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="age" className="text-xs">ที่อายุ</SelectItem>
+                        <SelectItem value="year" className="text-xs">ปีที่</SelectItem> 
+                    </SelectContent>
                 </Select>
-              </div>
-              {/* เริ่มต้น */}
-              <div className="flex flex-col space-y-1">
-                 <Label htmlFor="start-value-pause" className="text-xs sr-only">{refType === 'age' ? 'เริ่มที่อายุ' : 'เริ่มปีที่'}</Label>
-                 <Select onValueChange={handleStartValueChange} value={startValue.toString()} disabled={!canAddNewPeriod || startOptions.length === 0}>
-                    <SelectTrigger id="start-value-pause" className="h-8 text-xs w-[80px]" disabled={!canAddNewPeriod || startOptions.length === 0}> <SelectValue /> </SelectTrigger>
-                    <SelectContent>{startOptions.length > 0 ? startOptions.map(opt => ( <SelectItem key={opt} value={opt.toString()} className="text-xs">{opt} {refType === 'age' ? 'ปี' : ''}</SelectItem> ))  : ( <div className="px-2 py-1.5 text-center text-xs text-muted-foreground">ไม่มีช่วงให้เลือก</div>)} </SelectContent>
-                 </Select>
-              </div>
-              {/* ถึง */}
-              <span className='text-sm text-gray-700 pb-1'>ถึง</span>
-              <div className="flex flex-col space-y-1">
-                  <Label htmlFor="end-value-pause" className="text-xs sr-only">{refType === 'age' ? 'ถึงอายุ' : 'ถึงปีที่'}</Label>
-                  <Select onValueChange={handleEndValueChange} value={endValue.toString()} disabled={!canAddNewPeriod || endOptions.length === 0}>
-                      <SelectTrigger id="end-value-pause" className="h-8 text-xs w-[80px]" disabled={!canAddNewPeriod || endOptions.length === 0}> <SelectValue /> </SelectTrigger>
-                      <SelectContent>
-                        {endOptions.length > 0 
-                          ? endOptions.map(opt => (
-                            <SelectItem key={opt} value={opt.toString()} className="text-xs">
-                              {opt} {refType === 'age' ? 'ปี' : ''}
-                            </SelectItem>
-                            ))
-                            : <div className="px-2 py-1.5 text-center text-xs text-muted-foreground">
-                            ไม่มีช่วงให้เลือก
-                            </div>
-                        }
-                      </SelectContent>
-                  </Select>
-              </div>
-              <span className="text-sm text-gray-700 pb-1">ปี</span>
-              {/* ปุ่ม เพิ่มช่วงเวลา */}
-              <div className="ml-auto">
-                  <Button variant="outline" size="sm" onClick={handleAddPeriod} disabled={!canAddNewPeriod}>
-                    <span className="flex items-center"> {/* ใช้ flex จัด Icon กับ Text ข้างใน span */}
-                      <Plus size={16} className="mr-1"/>
-                      เพิ่มช่วงเวลา
-                    </span>
-                  </Button>
-              </div>
-           </div>
-           {/* Warning Messages (แก้ไขข้อความ) */}
-           <div className="space-y-1 pt-2">
-              <div className="flex items-center text-xs text-red-600">
-                 <AlertCircle size={14} className="mr-1 flex-shrink-0"/>
-                 {/* เอา Min Age ออก ถ้าไม่ต้องการ */}
-                 <span>สามารถหยุดพักชำระเบี้ยได้ถึงอายุ {maxPossibleAge} ปี</span>
-              </div>
-               <div className="flex items-center text-xs text-red-600">
-                  <AlertCircle size={14} className="mr-1 flex-shrink-0"/>
-                  <span>การหยุดพักชำระเบี้ยจะส่งผลให้ไม่ได้รับ Bonus ในปีนั้นๆ</span>
-               </div>
-           </div>
+            </div>
+            <div className="flex flex-col space-y-1">
+                <Select onValueChange={handleStartValueChange} value={startValue.toString()} disabled={!canAddNewPeriod || startOptions.length === 0}>
+                    <SelectTrigger className="h-8 text-xs w-[80px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>{startOptions.map(opt => <SelectItem key={opt} value={opt.toString()} className="text-xs">{opt}</SelectItem>)}</SelectContent>
+                </Select>
+            </div>
+            <span className='text-sm text-gray-700 pb-1'>ถึง</span>
+            <div className="flex flex-col space-y-1">
+                <Select onValueChange={handleEndValueChange} value={endValue.toString()} disabled={!canAddNewPeriod || endOptions.length === 0}>
+                    <SelectTrigger className="h-8 text-xs w-[80px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>{endOptions.map(opt => <SelectItem key={opt} value={opt.toString()} className="text-xs">{opt}</SelectItem>)}</SelectContent>
+                </Select>
+            </div>
+            <span className="text-sm text-gray-700 pb-1">ปี</span>
+            <div className="ml-auto">
+                <Button variant="outline" size="sm" onClick={handleAddPeriod} disabled={!canAddNewPeriod}>
+                    <Plus size={16} className="mr-1"/>เพิ่มช่วงเวลา
+                </Button>
+            </div>
+          </div>
+          <div className="space-y-1 pt-2">
+            <div className="flex items-center text-xs text-red-600"><AlertCircle size={14} className="mr-1"/>สามารถหยุดพักชำระเบี้ยได้ถึงอายุ {maxPossibleAge} ปี</div>
+            <div className="flex items-center text-xs text-red-600"><AlertCircle size={14} className="mr-1"/>การหยุดพักชำระเบี้ยจะส่งผลให้ไม่ได้รับ Bonus ในปีนั้นๆ</div>
+          </div>
         </div>
-        {/* === จบ ส่วนกรอกข้อมูล === */}
-
-
-        {/* === ส่วนสรุป/ประวัติ === */}
+        
         <div className="border-t pt-3 mt-4">
-           {/* ... โค้ดแสดง plannedPauses ... */}
-           <div className='flex justify-between items-center mb-2'>
-               <h3 className="font-medium text-md text-blue-800">รายการหยุดพักชำระเบี้ย</h3>
-               <span className='text-xs text-gray-500'>รายการทั้งหมด {plannedPauses.length}</span>
-           </div>
-            {!plannedPauses || plannedPauses.length === 0 ? (
-              <p className="text-sm text-gray-500 italic text-center py-4">ยังไม่มีรายการ</p>
-            ) : (
-              <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
-                {plannedPauses.map((record, index) => {
-                  const isLast = index === plannedPauses.length - 1;
-      
-                  // แปลงการแสดงผลตามประเภทการอ้างอิง
-                  const displayText = record.type === 'age' 
-                    ? `อายุ ${record.startAge} - ${record.endAge} ปี`
-                    : `ปีที่ ${record.startAge} - ${record.endAge}`;
-      
-                  return (
-                    <div 
-                      key={record.id} 
-                      className="grid grid-cols-[auto,1fr,auto] gap-2 items-center text-sm px-2 py-1 border rounded bg-gray-50"
-                    >
-                      <span className='font-mono text-gray-500'>{index + 1}.</span>
-                      <span className='text-left text-gray-700'>
-                        {displayText}
-                      </span>
-                      <div className="h-5 w-5 flex items-center justify-center">
-                        {isLast && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-full w-full text-red-500 hover:text-red-700 hover:bg-red-100 p-0 flex-shrink-0" 
-                            onClick={handleDeleteLastPeriod} 
-                            title="ลบรายการล่าสุด"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+          <div className='flex justify-between items-center mb-2'>
+            <h3 className="font-medium text-md text-blue-800">รายการหยุดพักชำระเบี้ย</h3>
+            <span className='text-xs text-gray-500'>รายการทั้งหมด {plannedPauses.length}</span>
+          </div>
+          {plannedPauses.length === 0 ? (
+            <p className="text-sm text-gray-500 italic text-center py-4">ยังไม่มีรายการ</p>
+          ) : (
+            <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+              {plannedPauses.map((record, index) => (
+                <div key={record.id} className="grid grid-cols-[auto,1fr,auto] gap-2 items-center text-sm px-2 py-1 border rounded bg-gray-50">
+                  <span className='font-mono text-gray-500'>{index + 1}.</span>
+                  <span className='text-left text-gray-700'>พักชำระช่วงอายุ {record.startAge} - {record.endAge} ปี</span>
+                  <div className="h-5 w-5 flex items-center justify-center">
+                    {index === plannedPauses.length - 1 && (
+                      <Button variant="ghost" size="icon" className="h-full w-full text-red-500 hover:text-red-700" onClick={handleDeleteLastPeriod}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        {/* === จบ ส่วนสรุป/ประวัติ === */}
 
-        {/* Footer */}
         <DialogFooter className="mt-6">
           <DialogClose asChild>
-              <Button type="button" variant="outline" size="sm">ยกเลิก</Button>
+            <Button type="button" variant="outline" size="sm" onClick={handleClose}>ยกเลิก</Button>
           </DialogClose>
           <Button type="button" size="sm" onClick={handleSavePlan} className='bg-blue-700 hover:bg-blue-500'>บันทึก</Button>
         </DialogFooter>
