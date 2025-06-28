@@ -1,8 +1,10 @@
-// src/components/ci/CIFormPage.tsx
+// src/pages/ci/CIFormPage.tsx
+
+
 
 // --- Imports ---
-import type { UseCiPlannerReturn } from '@/components/ci/hooks/useCiPlanner';
-import type { Gender, CiPlanSelections, IShieldPlan, LifeReadyPlan, RokRaiSoShieldPlan, IWealthyMode } from '@/components/ci/types/useCiTypes';
+// 1. แก้ไข: import Type ที่จำเป็นจากไฟล์ที่ถูกต้อง
+import type { UseCiPlannerReturn, Gender, CiPlanSelections, IShieldPlan, LifeReadyPlan, RokRaiSoShieldPlan, IWealthyMode } from '@/components/ci/types/useCiTypes';
 import { FaVenusMars, FaBirthdayCake, FaFileAlt } from "react-icons/fa";
 import { FaWandMagicSparkles } from "react-icons/fa6";
 import { Button } from "@/components/ui/button";
@@ -15,16 +17,21 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { formatNumber, CalculatorIcon } from '@/components/ci/utils/helpers';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// --- Data Constants ---
+// --- Data Constants (เหมือนเดิม) ---
 const ICarePlansData = [ { label: "5 แสน", value: 500000 }, { label: "1 ล้าน", value: 1000000 }, { label: "1.5 ล้าน", value: 1500000 }, { label: "2 ล้าน", value: 2000000 }, { label: "2.5 ล้าน", value: 2500000 }, { label: "3 ล้าน", value: 3000000 }, { label: "4 ล้าน", value: 4000000 }, { label: "5 ล้าน", value: 5000000 }, ];
 const IShieldPlanOptionsData: { label: string; value: IShieldPlan }[] = [ { label: "iShield (จ่ายเบี้ย 5 ปี)", value: "05" }, { label: "iShield (จ่ายเบี้ย 10 ปี)", value: "10" }, { label: "iShield (จ่ายเบี้ย 15 ปี)", value: "15" }, { label: "iShield (จ่ายเบี้ย 20 ปี)", value: "20" }, ];
 const LifeReadyPlanOptionsData: { label: string; value: LifeReadyPlan }[] = [ { label: "ชำระเบี้ย 6 ปี", value: 6 }, { label: "ชำระเบี้ย 12 ปี", value: 12 }, { label: "ชำระเบี้ย 18 ปี", value: 18 }, { label: "ชำระเบี้ยถึงอายุ 99 ปี", value: 99 }, ];
 const RokRaiSoShieldPlanOptionsData: { label: string; value: RokRaiSoShieldPlan }[] = [ { label: "แผน S", value: "S" }, { label: "แผน M", value: "M" }, { label: "แผน L", value: "L" }, { label: "แผน XL", value: "XL" }, ];
 const ageOptionsData = Array.from({ length: (70 - 18 + 1) }, (_, i) => 18 + i);
 
+
 // --- Component Definition ---
+// 2. แก้ไข: เปลี่ยนการประกาศฟังก์ชันให้รับ props ที่มี Type เป็น UseCiPlannerReturn
 export default function CIFormPage(props: UseCiPlannerReturn) {
+    
+    // 3. แก้ไข: ลบการเรียกใช้ useCiPlanner และดึงค่าจาก props ที่รับเข้ามาแทน
     const {
         policyholderEntryAge, setPolicyholderEntryAge,
         policyholderGender, setPolicyholderGender,
@@ -40,14 +47,15 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
         manualRtu, setManualRtu,
         autoRppRtuRatio, setAutoRppRtuRatio,
         isLoading,
+        error,
         ciPremiumsSchedule,
         calculatedMinPremium, calculatedRpp, calculatedRtu,
         runCalculation,
     } = props;
 
+    // --- Logic และ Handlers ทั้งหมดเหมือนเดิม เพราะทำงานกับ state และ setters ที่ได้รับมาจาก props ---
     const handleCiSelectionChange = <K extends keyof CiPlanSelections>(key: K, value: CiPlanSelections[K]) => {
-        // 🔥 แก้ไข: เพิ่ม Type ให้กับ prev
-        setSelectedCiPlans((prev: CiPlanSelections) => {
+        setSelectedCiPlans((prev) => { // ไม่ต้องระบุ Type prev ที่นี่แล้ว เพราะ TypeScript รู้จาก Type ของ setSelectedCiPlans
             const newState = { ...prev, [key]: value };
             if (key === 'mainRiderChecked' && !value) {
                 newState.rokraiChecked = false;
@@ -55,25 +63,25 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
             }
             if (key === 'icareChecked') { newState.icareSA = value ? 1000000 : 0; }
             if (key === 'ishieldChecked') {
-                if (value) { // ถ้าติ๊กเลือก
-                newState.ishieldPlan = '20'; // แผน 20 ปี
-                newState.ishieldSA = 500000; // ทุน 5 แสน
-            } else { // ถ้าเอาออก
+                if (value) {
+                newState.ishieldPlan = '20';
+                newState.ishieldSA = 500000;
+            } else {
                 newState.ishieldPlan = null;
                 newState.ishieldSA = 0;
             }
             }
             if (key === 'rokraiChecked') {
-            newState.rokraiPlan = value ? 'XL' : null; // ถ้าติ๊กเลือก -> แผน XL, ถ้าเอาออก -> null
-            }   
+            newState.rokraiPlan = value ? 'XL' : null;
+            } 
             if (key === 'dciChecked') {
-            newState.dciSA = value ? 300000 : 0; // ถ้าติ๊กเลือก -> ทุน 3 แสน, ถ้าเอาออก -> 0
+            newState.dciSA = value ? 300000 : 0;
             }
             if (key === 'mainRiderChecked') {
-                if (value) { // ถ้าติ๊กเลือก
-                newState.lifeReadyPlan = 18; // แผน 18 ปี
-                newState.lifeReadySA = 150000; // ทุน 1.5 แสน
-            } else { // ถ้าเอาออก (จะล้างค่าสัญญาเพิ่มเติมอื่นๆ ที่เกี่ยวข้องทั้งหมด)
+                if (value) {
+                newState.lifeReadyPlan = 18;
+                newState.lifeReadySA = 150000;
+            } else {
                 newState.lifeReadyPlan = null;
                 newState.lifeReadySA = 0;
                 newState.rokraiChecked = false;
@@ -397,6 +405,13 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                     </Card>
                 )}
             </div>
+
+            {error && (
+                <Alert variant="destructive" className="mt-6">
+                    <AlertTitle>พบข้อผิดพลาด</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
             
             <Card className="mt-10">
                 <CardContent className="p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-gradient-to-r from-blue-50 via-sky-50 to-cyan-50 dark:from-blue-900/30 dark:via-sky-900/30 dark:to-cyan-900/30 rounded-lg">

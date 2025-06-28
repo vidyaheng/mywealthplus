@@ -3,16 +3,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAppStore } from '@/stores/appStore'; 
 
-// UI Components
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// --- TYPE IMPORTS ---
+import { calculateAllCiPremiumsSchedule } from '@/components/ci/utils/ciScheduleCalcs';
+import type { AnnualCiPremiumDetail, UseCiPlannerReturn, CiPlanSelections, PolicyOriginMode } from '@/components/ci/types/useCiTypes';
+import type { Gender } from '@/lib/calculations';
 
-// Page/Component Sections
+// --- UI & PAGE IMPORTS ---
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CIFormPage from './CIFormPage';
 import CITablePage from './CITablePage';
 import CiChartPage from './CiChartPage';
 import CoverageSummaryPage from './CoverageSummaryPage';
-import type { CiPlanSelections, PolicyOriginMode, UseCiPlannerReturn } from '@/components/ci/types/useCiTypes';
-import type { Gender } from '@/lib/calculations';
 
 
 export default function CiPlannerPage() {
@@ -20,6 +21,22 @@ export default function CiPlannerPage() {
 
     // --- ดึง State และ Actions ทั้งหมดจาก useAppStore ---
     const store = useAppStore();
+
+    // --- สร้าง State ภายในสำหรับเก็บตารางเบี้ย CI ที่คำนวณอัตโนมัติ ---
+    const [ciPremiumsSchedule, setCiPremiumsSchedule] = useState<AnnualCiPremiumDetail[] | null>(null);
+
+    // --- useEffect สำหรับคำนวณตารางเบี้ย CI อัตโนมัติ ---
+    useEffect(() => {
+        const schedule = calculateAllCiPremiumsSchedule(
+            store.ciPlanningAge,
+            store.ciGender,
+            store.ciPlanSelections,
+            store.ciPolicyOriginMode,
+            store.ciExistingEntryAge
+        );
+        setCiPremiumsSchedule(schedule);
+    }, [store.ciPlanningAge, store.ciGender, store.ciPlanSelections, store.ciPolicyOriginMode, store.ciExistingEntryAge]);
+
 
     // --- useEffect เพื่อจัดการการเปลี่ยนหน้าหลังคำนวณเสร็จ ---
     const wasLoading = useRef(false);
@@ -51,6 +68,10 @@ export default function CiPlannerPage() {
         setSelectedCiPlans: useCallback((value: React.SetStateAction<CiPlanSelections>) => {
             store.setCiPlanSelections(typeof value === 'function' ? value(store.ciPlanSelections) : value);
         }, [store.ciPlanSelections, store.setCiPlanSelections]),
+        
+        setUseIWealthy: useCallback((value: React.SetStateAction<boolean>) => {
+            store.setCiUseIWealthy(typeof value === 'function' ? value(store.ciUseIWealthy) : value);
+        }, [store.ciUseIWealthy, store.setCiUseIWealthy]),
         
         setIWealthyMode: useCallback((value: React.SetStateAction<'manual' | 'automatic'>) => {
             store.setCiIWealthyMode(typeof value === 'function' ? value(store.ciIWealthyMode) : value);
@@ -85,20 +106,15 @@ export default function CiPlannerPage() {
             const state = store.ciIWealthyMode === 'manual' ? store.ciManualWithdrawalStartAge : store.ciAutoWithdrawalStartAge;
             setter(typeof value === 'function' ? value(state) : value);
         }, [store.ciIWealthyMode, store.ciManualWithdrawalStartAge, store.ciAutoWithdrawalStartAge, store.setCiManualWithdrawalStartAge, store.setCiAutoWithdrawalStartAge]),
-
-        // +++ จุดที่แก้ไข +++
-        setUseIWealthy: useCallback((value: React.SetStateAction<boolean>) => {
-            store.setCiUseIWealthy(typeof value === 'function' ? value(store.ciUseIWealthy) : value);
-        }, [store.ciUseIWealthy, store.setCiUseIWealthy]),
     };
     
-    // --- สร้าง Object 'planner' ขึ้นมาใหม่ เพื่อส่ง props ให้ลูกๆ ---
+    // --- สร้าง Object 'planner' เพื่อส่ง props ให้ Component ลูก ---
     const planner: UseCiPlannerReturn = {
         // Results
         isLoading: store.ciIsLoading,
         error: store.ciError,
         result: store.ciResult,
-        ciPremiumsSchedule: null, // Placeholder
+        ciPremiumsSchedule: ciPremiumsSchedule, // <<< แก้ไข: ส่ง state ที่คำนวณแล้วลงไป
         calculatedMinPremium: store.ciSolvedMinPremium,
         calculatedRpp: store.ciSolvedRpp,
         calculatedRtu: store.ciSolvedRtu,
@@ -127,7 +143,6 @@ export default function CiPlannerPage() {
         runCalculation: store.runCiCalculation,
     };
     
-    // คำนวณค่าเพิ่มเติมที่ต้องส่งให้ CITablePage
     const effectiveWithdrawalStartAge = planner.iWealthyMode === 'automatic'
         ? planner.policyholderEntryAge + planner.iWealthyOwnPPT
         : planner.iWealthyWithdrawalStartAge;

@@ -144,7 +144,7 @@ export default function CITablePage({
             )}
 
             {/* ตารางที่ 2: ภาพรวมผลประโยชน์ CI และ iWealthy */}
-            {isIWealthyMode && !showCiOnlyView && (
+            {isIWealthyMode && !showCiOnlyView && result && result.length > 0 && (
                 <Card className="bg-white dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
                     <CardHeader>
                         <div className="flex justify-between items-center">
