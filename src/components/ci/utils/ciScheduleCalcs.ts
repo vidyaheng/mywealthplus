@@ -28,7 +28,7 @@ const ICARE_CRITICAL_RIDER_MAX_AGE_FOR_RATE = 84;
 const ROKRAI_MAX_PAY_AGE = 98;
 const DCI_MIN_AGE_FOR_PREMIUM = 20;
 const DCI_MAX_PAY_AGE = 74;
-const FIXED_ICARE_MAIN_SA = 100000;
+//const FIXED_ICARE_MAIN_SA = 100000;
 
 export function calculateAllCiPremiumsSchedule(
     currentPlanningAge: number,
@@ -97,7 +97,7 @@ export function calculateAllCiPremiumsSchedule(
                 let iCareMainPremiumPart = 0;
                 const mainRateEntry = iCareMainPremiumRates.find(r => r.age === effectiveCiRiderEntryAge);
                 if (mainRateEntry) {
-                    iCareMainPremiumPart = mainRateEntry[gender] * (FIXED_ICARE_MAIN_SA / 1_000_000);
+                    iCareMainPremiumPart = mainRateEntry[gender];
                 }
 
                 let iCareCriticalPremiumPart = 0;

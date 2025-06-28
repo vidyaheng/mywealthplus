@@ -40,7 +40,7 @@ export default function LTHCLayout() {
         */}
         
         {/* ส่วนของ Tab Bar */}
-        <div className="flex bg-gray-100 px-4 relative">
+        <div className="flex bg-blue-50 px-4 relative">
             {lthcTabs.map((tab) => {
                 const isActive = location.pathname.startsWith(tab.path);
                 return (
@@ -57,7 +57,7 @@ export default function LTHCLayout() {
                     </button>
                 );
             })}
-            <div className="flex-grow bg-gray-100 border-b border-gray-300"></div>
+            <div className="flex-grow bg-blue-50 border-b border-gray-300"></div>
         </div>
 
         {/* ส่วนแสดงเนื้อหาของแต่ละหน้า */}

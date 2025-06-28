@@ -42,7 +42,7 @@ function App() {
         <div className="flex flex-col h-screen bg-blue-50 font-sans">
             <header className="bg-white shadow-sm w-full py-2 px-4 flex-shrink-0">
                 <h1 className="h-8 flex items-center justify-center text-base sm:text-lg font-semibold text-blue-900">
-                    Financial Planner
+                    Insurance Planner
                 </h1>
             </header>
             <div className="flex flex-1 overflow-hidden">
