@@ -144,22 +144,22 @@ interface CIPlannerState {
     ciSolvedMinPremium?: number;
     ciSolvedRpp?: number;
     ciSolvedRtu?: number;
-    setCiPlanningAge: (age: number) => void;
-    setCiGender: (gender: Gender) => void;
-    setCiPolicyOriginMode: (mode: CiPolicyOriginMode) => void;
-    setCiExistingEntryAge: (age?: number) => void;
-    setCiPlanSelections: (selections: CiPlanSelections) => void;
-    setCiUseIWealthy: (use: boolean) => void; // Action สำหรับเปิด/ปิด
-    setCiIWealthyMode: (mode: 'manual' | 'automatic') => void;
-    setCiManualRpp: (rpp: number) => void;
-    setCiManualRtu: (rtu: number) => void;
-    setCiManualInvReturn: (rate: number) => void;
-    setCiManualPpt: (ppt: number) => void;
-    setCiManualWithdrawalStartAge: (age: number) => void;
-    setCiAutoInvReturn: (rate: number) => void;
-    setCiAutoPpt: (ppt: number) => void;
-    setCiAutoRppRtuRatio: (ratio: string) => void;
-    setCiAutoWithdrawalStartAge: (age: number) => void;
+    setCiPlanningAge: Dispatch<SetStateAction<number>>;
+    setCiGender: Dispatch<SetStateAction<Gender>>;
+    setCiPolicyOriginMode: Dispatch<SetStateAction<CiPolicyOriginMode>>;
+    setCiExistingEntryAge: Dispatch<SetStateAction<number | undefined>>;
+    setCiPlanSelections: Dispatch<SetStateAction<CiPlanSelections>>;
+    setCiUseIWealthy: Dispatch<SetStateAction<boolean>>;
+    setCiIWealthyMode: Dispatch<SetStateAction<'manual' | 'automatic'>>;
+    setCiManualRpp: Dispatch<SetStateAction<number>>;
+    setCiManualRtu: Dispatch<SetStateAction<number>>;
+    setCiManualInvReturn: Dispatch<SetStateAction<number>>;
+    setCiManualPpt: Dispatch<SetStateAction<number>>;
+    setCiManualWithdrawalStartAge: Dispatch<SetStateAction<number>>;
+    setCiAutoInvReturn: Dispatch<SetStateAction<number>>;
+    setCiAutoPpt: Dispatch<SetStateAction<number>>;
+    setCiAutoRppRtuRatio: Dispatch<SetStateAction<string>>;
+    setCiAutoWithdrawalStartAge: Dispatch<SetStateAction<number>>;
     runCiCalculation: () => Promise<void>;
 }
 
@@ -428,22 +428,23 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
         ciSolvedRtu: undefined,
         
 
-        setCiPlanningAge: (age) => set({ ciPlanningAge: age }),
-        setCiGender: (gender) => set({ ciGender: gender }),
-        setCiPolicyOriginMode: (mode) => set({ ciPolicyOriginMode: mode }),
-        setCiExistingEntryAge: (age) => set({ ciExistingEntryAge: age }),
-        setCiPlanSelections: (selections) => set({ ciPlanSelections: selections }),
-        setCiUseIWealthy: (use) => set({ ciUseIWealthy: use }),
-        setCiIWealthyMode: (mode) => set({ ciIWealthyMode: mode }),
-        setCiManualRpp: (rpp) => set({ ciManualRpp: rpp }),
-        setCiManualRtu: (rtu) => set({ ciManualRtu: rtu }),
-        setCiManualInvReturn: (rate) => set({ ciManualInvReturn: rate }),
-        setCiManualPpt: (ppt) => set({ ciManualPpt: ppt }),
-        setCiManualWithdrawalStartAge: (age) => set({ ciManualWithdrawalStartAge: age }),
-        setCiAutoInvReturn: (rate) => set({ ciAutoInvReturn: rate }),
-        setCiAutoPpt: (ppt) => set({ ciAutoPpt: ppt }),
-        setCiAutoRppRtuRatio: (ratio) => set({ ciAutoRppRtuRatio: ratio }),
-        setCiAutoWithdrawalStartAge: (age) => set({ ciAutoWithdrawalStartAge: age }),
+        setCiPlanningAge: (arg) => set(state => ({ ciPlanningAge: typeof arg === 'function' ? arg(state.ciPlanningAge) : arg })),
+        setCiGender: (arg) => set(state => ({ ciGender: typeof arg === 'function' ? arg(state.ciGender) : arg })),
+        setCiPolicyOriginMode: (arg) => set(state => ({ ciPolicyOriginMode: typeof arg === 'function' ? arg(state.ciPolicyOriginMode) : arg })),
+        setCiExistingEntryAge: (arg) => set(state => ({ ciExistingEntryAge: typeof arg === 'function' ? arg(state.ciExistingEntryAge) : arg })),
+        setCiPlanSelections: (arg) => set(state => ({ ciPlanSelections: typeof arg === 'function' ? arg(state.ciPlanSelections) : arg })),
+        setCiUseIWealthy: (arg) => set(state => ({ ciUseIWealthy: typeof arg === 'function' ? arg(state.ciUseIWealthy) : arg })),
+        setCiIWealthyMode: (arg) => set(state => ({ ciIWealthyMode: typeof arg === 'function' ? arg(state.ciIWealthyMode) : arg })),
+        setCiManualRpp: (arg) => set(state => ({ ciManualRpp: typeof arg === 'function' ? arg(state.ciManualRpp) : arg })),
+        setCiManualRtu: (arg) => set(state => ({ ciManualRtu: typeof arg === 'function' ? arg(state.ciManualRtu) : arg })),
+        setCiManualInvReturn: (arg) => set(state => ({ ciManualInvReturn: typeof arg === 'function' ? arg(state.ciManualInvReturn) : arg })),
+        setCiManualPpt: (arg) => set(state => ({ ciManualPpt: typeof arg === 'function' ? arg(state.ciManualPpt) : arg })),
+        setCiManualWithdrawalStartAge: (arg) => set(state => ({ ciManualWithdrawalStartAge: typeof arg === 'function' ? arg(state.ciManualWithdrawalStartAge) : arg })),
+        setCiAutoInvReturn: (arg) => set(state => ({ ciAutoInvReturn: typeof arg === 'function' ? arg(state.ciAutoInvReturn) : arg })),
+        setCiAutoPpt: (arg) => set(state => ({ ciAutoPpt: typeof arg === 'function' ? arg(state.ciAutoPpt) : arg })),
+        setCiAutoRppRtuRatio: (arg) => set(state => ({ ciAutoRppRtuRatio: typeof arg === 'function' ? arg(state.ciAutoRppRtuRatio) : arg })),
+        setCiAutoWithdrawalStartAge: (arg) => set(state => ({ ciAutoWithdrawalStartAge: typeof arg === 'function' ? arg(state.ciAutoWithdrawalStartAge) : arg })),
+
         
 
         runCiCalculation: async () => {
