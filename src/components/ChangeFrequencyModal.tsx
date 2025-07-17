@@ -1,34 +1,55 @@
 // src/components/modals/ChangeFrequencyModal.tsx
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
-// +++ STEP 1: เปลี่ยนมา Import Store และ Types ที่ถูกต้อง +++
+// --- Store และ Types ---
 import { useAppStore } from '@/stores/appStore';
 import type { FrequencyChangeRecord } from '@/lib/calculations';
 
-// --- UI Component Imports (เหมือนเดิม) ---
+// --- UI Component Imports (ปรับปรุงใหม่) ---
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Trash2 } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Trash2, Calendar, CalendarClock, CalendarDays, CalendarRange } from 'lucide-react';
 
-
-// --- Type และ Options (เหมือนเดิม) ---
+// --- Type และ Options ---
 type PaymentFrequencyOption = 'monthly' | 'quarterly' | 'semi-annual' | 'annual';
-const frequencyOptions: { value: PaymentFrequencyOption; label: string }[] = [
-    { value: 'monthly', label: 'รายเดือน' },
-    { value: 'quarterly', label: 'ราย 3 เดือน' },
-    { value: 'semi-annual', label: 'ราย 6 เดือน' },
-    { value: 'annual', label: 'ราย 1 ปี' },
+const frequencyOptions: { value: PaymentFrequencyOption; label: string; icon: React.ElementType }[] = [
+  { value: 'monthly', label: 'รายเดือน', icon: Calendar },
+  { value: 'quarterly', label: 'ราย 3 เดือน', icon: CalendarDays },
+  { value: 'semi-annual', label: 'ราย 6 เดือน', icon: CalendarClock },
+  { value: 'annual', label: 'รายปี', icon: CalendarRange },
 ];
-type RefType = 'age' | 'year';
 
+// --- Sub-component สำหรับแสดงรายการใน Timeline ---
+function FrequencyChangeItem({ record, onDelete }: { record: FrequencyChangeRecord; onDelete: (id: string | undefined) => void; }) {
+  const option = frequencyOptions.find(opt => opt.value === record.frequency);
+  const Icon = option?.icon || Calendar;
+
+  return (
+    <div className="flex items-center gap-4 p-3 bg-white border rounded-xl shadow-sm hover:border-violet-300 transition-colors">
+      <div className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center bg-violet-100 text-violet-600">
+        <Icon className="w-6 h-6" />
+      </div>
+      <div className="flex-grow">
+        <p className="font-bold text-lg text-slate-800">{option?.label || record.frequency}</p>
+        <p className="text-sm text-slate-600">ช่วงอายุ {record.startAge} - {record.endAge} ปี</p>
+      </div>
+      {record.id && (
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => onDelete(record.id)}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  );
+}
 
 export default function ChangeFrequencyModal() {
-  // +++ STEP 2: ดึง State และ Actions ทั้งหมดมาจาก useAppStore +++
+  // --- Store State ---
   const {
     isChangeFreqModalOpen,
     closeChangeFreqModal,
@@ -39,207 +60,196 @@ export default function ChangeFrequencyModal() {
   
   const maxPossibleAge = 98;
 
-  // --- Local State สำหรับฟอร์ม (เหมือนเดิม) ---
-  const [activeTab, setActiveTab] = useState("edit");
+  // --- Local State ---
+  const [plannedChanges, setPlannedChanges] = useState<FrequencyChangeRecord[]>([]);
   const [newFrequency, setNewFrequency] = useState<PaymentFrequencyOption>('monthly');
-  const [refType, setRefType] = useState<RefType>('age');
-  const [startValue, setStartValue] = useState<number>(iWealthyAge + 1);
-  const [endValue, setEndValue] = useState<number>(maxPossibleAge);
+  const [startAge, setStartAge] = useState<number>(iWealthyAge + 1);
+  const [endAge, setEndAge] = useState<number>(maxPossibleAge);
+  const [itemToDeleteId, setItemToDeleteId] = useState<string | null>(null);
   
-  // +++ STEP 3: ปรับแก้ Hooks ให้ทำงานกับ Store State +++
-  const initialStartAge = useMemo(() => {
-    if (iWealthyFrequencyChanges.length > 0) {
-      const maxEndAge = Math.max(...iWealthyFrequencyChanges.map(item => item.endAge));
-      return Math.max(maxEndAge + 1, iWealthyAge + 1);
-    }
-    return Math.max(iWealthyAge + 1, 1);
-  }, [iWealthyFrequencyChanges, iWealthyAge]);
+  // --- Derived State & Memos ---
+  const lastEndAge = useMemo(() => 
+    plannedChanges.length > 0 ? Math.max(...plannedChanges.map(item => item.endAge)) : iWealthyAge,
+    [plannedChanges, iWealthyAge]
+  );
+  
+  const availableStartAges = useMemo(() => {
+    const firstPossibleAge = lastEndAge + 1;
+    if (firstPossibleAge > maxPossibleAge) return [];
+    return Array.from({ length: maxPossibleAge - firstPossibleAge + 1 }, (_, i) => firstPossibleAge + i);
+  }, [lastEndAge, maxPossibleAge]);
+  
+  const availableEndAges = useMemo(() => {
+    if (startAge > maxPossibleAge) return [];
+    return Array.from({ length: maxPossibleAge - startAge + 1 }, (_, i) => startAge + i);
+  }, [startAge, maxPossibleAge]);
 
+  const canAdd = availableStartAges.length > 0;
+
+  // --- Effects ---
   useEffect(() => {
-    if (isChangeFreqModalOpen && activeTab === 'edit') {
-      const defaultStartAge = initialStartAge;
-      const finalMaxAge = maxPossibleAge > defaultStartAge ? maxPossibleAge : defaultStartAge;
+    if (isChangeFreqModalOpen) {
+      const sortedPlan = [...iWealthyFrequencyChanges].sort((a, b) => a.startAge - b.startAge);
+      setPlannedChanges(sortedPlan);
       
+      const nextStartAge = (sortedPlan.length > 0 ? Math.max(...sortedPlan.map(p => p.endAge)) : iWealthyAge) + 1;
+      setStartAge(Math.min(nextStartAge, maxPossibleAge));
+      setEndAge(maxPossibleAge);
       setNewFrequency('monthly');
-      setRefType('age');
-      setStartValue(defaultStartAge);
-      setEndValue(finalMaxAge);
     }
-  }, [isChangeFreqModalOpen, activeTab, initialStartAge, maxPossibleAge]);
-  
-  // +++ STEP 4: เติม Logic ใน useMemo และ Handlers ให้สมบูรณ์ +++
-  const startOptions = useMemo(() => {
-    if (initialStartAge > maxPossibleAge) return [];
-    if (refType === 'age') {
-      return Array.from({ length: maxPossibleAge - initialStartAge + 1 }, (_, i) => initialStartAge + i);
-    } else { // 'year'
-      const maxPolicyYear = maxPossibleAge - iWealthyAge + 1;
-      const firstPossiblePolicyYear = Math.max(1, initialStartAge - iWealthyAge + 1);
-      if (firstPossiblePolicyYear > maxPolicyYear) return [];
-      return Array.from({ length: maxPolicyYear - firstPossiblePolicyYear + 1 }, (_, i) => firstPossiblePolicyYear + i);
-    }
-  }, [initialStartAge, maxPossibleAge, iWealthyAge, refType]);
-  
-  const endOptions = useMemo(() => {
-    const firstPossibleEnd = refType === 'age' ? startValue : iWealthyAge + startValue -1;
-    if (firstPossibleEnd >= maxPossibleAge) return [maxPossibleAge];
-    if (refType === 'age') {
-        return Array.from({ length: maxPossibleAge - firstPossibleEnd + 1 }, (_, i) => firstPossibleEnd + i);
-    } else { // 'year'
-        const maxPolicyYear = maxPossibleAge - iWealthyAge + 1;
-        const firstPossibleEndYear = Math.max(1, firstPossibleEnd - iWealthyAge + 2);
-        if (firstPossibleEndYear > maxPolicyYear) return [];
-        return Array.from({ length: maxPolicyYear - firstPossibleEndYear + 1 }, (_, i) => firstPossibleEndYear + i);
-    }
-  }, [startValue, maxPossibleAge, iWealthyAge, refType]);
-  
-  const handleFrequencyChange = (value: string) => setNewFrequency(value as PaymentFrequencyOption);
-  const handleRefTypeChange = (value: string) => {
-    const newRefType = value as 'age' | 'year';
-    setRefType(newRefType);
-    if (newRefType === 'age') {
-        setStartValue(initialStartAge);
-        setEndValue(maxPossibleAge);
-    } else {
-        setStartValue(Math.max(1, initialStartAge - iWealthyAge + 1));
-        setEndValue(maxPossibleAge - iWealthyAge + 1);
-    }
-  };
-  const handleStartValueChange = (value: string) => {
-    const numVal = parseInt(value, 10);
-    setStartValue(numVal);
-    if(numVal > endValue) {
-        setEndValue(numVal);
-    }
-  };
-  const handleEndValueChange = (value: string) => setEndValue(parseInt(value, 10));
+  }, [isChangeFreqModalOpen, iWealthyFrequencyChanges, iWealthyAge]);
 
-  const handleUpdatePlan = useCallback(() => {
-    const startAgeValue = refType === 'age' ? startValue : iWealthyAge + startValue - 1;
-    const endAgeValue = refType === 'age' ? endValue : iWealthyAge + endValue - 1;
-
-    if (!newFrequency || !startValue || !endValue || startAgeValue >= endAgeValue) {
-      alert("กรุณาเลือกข้อมูลให้ครบถ้วน และช่วงอายุ/ปี ให้ถูกต้อง");
+  // --- Handlers ---
+  const handleAddChange = useCallback(() => {
+    if (!canAdd || startAge >= endAge) {
+      alert("กรุณาตรวจสอบช่วงอายุให้ถูกต้อง");
       return;
     }
-    
     const newRecord: FrequencyChangeRecord = {
       id: uuidv4(),
-      startAge: startAgeValue,
-      endAge: endAgeValue,
+      startAge,
+      endAge,
       frequency: newFrequency,
-      type: 'age', // Save as age for consistency
+      type: 'age',
     };
-
-    const newList = [...iWealthyFrequencyChanges, newRecord].sort((a,b) => a.startAge - b.startAge);
-    setIWealthyFrequencyChanges(newList);
-    setActiveTab("history");
-
-  }, [newFrequency, startValue, endValue, refType, iWealthyAge, iWealthyFrequencyChanges, setIWealthyFrequencyChanges]);
-
-  const handleDeleteLastRecord = useCallback(() => {
-    if (window.confirm("คุณต้องการลบรายการล่าสุดใช่หรือไม่?")) {
-        const newList = iWealthyFrequencyChanges.slice(0, -1);
-        setIWealthyFrequencyChanges(newList);
+    const newList = [...plannedChanges, newRecord].sort((a,b) => a.startAge - b.startAge);
+    setPlannedChanges(newList);
+    
+    const nextStart = endAge + 1;
+    if(nextStart <= maxPossibleAge) {
+      setStartAge(nextStart);
+      setEndAge(maxPossibleAge);
     }
-  }, [iWealthyFrequencyChanges, setIWealthyFrequencyChanges]);
 
+  }, [newFrequency, startAge, endAge, canAdd, plannedChanges]);
+
+  const confirmDelete = useCallback(() => {
+    if (!itemToDeleteId) return;
+    setPlannedChanges(prev => prev.filter(p => p.id !== itemToDeleteId));
+    setItemToDeleteId(null);
+  }, [itemToDeleteId]);
+
+  const handleSaveAndClose = () => {
+    setIWealthyFrequencyChanges(plannedChanges);
+    closeChangeFreqModal();
+  };
+
+  const ageToPolicyYear = (age: number) => Math.max(1, age - iWealthyAge + 1);
 
   return (
-    <Dialog open={isChangeFreqModalOpen} onOpenChange={(open) => !open && closeChangeFreqModal()}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>เปลี่ยนงวดการชำระเบี้ยประกัน</DialogTitle>
-        </DialogHeader>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
-            <TabsList className="grid w-full grid-cols-2 h-9">
-                <TabsTrigger value="edit" className="text-xs px-2">เลือกงวดการชำระ</TabsTrigger>
-                <TabsTrigger value="history" className="text-xs px-2">ประวัติการเปลี่ยนแปลง</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="edit" className="pt-4">
-              <div className="flex flex-wrap items-end gap-x-3 gap-y-3">
-                <div className="flex flex-col space-y-1 min-w-[120px]">
-                  <Label htmlFor="new-frequency" className="text-xs">เปลี่ยนงวดเป็น</Label>
-                  <Select onValueChange={handleFrequencyChange} value={newFrequency}>
-                    <SelectTrigger id="new-frequency" className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent>{frequencyOptions.map(opt => (<SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col space-y-1 min-w-[90px]">
-                  <Label htmlFor="ref-type" className="text-xs">โดยอ้างอิง</Label>
-                  <Select onValueChange={handleRefTypeChange} value={refType}>
-                    <SelectTrigger id="ref-type" className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="age" className="text-xs">ที่อายุ</SelectItem>
-                      <SelectItem value="year" className="text-xs">ปีที่</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col space-y-1 w-20">
-                  <Label htmlFor="start-value" className="text-xs">{refType === 'age' ? 'เริ่มที่อายุ' : 'เริ่มปีที่'}</Label>
-                  <Select onValueChange={handleStartValueChange} value={startValue.toString()}>
-                    <SelectTrigger id="start-value" className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent>{startOptions.map(opt => ( <SelectItem key={opt} value={opt.toString()} className="text-xs">{opt}</SelectItem> ))}</SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col space-y-1 w-20">
-                  <Label htmlFor="end-value" className="text-xs">{refType === 'age' ? 'ถึงอายุ' : 'ถึงปีที่'}</Label>
-                  <Select onValueChange={handleEndValueChange} value={endValue.toString()}>
-                    <SelectTrigger id="end-value" className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent>{endOptions.map(opt => ( <SelectItem key={opt} value={opt.toString()} className="text-xs">{opt}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </TabsContent>
+    <>
+      <Dialog open={isChangeFreqModalOpen} onOpenChange={(open) => !open && closeChangeFreqModal()}>
+        <DialogContent className="sm:max-w-4xl grid grid-rows-[auto,1fr,auto] p-0 max-h-[90vh] rounded-2xl overflow-hidden">
+          <DialogHeader className="p-6 bg-slate-50 border-b">
+            <DialogTitle className="flex items-center text-2xl font-bold text-slate-800">
+              <CalendarClock className="mr-3 h-8 w-8 text-violet-600" />
+              เปลี่ยนงวดการชำระเบี้ย
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              วางแผนปรับเปลี่ยนงวดการชำระเบี้ยประกันของคุณสำหรับช่วงอายุต่างๆ ได้ล่วงหน้า
+            </DialogDescription>
+          </DialogHeader>
 
-            <TabsContent value="history" className="pt-4 min-h-[150px] max-h-60 overflow-y-auto border-t mt-2">
-                <h3 className="mb-2 font-medium text-sm">ประวัติการเปลี่ยนแปลง</h3>
-                {iWealthyFrequencyChanges.length === 0 ? (
-                    <p className="text-xs text-gray-500 italic text-center py-4">ยังไม่มีข้อมูล</p>
-                ) : (
-                    <ul className="space-y-1.5">
-                        {iWealthyFrequencyChanges.map((record, index) => {
-                            const isLastRecord = index === iWealthyFrequencyChanges.length - 1;
-                            const freqLabel = frequencyOptions.find(f => f.value === record.frequency)?.label || record.frequency;
-                            return (
-                                <li key={record.id} className="flex justify-between items-center text-xs border-b pb-1 pr-1">
-                                    <span className='flex-1 mr-2'>
-                                        อายุ {record.startAge} - {record.endAge} ปี: <span className="font-semibold">{freqLabel}</span>
-                                    </span>
-                                    {isLastRecord && record.id && (
-                                        <Button variant="ghost" size="icon" className="h-5 w-5 text-red-500 hover:text-red-700" onClick={handleDeleteLastRecord}>
-                                            <Trash2 className="h-3 w-3" />
-                                        </Button>
-                                    )}
-                                </li>
-                            );
-                        })}
-                    </ul>
-                )}
-            </TabsContent>
-        </Tabs>
-        <DialogFooter className="mt-4">
-          {activeTab === 'edit' && (
-            <>
-              {/* +++ จุดที่แก้ไข +++ */}
-              <DialogClose asChild>
-                <Button type="button" variant="outline" size="sm">ยกเลิก</Button>
-              </DialogClose>
-              <Button type="button" size="sm" onClick={handleUpdatePlan}>อัปเดตแผน</Button>
-            </>
-          )}
-          {activeTab === 'history' && (
-            <>
-              <Button type="button" variant="outline" size="sm" onClick={() => setActiveTab("edit")}>แก้ไขเพิ่มเติม</Button>
-              {/* +++ จุดที่แก้ไข +++ */}
-              <DialogClose asChild>
-                <Button type="button" size="sm">ยืนยัน</Button>
-              </DialogClose>
-            </>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <div className="overflow-y-auto grid grid-cols-1 lg:grid-cols-2 gap-x-2 bg-slate-100/60">
+            {/* --- คอลัมน์ซ้าย: ฟอร์ม --- */}
+            <div className="px-4 py-6 space-y-6 ml-2">
+              <h3 className="font-semibold text-lg text-slate-800">สร้างรายการเปลี่ยนแปลงใหม่</h3>
+              <div className="p-4 bg-white rounded-xl space-y-5 shadow-sm">
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold text-slate-700">1. เลือกงวดที่ต้องการ</Label>
+                  <ToggleGroup type="single" value={newFrequency} onValueChange={(value) => {if (value) setNewFrequency(value as PaymentFrequencyOption)}} className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {frequencyOptions.map(opt => {
+                      const Icon = opt.icon;
+                      return (
+                      <ToggleGroupItem key={opt.value} value={opt.value} aria-label={opt.label} className="flex flex-col h-20 gap-1 data-[state=on]:bg-violet-500 data-[state=on]:text-white">
+                        <Icon className="h-6 w-6" />
+                        <span>{opt.label}</span>
+                      </ToggleGroupItem>
+                    )})}
+                  </ToggleGroup>
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold text-slate-700">2. กำหนดช่วงเวลา</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 space-y-1">
+                      <Label htmlFor="start-age" className="text-sm">อายุเริ่มต้น</Label>
+                      <Select value={startAge.toString()} onValueChange={v => setStartAge(Number(v))} disabled={!canAdd}>
+                        <SelectTrigger id="start-age" className="h-11">
+                          <SelectValue>อายุ {startAge} (ปีที่ {ageToPolicyYear(startAge)})</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableStartAges.map(age => (
+                            <SelectItem key={age} value={age.toString()}>
+                              อายุ {age} (ปีที่ {ageToPolicyYear(age)})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                     <div className="flex-1 space-y-1">
+                      <Label htmlFor="end-age" className="text-sm">อายุสิ้นสุด</Label>
+                      <Select value={endAge.toString()} onValueChange={v => setEndAge(Number(v))} disabled={!canAdd}>
+                        <SelectTrigger id="end-age" className="h-11">
+                          <SelectValue>อายุ {endAge} (ปีที่ {ageToPolicyYear(endAge)})</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableEndAges.map(age => (
+                            <SelectItem key={age} value={age.toString()}>
+                              อายุ {age} (ปีที่ {ageToPolicyYear(age)})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+                <Button onClick={handleAddChange} disabled={!canAdd} className="w-full bg-violet-600 hover:bg-violet-700 text-base py-5 font-semibold">เพิ่มลงในแผน</Button>
+              </div>
+            </div>
+
+            {/* --- คอลัมน์ขวา: ไทม์ไลน์ --- */}
+            <div className="px-6 py-6 space-y-4 lg:border-l lg:bg-white/70">
+              <h3 className="font-semibold text-lg text-slate-800">ไทม์ไลน์แผนการชำระเบี้ย</h3>
+              {plannedChanges.length === 0 ? (
+                <div className="text-center text-slate-400 pt-16 h-full flex flex-col items-center justify-center">
+                  <p className="font-medium text-slate-500">ยังไม่มีการเปลี่ยนแปลง</p>
+                  <p className="text-sm">แผนการชำระเบี้ยของคุณยังเป็น "รายปี" ตลอดสัญญา</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {plannedChanges.map(change => (
+                    <FrequencyChangeItem
+                      // ✨ 1. ถ้า id ไม่มี ให้ใช้ startAge เป็น key สำรอง
+                      key={change.id || change.startAge}
+                      record={change}
+                      // ✨ 2. เรียกใช้ onDelete โดยตรงได้เลย
+                      onDelete={() => setItemToDeleteId(change.id ?? null)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <DialogFooter className="p-6 bg-slate-100 border-t">
+            <Button type="button" variant="ghost" onClick={closeChangeFreqModal}>ยกเลิก</Button>
+            <Button type="button" onClick={handleSaveAndClose} className="bg-violet-600 hover:bg-violet-700 text-white">บันทึกแผน</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <AlertDialog open={!!itemToDeleteId} onOpenChange={() => setItemToDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+            <AlertDialogDescription>คุณต้องการลบรายการเปลี่ยนแปลงงวดนี้ใช่หรือไม่?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">ยืนยันการลบ</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

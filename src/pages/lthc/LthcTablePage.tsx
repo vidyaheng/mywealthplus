@@ -1,251 +1,537 @@
-// src/pages/lthc/LthcTablePage.tsx (Refactored to use Zustand store)
-
 import { useState, useMemo } from 'react';
-// 1. ลบ import ที่ไม่ใช้ออกไป
-// import { useOutletContext } from 'react-router-dom';
-// import type { UseLthcPlannerReturn, AnnualLTHCOutputRow } from '../../hooks/useLthcTypes';
-import type { AnnualLTHCOutputRow } from '../../hooks/useLthcTypes';
-
-// 2. เพิ่ม import ของ useAppStore
 import { useAppStore } from '../../stores/appStore';
+import type { AnnualLTHCOutputRow, LthcTaxSavingsResult } from '../../hooks/useLthcTypes';
 import { PlusCircle, MinusCircle } from 'lucide-react';
+import { calculateLthcTaxSavings } from '../../hooks/useLthcTaxCalculations';
+// Helper function to format numbers
+const formatNum = (value: number | undefined | null, digits = 0) => {
+    if (value === undefined || value === null || isNaN(value)) return '-';
+    return Math.round(value).toLocaleString(undefined, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+    });
+};
+
+// 🎨 Step 2: สร้างคอมโพเนนต์ Tax Modal (วางไว้ในไฟล์เดียวกันเพื่อความง่าย)
+const TaxModal = ({ isOpen, onClose, onConfirm }: {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: (inputs: { taxRate: number; usedFirst100k: number, endAge: number; }) => void;
+}) => {
+    const [rate, setRate] = useState(10);
+    const [used, setUsed] = useState(0);
+    const [endAge, setEndAge] = useState(98);
+
+    if (!isOpen) return null;
+
+    const handleConfirm = () => {
+        onConfirm({ taxRate: rate, usedFirst100k: used, endAge: endAge });
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
+                <h3 className="text-lg font-semibold mb-4">ข้อมูลเพื่อคำนวณการลดหย่อนภาษี</h3>
+                <div className="space-y-4">
+                    <div>
+                        <label htmlFor="taxRate" className="block text-sm font-medium text-gray-700">ฐานภาษีของคุณ (%)</label>
+                        <input
+                            type="number"
+                            id="taxRate"
+                            value={rate}
+                            onChange={(e) => setRate(Number(e.target.value))}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="usedDeduction" className="block text-sm font-medium text-gray-700">ค่าลดหย่อนประกันชีวิต (แสนแรก) ที่ใช้ไปแล้ว</label>
+                        <input
+                            type="number"
+                            id="usedDeduction"
+                            value={used}
+                            onChange={(e) => setUsed(Number(e.target.value))}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="endAge" className="block text-sm font-medium text-gray-700">คำนวณลดหย่อนถึงอายุ</label>
+                        <input
+                            type="number"
+                            id="endAge"
+                            value={endAge}
+                            onChange={(e) => setEndAge(Number(e.target.value))}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500"
+                        />
+                    </div>
+                </div>
+                <div className="mt-6 flex justify-end space-x-3">
+                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
+                        ยกเลิก
+                    </button>
+                    <button onClick={handleConfirm} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-md hover:bg-sky-700">
+                        ยืนยัน
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 export default function LthcTablePage() {
-    // 3. เปลี่ยนจากการใช้ useOutletContext มาเป็น useAppStore
+    // --- ส่วนของ Hooks และ Logic คำนวณ (เหมือนเดิม) ---
     const {
         result, isLoading, error,
-        selectedHealthPlans,
-        policyOriginMode,
-        iWealthyMode,
-        manualWithdrawalStartAge,
-        autoIWealthyPPT,
-        policyholderEntryAge
+        selectedHealthPlans, fundingSource,
+        pensionFundingOptions,
+        isTaxDeductionEnabled,
+        isTaxModalOpen,
+        taxRate,
+        usedFirst100k,
+        taxDeductionEndAge,
+        handleTaxButtonClick,
+        setTaxInputs,
+        closeTaxModal
     } = useAppStore();
 
     const [isHealthDetailsExpanded, setIsHealthDetailsExpanded] = useState<boolean>(false);
+    //const [isPensionSurplusExpanded, setIsPensionSurplusExpanded] = useState<boolean>(false);
     const [isIWealthyPremiumExpanded, setIsIWealthyPremiumExpanded] = useState<boolean>(false);
-    const [isIWealthyValueDetailsExpanded, setIsIWealthyValueDetailsExpanded] = useState<boolean>(false);
+    //const [isHybridValueExpanded, setIsHybridValueExpanded] = useState<boolean>(false);
+    const [isTotalDbExpanded, setIsTotalDbExpanded] = useState<boolean>(false);
+    const [showFullPensionTerm, setShowFullPensionTerm] = useState<boolean>(false);
+    const [isHybridPremiumExpanded, setIsHybridPremiumExpanded] = useState<boolean>(false);
 
-    const getPlanDisplayName = () => {
-        let lrDisplay = `LR ${selectedHealthPlans.lifeReadySA.toLocaleString()}/${selectedHealthPlans.lifeReadyPPT === 99 ? '99' : selectedHealthPlans.lifeReadyPPT + 'ปี'}`;
-        if (policyOriginMode === 'existingPolicy') {
-            lrDisplay += " (แผนเดิม)";
+    
+
+
+    const getPlanDisplayName = (source: 'health' | 'lthc') => {
+        const ihuDisplay = selectedHealthPlans.iHealthyUltraPlan ? `iHealthy Ultra (${selectedHealthPlans.iHealthyUltraPlan})` : "แผนสุขภาพ";
+        if (source === 'health') {
+            return ihuDisplay;
         }
-        const ihuDisplay = selectedHealthPlans.iHealthyUltraPlan ? `${selectedHealthPlans.iHealthyUltraPlan}` : "";
-        const mebDisplay = selectedHealthPlans.mebPlan ? `MEB ${selectedHealthPlans.mebPlan.toLocaleString()}` : "";
-        return [lrDisplay, ihuDisplay, mebDisplay].filter(Boolean).join(' + ');
+
+        let fundingDisplayName = '';
+        switch(fundingSource) {
+            case 'iWealthy':
+                fundingDisplayName = '+ iWealthy';
+                break;
+            case 'pension':
+                const pensionPlanName = pensionFundingOptions.planType === 'pension8' ? 'บำนาญ 8' : 'บำนาญ 60';
+                fundingDisplayName = `+ ${pensionPlanName}`;
+                break;
+            case 'hybrid':
+                 const hybridPensionName = pensionFundingOptions.planType === 'pension8' ? 'บำนาญ 8' : 'บำนาญ 60';
+                fundingDisplayName = `+ iWealthy + ${hybridPensionName}`;
+                break;
+        }
+        return `แผนสุขภาพ LTHC - ${ihuDisplay} ${fundingDisplayName}`;
     };
-
-    const withdrawalStartAge = useMemo(() => {
-        if (iWealthyMode === 'manual') {
-            return manualWithdrawalStartAge;
+    
+   const displayedResult = useMemo(() => {
+        if (!result) return [];
+        
+        if (fundingSource === 'pension' && !showFullPensionTerm) {
+            return result.filter(row => row.age <= 88);
         }
-        const iWealthyEndAge = policyholderEntryAge + autoIWealthyPPT;
-        return Math.max(61, iWealthyEndAge);
-    }, [iWealthyMode, manualWithdrawalStartAge, policyholderEntryAge, autoIWealthyPPT]);
+
+        return result;
+    }, [result, fundingSource, showFullPensionTerm]);
+
+    const taxSavingsData: LthcTaxSavingsResult | null = useMemo(() => {
+    if (!result || !isTaxDeductionEnabled) return null;
+    
+    // 🎨 3. ส่ง taxDeductionEndAge เข้าไปเป็นพารามิเตอร์สุดท้าย
+    return calculateLthcTaxSavings(result, taxRate, usedFirst100k, fundingSource, taxDeductionEndAge);
+
+}, [result, isTaxDeductionEnabled, taxRate, usedFirst100k, fundingSource, taxDeductionEndAge]); // 🎨 เพิ่ม taxDeductionEndAge ใน dependency array
 
     const summaryValues = useMemo(() => {
-        if (!result || result.length === 0) {
-            return {
-                totalHealthPremiumIfPaidAlone: 0,
-                lthcHealthPremiumPaidByUser: 0,
-                lthcTotalIWealthyPremiumPaid: 0,
-                lthcTotalCombinedPremiumPaid: 0,
-                lthcTotalWithdrawalFromIWealthy: 0,
-            };
-        }
+        if (!displayedResult || displayedResult.length === 0) return null;
+
         let totalHealthPremiumIfPaidAlone = 0;
         let lthcHealthPremiumPaidByUser = 0;
-        let lthcTotalIWealthyPremiumPaid = 0;
-        let lthcTotalWithdrawalFromIWealthy = 0;
-        result.forEach(row => {
-            totalHealthPremiumIfPaidAlone += (row.totalHealthPremium || 0);
-            if (row.age < withdrawalStartAge) {
-                lthcHealthPremiumPaidByUser += (row.totalHealthPremium || 0);
+        let lthcTotalFundingPremium = 0;
+
+        displayedResult.forEach(row => {
+            totalHealthPremiumIfPaidAlone += row.totalHealthPremium || 0;
+            
+            let isUserPayingHealth = row.age < 60;
+            if (fundingSource === 'pension' && showFullPensionTerm && row.age > 88) {
+                isUserPayingHealth = true;
             }
-            lthcTotalIWealthyPremiumPaid += (row.iWealthyTotalPremium || 0);
-            lthcTotalWithdrawalFromIWealthy += (row.iWealthyWithdrawal || 0);
+
+            if (isUserPayingHealth) {
+                lthcHealthPremiumPaidByUser += row.totalHealthPremium || 0;
+            }
+            
+            lthcTotalFundingPremium += (row.iWealthyTotalPremium || 0) + (row.pensionPremium || 0);
         });
-        const lthcTotalCombinedPremiumPaid = lthcHealthPremiumPaidByUser + lthcTotalIWealthyPremiumPaid;
-        return {
-            totalHealthPremiumIfPaidAlone,
-            lthcHealthPremiumPaidByUser,
-            lthcTotalIWealthyPremiumPaid,
-            lthcTotalCombinedPremiumPaid,
-            lthcTotalWithdrawalFromIWealthy,
-        };
-    }, [result, withdrawalStartAge]);
+
+        const lthcTotalCombinedPremiumPaid = lthcHealthPremiumPaidByUser + lthcTotalFundingPremium;
+        const totalSavings = totalHealthPremiumIfPaidAlone - lthcTotalCombinedPremiumPaid;
+
+        return { totalHealthPremiumIfPaidAlone, lthcHealthPremiumPaidByUser, lthcTotalFundingPremium, lthcTotalCombinedPremiumPaid, totalSavings };
+    }, [displayedResult, fundingSource, showFullPensionTerm]);
+
+
+
+    const taxSummaryValues = useMemo(() => {
+        if (!displayedResult || !taxSavingsData) return null;
+
+        let healthOnlySaving = 0;
+        let lthcHealthSaving = 0;
+        let lthcFundingSaving = 0;
+
+        for (const row of displayedResult) {
+            // คำนวณถึงอายุที่กำหนดเท่านั้น
+            if (row.age <= taxDeductionEndAge) {
+                const taxRow = taxSavingsData.get(row.policyYear);
+                if (taxRow) {
+                    healthOnlySaving += (taxRow.life ?? 0) + (taxRow.health ?? 0);
+                    
+                    // เช็คว่าปีนั้นผู้ใช้จ่ายเบี้ยสุขภาพเองหรือไม่
+                    const fundIsActive = (row.iWealthyWithdrawal ?? 0) > 0 || (row.pensionPayout ?? 0) > 0;
+                    if (!fundIsActive) {
+                        lthcHealthSaving += (taxRow.life ?? 0) + (taxRow.health ?? 0);
+                    }
+                    
+                    lthcFundingSaving += (taxRow.iWealthy ?? 0) + (taxRow.pension ?? 0);
+                }
+            }
+        }
+        
+        const lthcTotalSaving = lthcHealthSaving + lthcFundingSaving;
+
+        return { healthOnlySaving, lthcHealthSaving, lthcFundingSaving, lthcTotalSaving };
+    }, [displayedResult, taxSavingsData, taxDeductionEndAge]);
+    
+    const getFundingSummaryLabel = () => {
+        switch(fundingSource) {
+            case 'iWealthy':
+                return "เบี้ย iWealthy รวม:";
+            case 'pension':
+                const pensionPlanName = pensionFundingOptions.planType === 'pension8' ? 'บำนาญ 8' : 'บำนาญ 60';
+                return `เบี้ย ${pensionPlanName} รวม:`;
+            case 'hybrid':
+                const hybridPensionName = pensionFundingOptions.planType === 'pension8' ? 'บำนาญ 8' : 'บำนาญ 60';
+                return `เบี้ย iWealthy + ${hybridPensionName} รวม:`;
+            default:
+                return "เบี้ย Funding ที่จ่ายเพิ่ม:";
+        }
+    };
 
     if (isLoading) return <div className="p-4 text-center">กำลังโหลดข้อมูลตาราง...</div>;
     if (error) return <div className="p-4 text-red-600">เกิดข้อผิดพลาด: {error}</div>;
-    if (!result || result.length === 0) return <div className="p-4 text-center text-gray-500">ไม่มีข้อมูลผลประโยชน์สำหรับแสดงผล กรุณากลับไปหน้ากรอกข้อมูลแล้วกดคำนวณ</div>;
+    if (!result || result.length === 0) return <div className="p-4 text-center text-gray-500">ไม่มีข้อมูลผลประโยชน์สำหรับแสดงผล</div>;
 
-    const iHealthyPlanName = selectedHealthPlans?.iHealthyUltraPlan;
-    const healthPlanHeaderColSpan = isHealthDetailsExpanded ? 5 : 2;
-    let lthcHeaderColSpan = 1;
-    lthcHeaderColSpan += isIWealthyPremiumExpanded ? 3 : 1;
-    lthcHeaderColSpan += 1;
-    lthcHeaderColSpan += isIWealthyValueDetailsExpanded ? 6 : 1;
-    lthcHeaderColSpan += 1;
-    const planNameSuffix = iHealthyPlanName ? ` (${iHealthyPlanName})` : "";
+    // --- 🎨 FIX: สร้างตัวแปรควบคุมการแสดงผลให้ชัดเจน ---
+    const showPensionCols = fundingSource === 'pension' || fundingSource === 'hybrid';
+    const showIWealthyCols = fundingSource === 'iWealthy' || fundingSource === 'hybrid';
+    const showTaxDeduction = isTaxDeductionEnabled;
 
     return (
         <div className="space-y-8">
+            <TaxModal isOpen={isTaxModalOpen} onClose={closeTaxModal} onConfirm={setTaxInputs} />
             <div>
-                <h2 className="text-xl font-semibold mb-1 text-sky-700">ตารางผลประโยชน์แผนสุขภาพครบวงจร (LTHC Planner)</h2>
-                <p className="text-sm text-gray-600 mb-3">แผนสุขภาพที่เลือก: {getPlanDisplayName()}</p>
+                <div className="flex justify-between items-center mb-1">
+                    <h2 className="text-xl font-semibold text-sky-700">ตารางเปรียบเทียบผลประโยชน์</h2>
+                        <div className="text-right">
+                            <button
+                                onClick={handleTaxButtonClick}
+                                className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-200 border-2 ${showTaxDeduction
+                                    ? 'bg-sky-600 text-white border-sky-600'
+                                    : 'bg-white text-sky-600 border-sky-600 hover:bg-sky-50'
+                                    }`}
+                            >
+                                ลดหย่อนภาษี
+                            </button>
+                            {showTaxDeduction && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    (ผลประโยชน์ทางภาษีถึงอายุ: {taxDeductionEndAge} ปี)
+                                </p>
+                            )}
+                        </div>
+                </div>
+
                 <div className="overflow-x-auto shadow-md sm:rounded-lg border border-gray-200" style={{ maxHeight: '70vh' }}>
                     <table className="min-w-full divide-y divide-gray-200 text-xs">
                         <thead className="bg-gray-100 sticky top-0 z-10">
                             <tr>
-                                <th scope="col" className="px-2 py-3 bg-gray-50"></th>
-                                <th scope="col" className="px-2 py-3 bg-gray-50"></th>
-                                <th scope="col" className="px-1 py-3"></th>
-                                <th scope="col" colSpan={healthPlanHeaderColSpan} className="px-2 py-3 text-center text-sm font-semibold text-sky-700 uppercase tracking-wider bg-sky-50">
-                                    แผน สุขภาพ{planNameSuffix}
+                                <th rowSpan={2} className="px-2 py-3 text-center font-medium text-gray-500 uppercase bg-gray-100">ปีที่</th>
+                                <th rowSpan={2} className="px-2 py-3 text-center font-medium text-gray-500 uppercase bg-gray-100">อายุ</th>
+                                <th rowSpan={2} className="px-1 py-3 bg-gray-200 w-1"></th>
+
+                                {/* 🎨 FIX: แก้ไข colSpan ให้ถูกต้อง */}
+                                <th colSpan={2 + (isHealthDetailsExpanded ? 3 : 0) + (showTaxDeduction ? 1 : 0)} className="px-2 py-3 text-center text-sm font-semibold text-sky-700 uppercase tracking-wider bg-sky-50 border-x">
+                                    {getPlanDisplayName('health')}
                                 </th>
-                                <th scope="col" className="px-1 py-3"></th>
-                                <th scope="col" colSpan={lthcHeaderColSpan} className="px-2 py-3 text-center text-sm font-semibold text-purple-700 uppercase tracking-wider bg-purple-50">
-                                    แผนสุขภาพ LTHC
-                                </th>
+                                {fundingSource !== 'none' && <th rowSpan={2} className="px-1 py-3 bg-gray-200 w-1"></th>}
+                                {fundingSource !== 'none' && (
+                                    <th colSpan={100} className="px-2 py-3 text-center text-sm font-semibold text-purple-700 uppercase tracking-wider bg-purple-50 border-x">
+                                        {getPlanDisplayName('lthc')}
+                                    </th>
+                                )}
                             </tr>
                             <tr>
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-gray-50">ปีที่</th>
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">อายุ</th>
-                                <th scope="col" className="px-1 py-3 bg-gray-100"></th>
+                                {/* 🎨 FIX: จัดเรียงคอลัมน์ใน thead ใหม่ทั้งหมด */}
+                                {/* Health Plan Columns */}
                                 {isHealthDetailsExpanded && (
                                     <>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-sky-50">เบี้ย LR</th>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-sky-50">เบี้ย IHU</th>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-sky-50">เบี้ย MEB</th>
+                                        <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase bg-sky-50">เบี้ย LR</th>
+                                        <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase bg-sky-50">เบี้ย IHU</th>
+                                        <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase bg-sky-50">เบี้ย MEB</th>
                                     </>
                                 )}
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-red-600 uppercase tracking-wider whitespace-nowrap bg-sky-50">
-                                    <div className="flex flex-col items-center">
-                                        <span>เบี้ยสุขภาพ</span>
-                                        <button onClick={() => setIsHealthDetailsExpanded(!isHealthDetailsExpanded)} className="p-0.5 rounded-full hover:bg-gray-300 focus:outline-none" title={isHealthDetailsExpanded ? "ยุบ" : "ขยาย"}>
-                                            {isHealthDetailsExpanded ? <MinusCircle size={16} /> : <PlusCircle size={16} />}
-                                        </button>
-                                    </div>
+                                <th className="px-2 py-3 text-center text-xs font-medium text-red-600 uppercase bg-sky-50">
+                                    <div className="flex flex-col items-center"><span>เบี้ยสุขภาพรวม</span><button onClick={() => setIsHealthDetailsExpanded(!isHealthDetailsExpanded)} className="p-0.5">{isHealthDetailsExpanded ? <MinusCircle size={14} /> : <PlusCircle size={14} />}</button></div>
                                 </th>
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-purple-600 uppercase tracking-wider whitespace-nowrap bg-sky-50">คุ้มครองชีวิต</th>
-                                <th scope="col" className="px-1 py-3 bg-gray-100"></th>
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-red-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">เบี้ยสุขภาพ</th>
-                                {isIWealthyPremiumExpanded && (
+                                {showTaxDeduction && <th className="px-2 py-3 text-center text-xs font-medium text-teal-600 uppercase bg-sky-50">ลดหย่อนภาษี</th>}
+                                <th className="px-2 py-3 text-center text-xs font-medium text-purple-600 uppercase bg-sky-50">คุ้มครองชีวิต</th>
+                                
+
+                                {/* --- LTHC Plan Columns --- */}
+                                {fundingSource !== 'none' && (
                                     <>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">RPP (iW)</th>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">RTU (iW)</th>
+                                        {/* 🎨 START: แก้ไขส่วนของ LTHC */}
+                                        <th className="px-2 py-3 text-center text-xs font-medium text-red-500 uppercase bg-purple-50">เบี้ยสุขภาพ</th>
+                                        {showTaxDeduction && <th className="px-2 py-3 text-center text-xs font-medium text-teal-600 uppercase bg-purple-50">ลดหย่อน (สุขภาพ)</th>}
+                                        
+                                        {fundingSource === 'pension' && (
+                                            <>
+                                                <th className="px-2 py-3 text-center text-xs font-medium text-blue-600 uppercase bg-purple-50">เบี้ยบำนาญ</th>
+                                                {showTaxDeduction && <th className="px-2 py-3 text-center text-xs font-medium text-teal-600 uppercase bg-purple-50">ลดหย่อน (บำนาญ)</th>}
+                                                <th className="px-2 py-3 text-center text-xs font-medium text-green-600 uppercase bg-purple-50">เงินบำนาญ</th>
+                                            </>
+                                        )}
+                                        
+                                        {fundingSource === 'iWealthy' && (
+                                            <>
+                                                {isIWealthyPremiumExpanded && (
+                                                    <>
+                                                        <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase bg-purple-50">เบี้ย RPP</th>
+                                                        <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase bg-purple-50">เบี้ย RTU</th>
+                                                    </>
+                                                )}
+                                                <th className="px-2 py-3 text-center text-xs font-medium text-blue-600 uppercase bg-purple-50">
+                                                    <div className="flex flex-col items-center">
+                                                        <span>เบี้ย iW รวม</span>
+                                                        <button onClick={() => setIsIWealthyPremiumExpanded(!isIWealthyPremiumExpanded)} className="p-0.5">
+                                                            {isIWealthyPremiumExpanded ? <MinusCircle size={14} /> : <PlusCircle size={14} />}
+                                                        </button>
+                                                    </div>
+                                                </th>
+                                                {showTaxDeduction && <th className="px-2 py-3 text-center text-xs font-medium text-teal-600 uppercase bg-purple-50">ลดหย่อน (iW)</th>}
+                                                <th className="px-2 py-3 text-center text-xs font-medium text-orange-600 uppercase bg-purple-50">เงินถอน iW</th>
+                                                <th className="px-2 py-3 text-center text-xs font-medium text-green-600 uppercase bg-purple-50">มูลค่าบัญชี iW</th>
+                                            </>
+                                        )}
+
+                                        {fundingSource === 'hybrid' && (
+                                            <>
+                                                {isHybridPremiumExpanded && (
+                                                    <>
+                                                        <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase bg-purple-50">เบี้ยบำนาญ</th>
+                                                        {showTaxDeduction && <th className="px-2 py-3 text-center text-xs font-medium text-teal-600 uppercase bg-purple-50">ลดหย่อน</th>}
+                                                        <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase bg-purple-50">เบี้ย iW</th>
+                                                        {showTaxDeduction && <th className="px-2 py-3 text-center text-xs font-medium text-teal-600 uppercase bg-purple-50">ลดหย่อน</th>}
+                                                    </>
+                                                )} 
+                                                        
+                                                
+                                                <th className="px-2 py-3 text-center text-xs font-medium text-blue-600 uppercase bg-purple-50">
+                                                    <div className="flex flex-col items-center"><span>เบี้ยรวม</span><button onClick={() => setIsHybridPremiumExpanded(!isHybridPremiumExpanded)} className="p-0.5">{isHybridPremiumExpanded ? <MinusCircle size={14} /> : <PlusCircle size={14} />}</button></div>
+                                                </th>
+                                                {showTaxDeduction && <th className="px-2 py-3 text-center text-xs font-medium text-teal-600 uppercase bg-purple-50">รวมลดหย่อนภาษี</th>}
+                                                
+                                                <th className="px-2 py-3 text-center text-xs font-medium text-green-600 uppercase bg-purple-50">เงินบำนาญ</th>
+                                                <th className="px-2 py-3 text-center text-xs font-medium text-orange-600 uppercase bg-purple-50">เงินถอน iW</th>
+                                            </>
+                                        )}
+
+                                        {showPensionCols && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase bg-purple-50">ส่วนต่าง</th>}
+                                        
+                                        {isTotalDbExpanded && (
+                                            <>
+                                                {showIWealthyCols && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase bg-purple-50">DB iW</th>}
+                                                {showPensionCols && <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase bg-purple-50">DB บำนาญ</th>}
+                                            </>
+                                        )}
+                                        <th className="px-2 py-3 text-center text-xs font-medium text-purple-600 uppercase bg-purple-50">
+                                            <div className="flex flex-col items-center"><span>คุ้มครองชีวิตรวม</span><button onClick={() => setIsTotalDbExpanded(!isTotalDbExpanded)} className="p-0.5">{isTotalDbExpanded ? <MinusCircle size={14} /> : <PlusCircle size={14} />}</button></div>
+                                        </th>
+                                        
                                     </>
                                 )}
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-blue-600 uppercase tracking-wider whitespace-nowrap bg-purple-50">
-                                    <div className="flex flex-col items-center">
-                                        <span>เบี้ย iW</span>
-                                        <button onClick={() => setIsIWealthyPremiumExpanded(!isIWealthyPremiumExpanded)} className="p-0.5 rounded-full hover:bg-gray-300 focus:outline-none" title={isIWealthyPremiumExpanded ? "ยุบ" : "ขยาย"}>
-                                            {isIWealthyPremiumExpanded ? <MinusCircle size={16} /> : <PlusCircle size={16} />}
-                                        </button>
-                                    </div>
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-orange-600 uppercase tracking-wider whitespace-nowrap bg-purple-50">เงินถอน</th>
-                                {isIWealthyValueDetailsExpanded && (
-                                    <>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">ค่าธรรมเนียม</th>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">COI</th>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">AdFEE</th>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">ผลตอบแทน</th>
-                                        <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">Bonus</th>
-                                    </>
-                                )}
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-green-600 uppercase tracking-wider whitespace-nowrap bg-purple-50">
-                                    <div className="flex flex-col items-center">
-                                        <span>มูลค่า กธ</span>
-                                        <button onClick={() => setIsIWealthyValueDetailsExpanded(!isIWealthyValueDetailsExpanded)} className="p-0.5 rounded-full hover:bg-gray-300 focus:outline-none" title={isIWealthyValueDetailsExpanded ? "ยุบ" : "ขยาย"}>
-                                            {isIWealthyValueDetailsExpanded ? <MinusCircle size={16} /> : <PlusCircle size={16} />}
-                                        </button>
-                                    </div>
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-purple-600 uppercase tracking-wider whitespace-nowrap bg-purple-50">คุ้มครองชีวิตรวม</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {result.map((row: AnnualLTHCOutputRow) => {
-                                const healthPremiumPaidByUser = row.age < withdrawalStartAge ? (row.totalHealthPremium || 0) : 0;
+                            {displayedResult.map((row: AnnualLTHCOutputRow) => {
+                                const taxRow = taxSavingsData?.get(row.policyYear);
+                                //const fundIsActive = (row.iWealthyWithdrawal ?? 0) > 0 || (row.pensionPayout ?? 0) > 0;
+                                const healthPremiumPaidByUser = row.age < 60 ? row.totalHealthPremium : 0;
+
+                                const totalFundingPremium = (row.pensionPremium ?? 0) + (row.iWealthyTotalPremium ?? 0);
+
                                 return (
                                     <tr key={`lthc-${row.policyYear}`} className="hover:bg-slate-50">
                                         <td className="px-2 py-2 whitespace-nowrap text-center">{row.policyYear}</td>
-                                        <td className="px-2 py-2 whitespace-nowrap text-center">{row.age}</td>
-                                        <td className="px-1 py-2 bg-gray-100"></td>
+                                        <td className="px-2 py-2 whitespace-nowrap text-center font-semibold">{row.age}</td>
+                                        <td className="px-1 py-2 bg-gray-200"></td>
+
+                                        {/* 🎨 FIX: จัดเรียงคอลัมน์ใน tbody ให้ตรงกับ thead ใหม่ */}
                                         {isHealthDetailsExpanded && (
                                             <>
-                                                <td className="px-2 py-2 whitespace-nowrap text-center">{Math.round(row.lifeReadyPremium).toLocaleString()}</td>
-                                                <td className="px-2 py-2 whitespace-nowrap text-center">{Math.round(row.iHealthyUltraPremium).toLocaleString()}</td>
-                                                <td className="px-2 py-2 whitespace-nowrap text-center">{Math.round(row.mebPremium).toLocaleString()}</td>
+                                                <td className="px-2 py-2 whitespace-nowrap text-right">{formatNum(row.lifeReadyPremium)}</td>
+                                                <td className="px-2 py-2 whitespace-nowrap text-right">{formatNum(row.iHealthyUltraPremium)}</td>
+                                                <td className="px-2 py-2 whitespace-nowrap text-right">{formatNum(row.mebPremium)}</td>
                                             </>
                                         )}
-                                        <td className="px-2 py-2 whitespace-nowrap text-center font-semibold text-red-500">{Math.round(row.totalHealthPremium).toLocaleString()}</td>
-                                        <td className="px-2 py-2 whitespace-nowrap text-center font-semibold text-purple-500">{Math.round(row.lifeReadyDeathBenefit).toLocaleString()}</td>
-                                        <td className="px-1 py-2 bg-gray-100"></td>
-                                        <td className="px-2 py-2 whitespace-nowrap text-center font-semibold text-red-500">{Math.round(healthPremiumPaidByUser).toLocaleString()}</td>
-                                        {isIWealthyPremiumExpanded && (
+                                        <td className="px-2 py-2 whitespace-nowrap text-right font-semibold text-red-500 bg-red-50">{formatNum(row.totalHealthPremium)}</td>
+                                        {showTaxDeduction && 
+                                            <td className="px-2 py-2 whitespace-nowrap text-right font-semibold text-teal-600 bg-teal-50">
+                                                {formatNum(row.age <= taxDeductionEndAge ? (taxRow?.life ?? 0) + (taxRow?.health ?? 0) : 0)}
+                                            </td>
+                                        }
+                                        <td className="px-2 py-2 whitespace-nowrap text-right font-semibold text-purple-500 bg-purple-50">{formatNum(row.lifeReadyDeathBenefit)}</td>
+                                        
+                                        
+                                        {fundingSource !== 'none' && <td className="px-1 py-2 bg-gray-200"></td>}
+
+                                        {fundingSource !== 'none' && (
                                             <>
-                                                <td className="px-2 py-2 whitespace-nowrap text-center">{row.iWealthyRpp !== undefined ? Math.round(row.iWealthyRpp).toLocaleString() : '-'}</td>
-                                                <td className="px-2 py-2 whitespace-nowrap text-center">{row.iWealthyRtu !== undefined ? Math.round(row.iWealthyRtu).toLocaleString() : '-'}</td>
+                                                {/* 🎨 START: แก้ไขส่วนของ LTHC */}
+                                                <td className="px-2 py-2 whitespace-nowrap text-right font-semibold text-red-500 bg-red-50">{formatNum(healthPremiumPaidByUser)}</td>
+                                                {showTaxDeduction && 
+                                                    <td className="px-2 py-2 whitespace-nowrap text-right font-semibold text-teal-600 bg-teal-50">
+                                                        {formatNum(healthPremiumPaidByUser > 0 && row.age <= taxDeductionEndAge ? (taxRow?.life ?? 0) + (taxRow?.health ?? 0) : 0)}
+                                                    </td>
+                                                }
+                                                
+                                                {fundingSource === 'pension' && (
+                                                    <>
+                                                        <td className="px-2 py-2 whitespace-nowrap text-right text-blue-600">{formatNum(row.pensionPremium)}</td>
+                                                        {showTaxDeduction && <td className="px-2 py-2 whitespace-nowrap text-right font-semibold text-teal-600 bg-teal-50">{formatNum(taxRow?.pension)}</td>}
+                                                        <td className="px-2 py-2 whitespace-nowrap text-right text-green-600">{formatNum(row.pensionPayout)}</td>
+                                                    </>
+                                                )}
+
+                                                {fundingSource === 'iWealthy' && (
+                                                    <>
+                                                        {isIWealthyPremiumExpanded && (
+                                                            <>
+                                                                <td className="px-2 py-2 whitespace-nowrap text-right">{formatNum(row.iWealthyRpp)}</td>
+                                                                <td className="px-2 py-2 whitespace-nowrap text-right">{formatNum(row.iWealthyRtu)}</td>
+                                                            </>
+                                                        )}
+                                                        <td className="px-2 py-2 whitespace-nowrap text-right text-blue-600">{formatNum(row.iWealthyTotalPremium)}</td>
+                                                        {showTaxDeduction && <td className="px-2 py-2 whitespace-nowrap text-right font-semibold text-teal-600 bg-teal-50">{formatNum(taxRow?.iWealthy)}</td>}
+                                                        <td className="px-2 py-2 whitespace-nowrap text-right text-orange-600">{formatNum(row.iWealthyWithdrawal)}</td>
+                                                        <td className="px-2 py-2 whitespace-nowrap text-right font-semibold text-green-600">{formatNum(row.iWealthyEoyAccountValue)}</td>
+                                                    </>
+                                                )}
+
+                                                {fundingSource === 'hybrid' && (
+                                                    <>
+                                                        {isHybridPremiumExpanded && (
+                                                            <>
+                                                                <td className="px-2 py-2 whitespace-nowrap text-right">{formatNum(row.pensionPremium)}</td>
+                                                                {showTaxDeduction && <td className="px-2 py-2 whitespace-nowrap text-right font-semibold text-teal-600 bg-teal-50">{formatNum(taxRow?.pension)}</td>}
+                                                                <td className="px-2 py-2 whitespace-nowrap text-right">{formatNum(row.iWealthyTotalPremium)}</td>
+                                                                {showTaxDeduction && <td className="px-2 py-2 whitespace-nowrap text-right font-semibold text-teal-600 bg-teal-50">{formatNum(taxRow?.iWealthy)}</td>}
+                                                            </>
+                                                        )}
+                                                        <td className="px-2 py-2 whitespace-nowrap text-right text-blue-600">{formatNum(totalFundingPremium)}</td>
+                                                        {showTaxDeduction && <td className="px-2 py-2 whitespace-nowrap text-right font-semibold text-teal-600 bg-teal-50">{formatNum(taxRow?.total)}</td>}
+                                                        
+                                                        <td className="px-2 py-2 whitespace-nowrap text-right text-green-600">{formatNum(row.pensionPayout)}</td>
+                                                        <td className="px-2 py-2 whitespace-nowrap text-right text-orange-600">{formatNum(row.iWealthyWithdrawal)}</td>
+                                                    </>
+                                                )}
+
+                                                {showPensionCols && <td className={`px-2 py-2 whitespace-nowrap text-right font-medium ${(row.pensionSurplusShortfall ?? 0) < 0 ? 'text-red-600' : 'text-green-700'}`}>{formatNum(row.pensionSurplusShortfall)}</td>}
+                                                
+                                                {isTotalDbExpanded && (
+                                                    <>
+                                                        {showIWealthyCols && <td className="px-2 py-2 whitespace-nowrap text-right">{formatNum(row.iWealthyEoyDeathBenefit)}</td>}
+                                                        {showPensionCols && <td className="px-2 py-2 whitespace-nowrap text-right">{formatNum(row.pensionDeathBenefit)}</td>}
+                                                    </>
+                                                )}
+                                                <td className="px-2 py-2 whitespace-nowrap text-right font-bold text-purple-700 bg-purple-100">{formatNum(row.totalCombinedDeathBenefit)}</td>
+                                                
                                             </>
                                         )}
-                                        <td className="px-2 py-2 whitespace-nowrap text-center font-medium text-blue-500">{row.iWealthyTotalPremium !== undefined ? Math.round(row.iWealthyTotalPremium).toLocaleString() : '-'}</td>
-                                        <td className="px-2 py-2 whitespace-nowrap text-center text-orange-500">{row.iWealthyWithdrawal !== undefined ? Math.round(row.iWealthyWithdrawal).toLocaleString() : '-'}</td>
-                                        {isIWealthyValueDetailsExpanded && (
-                                            <>
-                                                <td className="px-2 py-2 whitespace-nowrap text-center">{row.iWealthyPremChargeTotal !== undefined ? Math.round(row.iWealthyPremChargeTotal).toLocaleString() : '-'}</td>
-                                                <td className="px-2 py-2 whitespace-nowrap text-center">{row.iWealthyCOI !== undefined ? Math.round(row.iWealthyCOI).toLocaleString() : '-'}</td>
-                                                <td className="px-2 py-2 whitespace-nowrap text-center">{row.iWealthyAdminFee !== undefined ? Math.round(row.iWealthyAdminFee).toLocaleString() : '-'}</td>
-                                                <td className="px-2 py-2 whitespace-nowrap text-center">{row.iWealthyInvestmentReturn !== undefined ? Math.round(row.iWealthyInvestmentReturn).toLocaleString() : '-'}</td>
-                                                <td className="px-2 py-2 whitespace-nowrap text-center">{row.iWealthyRoyaltyBonus !== undefined ? Math.round(row.iWealthyRoyaltyBonus).toLocaleString() : '-'}</td>
-                                            </>
-                                        )}
-                                        <td className="px-2 py-2 whitespace-nowrap text-center font-semibold text-green-500">{row.iWealthyEoyAccountValue !== undefined ? Math.round(row.iWealthyEoyAccountValue).toLocaleString() : '-'}</td>
-                                        <td className="px-2 py-2 whitespace-nowrap text-center font-semibold text-purple-500">{row.totalCombinedDeathBenefit !== undefined ? Math.round(row.totalCombinedDeathBenefit).toLocaleString() : '-'}</td>
                                     </tr>
-                                );
+                                )
                             })}
                         </tbody>
                     </table>
                 </div>
+                 {fundingSource === 'pension' && result.length > 0 && result[result.length-1].age > 88 && (
+                    <div className="text-center mt-4">
+                        <button onClick={() => setShowFullPensionTerm(prev => !prev)} className="text-sm text-blue-600 hover:underline">
+                            {showFullPensionTerm ? 'แสดงผลถึงอายุ 88 ปี' : 'แสดงผลถึงอายุ 99 ปี'}
+                        </button>
+                    </div>
+                 )}
             </div>
-            {result && result.length > 0 && (
+            {summaryValues && (
                 <section className="mt-8 p-6 border-t-2 border-sky-600 bg-slate-50 rounded-lg shadow-lg">
-                    <h2 className="text-xl font-semibold mb-4 text-slate-700">สรุปผลประโยชน์โดยรวม:</h2>
+                    <h2 className="text-xl font-semibold mb-4 text-slate-700">
+                        สรุปเปรียบเทียบค่าใช้จ่าย (ถึงอายุ {isTaxDeductionEnabled ? taxDeductionEndAge : (fundingSource === 'pension' && !showFullPensionTerm ? 88 : 99)} ปี):
+                    </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                        <div className="p-4 bg-white rounded shadow border border-gray-200">
-                            <h3 className="font-semibold text-gray-600 mb-1">กรณีจ่ายเบี้ยสุขภาพเองทั้งหมด (โดยไม่มี iWealthy):</h3>
-                            <p>เบี้ยประกันสุขภาพรวมตลอดสัญญา:
-                                <span className="font-bold text-rose-600 ml-2">
-                                    {Math.round(summaryValues.totalHealthPremiumIfPaidAlone).toLocaleString()} บาท
-                                </span>
-                            </p>
+                         <div className="p-4 bg-white rounded shadow border border-gray-200">
+                            <h3 className="font-semibold text-gray-600 mb-1">1. กรณีจ่ายเบี้ยสุขภาพเองทั้งหมด:</h3>
+                            <p className="font-bold text-xl text-rose-600">{formatNum(summaryValues.totalHealthPremiumIfPaidAlone)} บาท</p>
+                        </div>
+                        {fundingSource !== 'none' && (
+                            <div className="p-4 bg-white rounded shadow border border-gray-200 space-y-1">
+                                <h3 className="font-semibold text-gray-600 mb-1">2. กรณีใช้แผน LTHC:</h3>
+                                <p>เบี้ยสุขภาพที่จ่ายเอง: <span className="font-bold text-sky-600 ml-2">{formatNum(summaryValues.lthcHealthPremiumPaidByUser)} บาท</span></p>
+                                <p>{getFundingSummaryLabel()} <span className="font-bold text-blue-600 ml-2">{formatNum(summaryValues.lthcTotalFundingPremium)} บาท</span></p>
+                                <p className="text-gray-800 font-medium border-t pt-2 mt-2">รวมเบี้ยที่จ่ายทั้งหมด: <span className="font-bold text-xl text-emerald-600 ml-2">{formatNum(summaryValues.lthcTotalCombinedPremiumPaid)} บาท</span></p>
+                            </div>
+                        )}
+                    </div>
+                    {fundingSource !== 'none' && summaryValues.totalSavings > 0 && (
+                        <div className="mt-6 p-4 bg-green-100 text-green-800 rounded-lg text-center">
+                            <p className="text-lg font-semibold">คุณประหยัดค่าใช้จ่ายโดยรวมไปได้ถึง <span className="text-2xl font-bold">{formatNum(summaryValues.totalSavings)}</span> บาท!</p>
                         </div>
-                        <div className="p-4 bg-white rounded shadow border border-gray-200 space-y-1">
-                            <h3 className="font-semibold text-gray-600 mb-1">กรณีใช้แผน LTHC (iWealthy ช่วยจ่ายเบี้ยสุขภาพ):</h3>
-                            <p>เบี้ยสุขภาพที่จ่ายเอง (ถึงปีก่อนเริ่มถอนจาก iWealthy):
-                                <span className="font-bold text-sky-600 ml-2">
-                                    {Math.round(summaryValues.lthcHealthPremiumPaidByUser).toLocaleString()} บาท
-                                </span>
-                            </p>
-                            <p>เบี้ย iWealthy ที่จ่ายรวมทั้งหมด:
-                                <span className="font-bold text-blue-600 ml-2">
-                                    {Math.round(summaryValues.lthcTotalIWealthyPremiumPaid).toLocaleString()} บาท
-                                </span>
-                            </p>
-                            <p className="text-gray-800 font-medium border-t pt-1 mt-1">รวมเบี้ยที่จ่ายทั้งหมดสำหรับแผน LTHC:
-                                <span className="font-bold text-emerald-600 ml-2">
-                                    {Math.round(summaryValues.lthcTotalCombinedPremiumPaid).toLocaleString()} บาท
-                                </span>
-                            </p>
-                            <p className="text-gray-800 font-medium border-t pt-1 mt-1">รวมเงินที่ถอนจาก iWealthy เพื่อจ่ายเบี้ยสุขภาพ:
-                                <span className="font-bold text-orange-600 ml-2">
-                                    {Math.round(summaryValues.lthcTotalWithdrawalFromIWealthy).toLocaleString()} บาท
-                                </span>
-                            </p>
-                        </div>
+                    )}
+                </section>
+            )}
+            {showTaxDeduction && taxSummaryValues && (
+                <section className="mt-8 p-6 border-t-2 border-teal-600 bg-slate-50 rounded-lg shadow-lg">
+                    <h2 className="text-xl font-semibold mb-4 text-slate-700">
+                        สรุปผลประโยชน์ทางภาษี (ถึงอายุ {taxDeductionEndAge} ปี):
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                            <div className="p-4 bg-white rounded shadow border border-gray-200">
+                                <h3 className="font-semibold text-gray-600 mb-1">1. กรณีจ่ายเบี้ยสุขภาพเองทั้งหมด:</h3>
+                                <p className="font-bold text-xl text-teal-600">{formatNum(taxSummaryValues.healthOnlySaving)} บาท</p>
+                            </div>
+
+                            <div className="p-4 bg-white rounded shadow border border-gray-200 space-y-1">
+                                <h3 className="font-semibold text-gray-600 mb-1">2. กรณีใช้แผน LTHC:</h3>
+                                <p>ประหยัดจากเบี้ยที่จ่ายเอง: <span className="font-bold text-sky-600 ml-2">{formatNum(taxSummaryValues.lthcHealthSaving)} บาท</span></p>
+                                <p>
+                                    ประหยัดจากแผน {(() => {
+                                        switch(fundingSource) {
+                                            case 'iWealthy':
+                                                return 'iWealthy';
+                                            case 'pension':
+                                                return pensionFundingOptions.planType === 'pension8' ? 'บำนาญ 8' : 'บำนาญ 60';
+                                            case 'hybrid':
+                                                const pensionName = pensionFundingOptions.planType === 'pension8' ? 'บำนาญ 8' : 'บำนาญ 60';
+                                                return `Hybrid (iWealthy + ${pensionName})`;
+                                            default:
+                                                return 'Funding';
+                                        }
+                                    })()}:
+                                    <span className="font-bold text-blue-600 ml-2">{formatNum(taxSummaryValues.lthcFundingSaving)} บาท</span>
+                                </p>
+                                <p className="text-gray-800 font-medium border-t pt-2 mt-2">รวมประหยัดภาษีทั้งหมด: <span className="font-bold text-xl text-teal-600 ml-2">{formatNum(taxSummaryValues.lthcTotalSaving)} บาท</span></p>
+                            </div>
                     </div>
                 </section>
             )}

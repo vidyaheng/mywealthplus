@@ -1,5 +1,4 @@
-// src/components/lthc/LthcReduceSumInsuredModal.tsx
-
+// src/components/lthc/LthcReduceSumInsuredModal.tsx (ฉบับแก้ไข)
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { SAReductionStrategy } from '@/hooks/useLthcTypes';
 import { FaTrash, FaPlus, FaSave, FaTimes } from 'react-icons/fa';
@@ -17,6 +16,7 @@ export default function LthcReduceSumInsuredModal({ isOpen, onClose, strategy, s
     const [workingStrategy, setWorkingStrategy] = useState<SAReductionStrategy>(strategy);
     const ageSelectRef = useRef<HTMLSelectElement>(null);
 
+    // ... (useMemo และ useEffect เหมือนเดิม) ...
     const availableAgesForDropdown = useMemo(() => {
         let startAge = entryAge + 1;
         if (workingStrategy.type === 'manual' && workingStrategy.ages.length > 0) {
@@ -36,13 +36,15 @@ export default function LthcReduceSumInsuredModal({ isOpen, onClose, strategy, s
         return null;
     }
 
-    const handleStrategyTypeChange = (type: 'auto' | 'manual') => {
+
+    const handleStrategyTypeChange = (type: 'auto' | 'manual' | 'none') => {
         if (type === 'auto') {
             setWorkingStrategy({ type: 'auto' });
-        } else {
-            if (workingStrategy.type === 'auto') {
-                setWorkingStrategy({ type: 'manual', ages: [] });
-            }
+        } else if (type === 'manual') {
+            const currentAges = workingStrategy.type === 'manual' ? workingStrategy.ages : [];
+            setWorkingStrategy({ type: 'manual', ages: currentAges });
+        } else if (type === 'none') {
+            setWorkingStrategy({ type: 'none' });
         }
     };
 
@@ -65,7 +67,11 @@ export default function LthcReduceSumInsuredModal({ isOpen, onClose, strategy, s
     };
 
     const handleSave = () => {
-        setStrategy(workingStrategy);
+        if (workingStrategy.type === 'manual' && workingStrategy.ages.length === 0) {
+            setStrategy({ type: 'none' });
+        } else {
+            setStrategy(workingStrategy);
+        }
         onClose();
     };
 
@@ -79,14 +85,19 @@ export default function LthcReduceSumInsuredModal({ isOpen, onClose, strategy, s
                 <div className="p-5 space-y-6">
                     <div>
                         <label className="font-medium text-gray-700">รูปแบบการลดทุน</label>
-                        <div className="mt-2 flex rounded-md shadow-sm">
+                        {/* ✅ เพิ่มปุ่ม "ไม่ลดทุน" */}
+                        <div className="mt-2 grid grid-cols-3 rounded-md shadow-sm">
                             <button type="button" onClick={() => handleStrategyTypeChange('auto')}
-                                className={`flex-1 px-4 py-2 text-sm font-medium rounded-l-md border border-gray-300 ${workingStrategy.type === 'auto' ? 'bg-blue-600 text-white z-10' : 'bg-white hover:bg-gray-50'}`}>
-                                อัตโนมัติ (แนะนำ)
+                                className={`px-4 py-2 text-sm font-medium rounded-l-md border border-gray-300 ${workingStrategy.type === 'auto' ? 'bg-blue-600 text-white z-10' : 'bg-white hover:bg-gray-50'}`}>
+                                อัตโนมัติ
                             </button>
                             <button type="button" onClick={() => handleStrategyTypeChange('manual')}
-                                className={`flex-1 px-4 py-2 text-sm font-medium rounded-r-md border border-l-0 border-gray-300 ${workingStrategy.type === 'manual' ? 'bg-blue-600 text-white z-10' : 'bg-white hover:bg-gray-50'}`}>
+                                className={`px-4 py-2 text-sm font-medium border-t border-b border-gray-300 ${workingStrategy.type === 'manual' ? 'bg-blue-600 text-white z-10' : 'bg-white hover:bg-gray-50'}`}>
                                 กำหนดเอง
+                            </button>
+                            <button type="button" onClick={() => handleStrategyTypeChange('none')}
+                                className={`px-4 py-2 text-sm font-medium rounded-r-md border border-l-0 border-gray-300 ${workingStrategy.type === 'none' ? 'bg-blue-600 text-white z-10' : 'bg-white hover:bg-gray-50'}`}>
+                                ไม่ลดทุน
                             </button>
                         </div>
                     </div>
