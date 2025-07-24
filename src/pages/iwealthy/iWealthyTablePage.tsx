@@ -130,11 +130,16 @@ const dataWithTaxBenefit = useMemo((): AnnualDataRowWithTax[] => {
     // --- Handlers สำหรับส่งให้ Fullscreen Modal ---
     const totalPremiumForSliderModal = useMemo(() => iWealthyRpp + iWealthyRtu, [iWealthyRpp, iWealthyRtu]);
     const rppPercentForSliderModal = useMemo(() => (totalPremiumForSliderModal > 0 ? Math.round((iWealthyRpp / totalPremiumForSliderModal) * 100) : 100), [iWealthyRpp, totalPremiumForSliderModal]);
-    const handleGraphAgeChangeInModal = useCallback((ageFromGraph: number) => {
+    const handleGraphAgeChangeInModal = useCallback((ageFromGraph: number | undefined) => {
         setCurrentAgeForInfoBoxModal(ageFromGraph);
-        const dataPoint = chartDataForModal.find(d => d.age === ageFromGraph);
-        if (dataPoint) {
-            setHoveredGraphDataModal(dataPoint);
+        
+        if (typeof ageFromGraph === 'number') {
+            const dataPoint = chartDataForModal.find(d => d.age === ageFromGraph);
+            if (dataPoint) {
+                setHoveredGraphDataModal(dataPoint);
+            }
+        } else {
+            setHoveredGraphDataModal(null); // Clear hovered data if age is undefined
         }
     }, [chartDataForModal]);
     const initialDataForInfoBoxModal = useMemo(() => {
