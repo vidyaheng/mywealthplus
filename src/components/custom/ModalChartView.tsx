@@ -27,7 +27,7 @@ export interface ModalChartViewProps {
     assumedReturnRate: number;
     onReturnRateChange: (rate: number) => void;
     onRecalculate: () => void;
-    onAgeChange: (age: number) => void;
+    onAgeChange: (age: number | undefined) => void;
     isFullScreenView?: boolean; // Prop ที่แก้ปัญหา error
     CustomTooltipComponent?: React.ElementType;
     hoveredAge?: number;
