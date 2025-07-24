@@ -80,6 +80,12 @@
   }
 }
 
+@media print {
+  .page-break-before {
+    page-break-before: always;
+  }
+}
+
 /* ----- VVVVVV เพิ่ม Custom CSS สำหรับ Slider Theme สีอ่อนบนพื้นหลังเข้ม VVVVVV ----- */
 /* ใช้สำหรับ Slider ที่มี class "slider-dark-theme" */
 

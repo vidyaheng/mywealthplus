@@ -1,15 +1,10 @@
 // src/components/GraphComponent.tsx
-import React from 'react'; // React import is crucial for JSX and React types
-import { useCallback, useMemo } from 'react';
+
+import React, { useCallback, useMemo } from 'react';
 import {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    //Legend,
-    ResponsiveContainer,
+    LineChart, Line, XAxis, YAxis,
+    CartesianGrid, ResponsiveContainer, ReferenceLine,
+    Tooltip, Dot
 } from 'recharts';
 
 export interface ChartData {
@@ -20,6 +15,89 @@ export interface ChartData {
     premiumCumulative?: number;
 }
 
+// [ใหม่] สร้าง Component สำหรับป้ายแสดงข้อมูลที่ลอยอยู่ด้านบน
+const CustomHoverLabel = React.memo(({ viewBox, age, mirr }: { viewBox?: any, age?: number, mirr?: string }) => {
+    if (!viewBox || age === undefined) return null;
+    const { x } = viewBox;
+    // ปรับให้แสดงเฉพาะ MIRR ถ้า age เป็นค่าที่มาจาก ReferenceLine (hover)
+    // แต่ถ้าต้องการให้แสดงทั้งคู่ ก็สามารถคงรูปแบบเดิมได้
+    const textToShow = `อายุ ${age} | MIRR: ${mirr || 'N/A'}`;
+    const textWidth = textToShow.length * 6.5; // ประมาณความกว้าง
+
+    return (
+        <g transform={`translate(${x}, 10)`}>
+            <rect x={-(textWidth / 2)} y={0} width={textWidth} height={22} fill="#1e3a8a" rx={11} />
+            <text x={0} y={15} textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">
+                {textToShow}
+            </text>
+        </g>
+    );
+});
+
+const LINE_COLORS = {
+    deathBenefit: '#3b87eb',
+    accountValue: '#F5A623',
+    premiumAnnual: 'red',
+    premiumCumulative: 'green',
+};
+
+// --- ฟังก์ชันสำหรับสร้าง custom activeDot renderer (Higher-Order Function) ---
+const createCustomActiveDotRenderer = (showProps: {
+    showDeathBenefit: boolean;
+    showAccountValue: boolean;
+    showPremiumAnnual: boolean;
+    showPremiumCumulative: boolean;
+}) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    return (dotProps: any): React.ReactElement => { // นี่คือฟังก์ชันที่ Recharts คาดหวัง
+        const { cx, cy, dataKey } = dotProps;
+        
+        let dotStrokeColor: string = 'grey';
+        let shouldRender = false;
+
+        if (typeof cx !== 'number' || typeof cy !== 'number') return <></>;
+
+        switch (dataKey) {
+            case 'deathBenefit':
+                if (showProps.showDeathBenefit) {
+                    dotStrokeColor = LINE_COLORS.deathBenefit;
+                    shouldRender = true;
+                }
+                break;
+            case 'accountValue':
+                if (showProps.showAccountValue) {
+                    dotStrokeColor = LINE_COLORS.accountValue;
+                    shouldRender = true;
+                }
+                break;
+            case 'premiumAnnual':
+                if (showProps.showPremiumAnnual) {
+                    dotStrokeColor = LINE_COLORS.premiumAnnual;
+                    shouldRender = true;
+                }
+                break;
+            case 'premiumCumulative':
+                if (showProps.showPremiumCumulative) {
+                    dotStrokeColor = LINE_COLORS.premiumCumulative;
+                    shouldRender = true;
+                }
+                break;
+            default:
+                shouldRender = false;
+        }
+
+        if (shouldRender) {
+            return (
+                <g>
+                    <Dot cx={cx} cy={cy} r={5} fill={dotStrokeColor} stroke={dotStrokeColor} strokeWidth={1} />
+                    <Dot cx={cx} cy={cy} r={3} fill="white" />
+                </g>
+            );
+        }
+        return <></>;
+    };
+};
+
 interface GraphProps {
     data: ChartData[];
     setHoveredData: React.Dispatch<React.SetStateAction<ChartData | null>>;
@@ -27,26 +105,12 @@ interface GraphProps {
     showAccountValue: boolean;
     showPremiumAnnual: boolean;
     showPremiumCumulative: boolean;
-    onAgeChange?: (age: number) => void;
+    onAgeChange: (age: number | undefined) => void;
+    hoveredAge?: number;
+    hoveredMirr?: string;
+    mirrData?: Map<number, number | null> | null;
+    CustomTooltipComponent?: React.ElementType;
 }
-
-// Custom Tooltip (ถ้าต้องการปรับแต่งการแสดงข้อมูลเมื่อ hover)
-// const CustomTooltipContent = ({ active, payload, label }: any) => {
-//     if (active && payload && payload.length) {
-//         // Example of custom tooltip content
-//         // return (
-//         //   <div className="custom-tooltip bg-white p-3 shadow-lg rounded border border-gray-200 text-xs">
-//         //     {/* ... content ... */}
-//         //   </div>
-//         // );
-//     }
-//     return null;
-// };
-
-// Custom Tooltip Content ที่ไม่แสดงผลอะไรเลย (เพื่อให้ cursor ยังทำงาน)
-const EmptyTooltipContent = () => {
-    return null; // หรือ <></>
-};
 
 const Graph: React.FC<GraphProps> = ({
     data,
@@ -55,144 +119,124 @@ const Graph: React.FC<GraphProps> = ({
     showAccountValue,
     showPremiumCumulative,
     showPremiumAnnual,
-    onAgeChange
+    onAgeChange, 
+    hoveredAge,
+    hoveredMirr,
+    //mirrData,
+    //CustomTooltipComponent,
 }) => {
+    
+    const getTicks = useCallback((dataForTicks: ChartData[]): number[] => {
+        if (!dataForTicks || dataForTicks.length === 0) return [];
 
-    // filterTicks function ควรจะรับ number เท่านั้น (เหมือนเดิม)
-    const filterTicks = useCallback((age: number): boolean => {
-        if (data && data.length > 0) {
-            const firstAge = data[0]?.age; // ใช้ optional chaining เผื่อ data[0] ไม่มี
-            const lastAge = data[data.length - 1]?.age; // ใช้ optional chaining เผื่อ data[data.length - 1] ไม่มี
+        const ages = dataForTicks.map(d => d.age).filter((age): age is number => age !== undefined);
+        if (ages.length === 0) return [];
 
-            // ตรวจสอบว่า firstAge และ lastAge เป็น number จริงๆ ก่อนเปรียบเทียบ
-            if (typeof firstAge === 'number' && age === firstAge) {
-                return true;
-            }
-            if (typeof lastAge === 'number' && age === lastAge) {
-                return true;
-            }
-        }
-        return age % 5 === 0;
-    }, [data]); // filterTicks ขึ้นอยู่กับ data
+        const minAge = Math.min(...ages);
+        const maxAge = Math.max(...ages);
 
-    const tickValues = useMemo(() => {
-        if (!data || data.length === 0) {
-            return []; // ถ้าไม่มี data ก็ return array ว่าง
+        const ticks = new Set<number>();
+
+        // หาตัวเลขแรกที่ลงท้ายด้วย 0 หรือ 5 ที่มากกว่าหรือเท่ากับ minAge
+        const startTick = Math.ceil(minAge / 5) * 5;
+
+        // สร้าง Ticks ที่ลงท้ายด้วย 0 หรือ 5 ไปจนถึง maxAge
+        for (let i = startTick; i <= maxAge; i += 5) {
+            ticks.add(i);
         }
 
-        // 1. ดึงค่า age ทั้งหมดออกมา (TypeScript อาจจะมองว่าเป็น (number | undefined)[])
-        const allAges = data.map(item => item.age);
+        // เพิ่ม tick แรก (minAge) และ tick สุดท้าย (maxAge) เพื่อให้กราฟเต็มขอบเสมอ
+        // ถ้า minAge หรือ maxAge ไม่ได้ลงท้ายด้วย 0 หรือ 5
+        ticks.add(minAge);
+        ticks.add(maxAge);
 
-        // 2. กรองเอาเฉพาะค่าที่เป็น number จริงๆ และไม่เป็น undefined
-        //    โดยใช้ type predicate `ageValue is number` เพื่อบอก TypeScript ว่าผลลัพธ์จะเป็น number[]
-        const definedAges: number[] = allAges.filter((ageValue): ageValue is number => typeof ageValue === 'number');
+        return Array.from(ticks).sort((a, b) => a - b);
+    }, []);
 
-        // 3. นำ definedAges (ซึ่งเป็น number[] แน่นอนแล้ว) มา filter ด้วย filterTicks
-        return definedAges.filter(filterTicks);
+    const memoizedTicks = useMemo(() => getTicks(data), [data, getTicks]);
 
-    }, [data, filterTicks]); // คำนวณใหม่เมื่อ data หรือ filterTicks เปลี่ยน
+    // สร้าง activeDotRenderer ใน useMemo เพื่อให้มัน Stable
+    const activeDotRenderer = React.useMemo(() => createCustomActiveDotRenderer({
+        showDeathBenefit,
+        showAccountValue,
+        showPremiumAnnual,
+        showPremiumCumulative
+    }), [showDeathBenefit, showAccountValue, showPremiumAnnual, showPremiumCumulative]);
+    // Dependencies คือ props ที่ควบคุมการแสดงผลของ Dot ซึ่งอาจเปลี่ยนได้
 
-    const handleMouseMove = (event: any) => {
-        if (event && event.activePayload && event.activePayload.length > 0) {
+    // สร้าง object สำหรับ margin ใน useMemo เพื่อให้มัน Stable
+    const chartMargin = React.useMemo(() => ({ top: 40, right: 40, left: 20, bottom: 20 }), []);
+
+    const lastHoveredAgeRef = React.useRef<number | undefined>(undefined);
+
+    const handleMouseMove = React.useCallback((event: any) => {
+        if (event?.activePayload && event.activePayload.length > 0) {
             const payload = event.activePayload[0].payload as ChartData;
-            setHoveredData(payload);
-            if (onAgeChange && payload.age !== undefined) {
+            // ตรวจสอบว่าข้อมูลที่ hover มีการเปลี่ยนแปลงหรือไม่ ก่อนที่จะ set State
+            // เพื่อหลีกเลี่ยงการ re-render ที่ไม่จำเป็น
+            setHoveredData(prevData => {
+                if (prevData?.age === payload.age && 
+                    prevData?.deathBenefit === payload.deathBenefit &&
+                    prevData?.accountValue === payload.accountValue &&
+                    prevData?.premiumAnnual === payload.premiumAnnual &&
+                    prevData?.premiumCumulative === payload.premiumCumulative) {
+                    return prevData; // ไม่มีอะไรเปลี่ยน ไม่ต้อง update state
+                }
+                return payload; // ข้อมูลเปลี่ยน อัปเดต state
+            });
+
+            if (payload.age !== undefined && payload.age !== lastHoveredAgeRef.current) {
+                lastHoveredAgeRef.current = payload.age;
                 onAgeChange(payload.age);
             }
         }
-    };
+    }, [setHoveredData, onAgeChange]); // Dependencies สำหรับ useCallback
 
-    const handleMouseLeave = () => {
-        setHoveredData(null);
-    };
-
-    // เปลี่ยน return type เป็น React.ReactElement
-    const renderActiveDot = (props: any): React.ReactElement => {
-        const { cx, cy, payload, dataKey } = props; // ไม่ใช้ stroke จาก props โดยตรงแล้ว
-
-        let shouldRenderDot = false;
-        let dotStrokeColor = '#8884d8'; // สี fallback เริ่มต้น
-
-        // ตรวจสอบว่า payload (ข้อมูล ณ จุดนั้น) และ cx, cy (พิกัด) มีค่าที่ถูกต้อง
-        if (payload && typeof cx === 'number' && typeof cy === 'number') {
-            // กำหนดสีของเส้นขอบวงกลม (dotStrokeColor) ตาม dataKey และตรวจสอบว่าเส้นนั้นๆ ถูกตั้งค่าให้แสดงผล
-            // และมีข้อมูล ณ จุดนั้นหรือไม่
-            if (dataKey === 'deathBenefit' && showDeathBenefit && payload.deathBenefit !== undefined) {
-                shouldRenderDot = true;
-                dotStrokeColor = "#3b87eb"; // สีของเส้น deathBenefit
-            } else if (dataKey === 'accountValue' && showAccountValue && payload.accountValue !== undefined) {
-                shouldRenderDot = true;
-                dotStrokeColor = "#F5A623"; // สีของเส้น accountValue
-            } else if (dataKey === 'premiumAnnual' && showPremiumAnnual && payload.premiumAnnual !== undefined) {
-                shouldRenderDot = true;
-                dotStrokeColor = "red";     // สีของเส้น premiumAnnual
-            } else if (dataKey === 'premiumCumulative' && showPremiumCumulative && payload.premiumCumulative !== undefined) {
-                shouldRenderDot = true;
-                dotStrokeColor = "green";   // สีของเส้น premiumCumulative
-            }
-        }
-
-        if (shouldRenderDot) {
-            // แสดงวงกลม: ขอบสีตามเส้นกราฟ (dotStrokeColor), สีพื้นเป็นสีขาว, รัศมี 5, เส้นขอบหนา 1.5
-            return (
-                <circle cx={cx} cy={cy} r={6} stroke={dotStrokeColor} strokeWidth={2} fill="white" />
-            );
-        }
-        return <></>; // ถ้าไม่เข้าเงื่อนไข ให้ return React Fragment เปล่า
-    };
-
+    const handleMouseLeave = React.useCallback(() => {
+    setHoveredData(null);
+    lastHoveredAgeRef.current = undefined;
+    // ส่ง undefined แทน NaN เพื่อบ่งบอกว่าไม่มีการ hover อายุที่ชัดเจน
+    // และให้ Parent Component จัดการการรีเซ็ตค่าเริ่มต้น (ถ้ามี)
+    onAgeChange(undefined); // เปลี่ยนจาก NaN
+}, [setHoveredData, onAgeChange]);
 
     return (
-        
-        <ResponsiveContainer width="100%" height="100%" minHeight={500}>
+        <ResponsiveContainer width="100%" height="100%">
             <LineChart
                 data={data}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
-                margin={{ top: 50, right: 70, left: 20, bottom: 20 }}
+                margin={chartMargin}
             >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                    dataKey="age"
-                    tickFormatter={(tick) => `${tick}`}
-                    ticks={tickValues} 
-                    interval="preserveStartEnd"
-                    dy={10}
-                    tick={{ fontSize: 10, fill: '#666' }}
-                    padding={{ left: 0, right: 0 }}
-                    label={{ value: 'อายุ (ปี)', angle: 0, position: 'right', offset: 20, fontSize: 11, fill:'#666' }}
-                />
-                <YAxis
-                    tickFormatter={(value) => (value / 1_000_000).toFixed(1)}
-                    domain={['auto', 'auto']}
-                    tick={{ fontSize: 10, fill: '#666' }}
-                    allowDataOverflow={true}
-                    label={{ value: 'มูลค่า (ล้านบาท)', angle: 0, position: 'top', offset: 20, fontSize: 11, fill:'#666' }}
-                />
-                <Tooltip
-                    cursor={{ stroke: 'rgba(150, 150, 150, 0.5)', strokeWidth: 1, strokeDasharray: '3 3' }}
-                    content={<EmptyTooltipContent />} // <<< ใช้ EmptyTooltipContent เพื่อซ่อนกล่อง Tooltip
-                    wrapperStyle={{ zIndex: 1000 }} // เพิ่ม zIndex เผื่อกรณี Tooltip ถูกบัง
-                    // content={<CustomTooltipContent />} // CustomTooltipContent is currently commented out
-                />
+                <XAxis dataKey="age" tick={{ fontSize: 11 }} dy={10} interval="preserveStartEnd" ticks={memoizedTicks} />
+                <YAxis tickFormatter={(tick) => `${(tick / 1000000).toFixed(1)}M`} tick={{ fontSize: 11 }} />
+                {/* ใช้ CustomTooltipComponent หากมี หรือใช้ Tooltip ปกติ */}
+                <Tooltip content={() => null}
+                         cursor={{ stroke: 'rgba(100, 100, 100, 0.4)', strokeWidth: 1, strokeDasharray: '3 3' }} />
 
-                {/* <Legend /> */} {/* Legend is hidden */}
+                {/* ReferenceLine สำหรับ Hovered Age และ MIRR */}
+                {hoveredAge !== undefined && !isNaN(hoveredAge) && ( // <--- เพิ่มเงื่อนไข !isNaN(hoveredAge)
+                    <ReferenceLine x={hoveredAge} stroke="#64748b" strokeDasharray="3 3"
+                        label={<CustomHoverLabel age={hoveredAge} mirr={hoveredMirr} />}
+                    />
+                )}
 
-                {showDeathBenefit && (
-                    <Line isAnimationActive={true} type="monotone" dataKey="deathBenefit" stroke="#3b87eb" strokeWidth={2} name="ผลประโยชน์กรณีเสียชีวิต" dot={false} activeDot={renderActiveDot} />
-                )}
-                {showAccountValue && (
-                    <Line isAnimationActive={true} type="monotone" dataKey="accountValue" stroke="#F5A623" strokeWidth={2} name="มูลค่าบัญชีกรมธรรม์" dot={false} activeDot={renderActiveDot} />
-                )}
-                {showPremiumAnnual && (
-                    <Line isAnimationActive={true} type="monotone" dataKey="premiumAnnual" stroke="red" strokeWidth={2} name="เบี้ยประกันภัยรายปี" dot={false} activeDot={renderActiveDot} />
-                )}
-                {showPremiumCumulative && (
-                    <Line isAnimationActive={true} type="monotone" dataKey="premiumCumulative" stroke="green" strokeWidth={2} name="เบี้ยประกันภัยสะสม" dot={false} activeDot={renderActiveDot} />
-                )}
+                {/* activeDot ใช้ activeDotRenderer ที่ stable */}
+                {showDeathBenefit && <Line isAnimationActive={false} type="monotone" dataKey="deathBenefit" stroke={LINE_COLORS.deathBenefit} strokeWidth={2} name="ผลประโยชน์กรณีเสียชีวิต" dot={false} 
+                    activeDot={activeDotRenderer} />}
+                
+                {showAccountValue && <Line isAnimationActive={false} type="monotone" dataKey="accountValue" stroke={LINE_COLORS.accountValue} strokeWidth={2} name="มูลค่าบัญชีกรมธรรม์" dot={false} 
+                    activeDot={activeDotRenderer} />}
+                
+                {showPremiumAnnual && <Line isAnimationActive={false} type="monotone" dataKey="premiumAnnual" stroke={LINE_COLORS.premiumAnnual} strokeWidth={2} name="เบี้ยประกันภัยรายปี" dot={false} 
+                    activeDot={activeDotRenderer} />}
+                
+                {showPremiumCumulative && <Line isAnimationActive={false} type="monotone" dataKey="premiumCumulative" stroke={LINE_COLORS.premiumCumulative} strokeWidth={2} name="เบี้ยประกันภัยสะสม" dot={false} 
+                    activeDot={activeDotRenderer} />}
             </LineChart>
         </ResponsiveContainer>
     );
 };
 
-export default Graph;
+export default React.memo(Graph); 

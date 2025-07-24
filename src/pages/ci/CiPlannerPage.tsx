@@ -18,14 +18,9 @@ import CoverageSummaryPage from './CoverageSummaryPage';
 
 export default function CiPlannerPage() {
     const [activeTab, setActiveTab] = useState('form');
-
-    // --- ดึง State และ Actions ทั้งหมดจาก useAppStore ---
     const store = useAppStore();
-
-    // --- สร้าง State ภายในสำหรับเก็บตารางเบี้ย CI ที่คำนวณอัตโนมัติ ---
     const [ciPremiumsSchedule, setCiPremiumsSchedule] = useState<AnnualCiPremiumDetail[] | null>(null);
 
-    // --- useEffect สำหรับคำนวณตารางเบี้ย CI อัตโนมัติ ---
     useEffect(() => {
         const schedule = calculateAllCiPremiumsSchedule(
             store.ciPlanningAge,
@@ -37,8 +32,6 @@ export default function CiPlannerPage() {
         setCiPremiumsSchedule(schedule);
     }, [store.ciPlanningAge, store.ciGender, store.ciPlanSelections, store.ciPolicyOriginMode, store.ciExistingEntryAge]);
 
-
-    // --- useEffect เพื่อจัดการการเปลี่ยนหน้าหลังคำนวณเสร็จ ---
     const wasLoading = useRef(false);
     useEffect(() => {
         if (wasLoading.current && !store.ciIsLoading && !store.ciError) {
@@ -47,7 +40,6 @@ export default function CiPlannerPage() {
         wasLoading.current = store.ciIsLoading;
     }, [store.ciIsLoading, store.ciError]);
 
-    // --- สร้าง "ฟังก์ชันครอบ" (Wrapper Functions) สำหรับ Setters ---
     const wrappedSetters = {
         setPolicyholderEntryAge: useCallback((value: React.SetStateAction<number>) => {
             store.setCiPlanningAge(typeof value === 'function' ? value(store.ciPlanningAge) : value);
@@ -101,60 +93,46 @@ export default function CiPlannerPage() {
             setter(typeof value === 'function' ? value(state) : value);
         }, [store.ciIWealthyMode, store.ciManualPpt, store.ciAutoPpt, store.setCiManualPpt, store.setCiAutoPpt]),
         
-        setIWealthyWithdrawalStartAge: useCallback((value: React.SetStateAction<number>) => {
-            const setter = store.ciIWealthyMode === 'manual' ? store.setCiManualWithdrawalStartAge : store.setCiAutoWithdrawalStartAge;
-            const state = store.ciIWealthyMode === 'manual' ? store.ciManualWithdrawalStartAge : store.ciAutoWithdrawalStartAge;
-            setter(typeof value === 'function' ? value(state) : value);
-        }, [store.ciIWealthyMode, store.ciManualWithdrawalStartAge, store.ciAutoWithdrawalStartAge, store.setCiManualWithdrawalStartAge, store.setCiAutoWithdrawalStartAge]),
+        // --- ADDED BACK: เพิ่มกลับเข้ามาเป็นฟังก์ชันว่างๆ เพื่อให้ Type ถูกต้อง ---
+        setIWealthyWithdrawalStartAge: useCallback(() => {
+            // ไม่ต้องทำอะไร เพราะค่านี้ถูกคำนวณอัตโนมัติใน backend แล้ว
+        }, []),
     };
     
-    // --- สร้าง Object 'planner' เพื่อส่ง props ให้ Component ลูก ---
     const planner: UseCiPlannerReturn = {
-        // Results
         isLoading: store.ciIsLoading,
         error: store.ciError,
         result: store.ciResult,
-        ciPremiumsSchedule: ciPremiumsSchedule, // <<< แก้ไข: ส่ง state ที่คำนวณแล้วลงไป
+        ciPremiumsSchedule: ciPremiumsSchedule,
         calculatedMinPremium: store.ciSolvedMinPremium,
         calculatedRpp: store.ciSolvedRpp,
         calculatedRtu: store.ciSolvedRtu,
-        
-        // Inputs
         policyholderEntryAge: store.ciPlanningAge,
         policyholderGender: store.ciGender,
         policyOriginMode: store.ciPolicyOriginMode,
         existingPolicyEntryAge: store.ciExistingEntryAge,
         selectedCiPlans: store.ciPlanSelections,
-        
-        // iWealthy Toggle & Config
         useIWealthy: store.ciUseIWealthy,
         iWealthyMode: store.ciIWealthyMode,
         iWealthyInvestmentReturn: store.ciIWealthyMode === 'manual' ? store.ciManualInvReturn : store.ciAutoInvReturn,
         iWealthyOwnPPT: store.ciIWealthyMode === 'manual' ? store.ciManualPpt : store.ciAutoPpt,
-        iWealthyWithdrawalStartAge: store.ciIWealthyMode === 'manual' ? store.ciManualWithdrawalStartAge : store.ciAutoWithdrawalStartAge,
+        // --- REMOVED: ค่านี้ไม่จำเป็นต้องส่งไปแล้ว เพราะ Logic อยู่ใน Backend ---
+        // แต่ Type ยังต้องการอยู่ เราจึงส่งค่า placeholder ไป
+        iWealthyWithdrawalStartAge: 0,
         manualRpp: store.ciManualRpp,
         manualRtu: store.ciManualRtu,
         autoRppRtuRatio: store.ciAutoRppRtuRatio,
-        
-        // Wrapped Setters
         ...wrappedSetters,
-        
-        // Main Action
         runCalculation: store.runCiCalculation,
     };
     
-    const effectiveWithdrawalStartAge = planner.iWealthyMode === 'automatic'
-        ? planner.policyholderEntryAge + planner.iWealthyOwnPPT
-        : planner.iWealthyWithdrawalStartAge;
-
-    // --- Rendering ---
     return (
         <main className="container mx-auto space-y-4 bg-blue-50 text-foreground min-h-screen">
             <header className="text-center">
                 <h1 className="pb-2 text-2xl font-extrabold tracking-tight lg:text-2xl bg-gradient-to-r from-blue-800 to-green-500 bg-clip-text text-transparent">
-                    วางแผนประกันโรคร้ายแรง (CI)
+                    วางแผนประกันโรคร้ายแรงแบบยั่งยืน (LTCI)
                 </h1>
-                <p className="pb-2 text-xl font-extrabold tracking-tight lg:text-xl bg-gradient-to-r from-green-700 to-yellow-500 bg-clip-text text-transparent">พร้อมทางเลือกชำระเบี้ยระยะสั้น</p>
+                <p className="pb-2 text-lg font-bold tracking-tight lg:text-xl bg-gradient-to-r from-green-700 to-yellow-500 bg-clip-text text-transparent">LONG-TERM CRITICAL ILLNESS</p>
             </header>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -173,7 +151,6 @@ export default function CiPlannerPage() {
                     </TabsTrigger>
                 </TabsList>
 
-                {/* เนื้อหา Tab จะรับ props จาก object 'planner' ที่เราสร้างขึ้นใหม่ */}
                 <TabsContent value="form" className="mt-0 rounded-b-md rounded-tr-md border bg-card p-6 shadow-sm">
                     <CIFormPage {...planner} />
                 </TabsContent>
@@ -184,7 +161,7 @@ export default function CiPlannerPage() {
                         result={planner.result}
                         ciPremiumsSchedule={planner.ciPremiumsSchedule}
                         useIWealthy={planner.useIWealthy}
-                        iWealthyWithdrawalStartAge={effectiveWithdrawalStartAge}
+                        // ไม่ต้องส่ง iWealthyWithdrawalStartAge ไปแล้ว
                     />
                 </TabsContent>
                 <TabsContent value="graph" className="mt-0 rounded-b-md rounded-tr-md border bg-card p-6 shadow-sm">

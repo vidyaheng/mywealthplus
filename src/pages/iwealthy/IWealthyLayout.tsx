@@ -8,11 +8,13 @@ import { useAppStore } from '../../stores/appStore';
 import IWealthyFormPage from "./iWealthyFormPage";
 import IWealthyTablePage from "./iWealthyTablePage";
 import IWealthyChartPage from "./iWealthyChartPage";
+import { IWealthyReportPage } from './iWealthyReportPage';
 import PausePremiumModal from '../../components/PausePremiumModal';
 import ReduceSumInsuredModal from '../../components/ReduceSumInsuredModal';
 import WithdrawalPlanModal from '../../components/WithdrawalPlanModal';
 import ChangeFrequencyModal from '../../components/ChangeFrequencyModal';
 import AddInvestmentModal from '../../components/AddInvestmentModal';
+
 
 // Import Components อื่นๆ
 import TopButtons from "../../components/TopButtons"; 
@@ -23,6 +25,7 @@ const iWealthyTabs = [
     { label: "กรอกข้อมูล", path: "/iwealthy/form" },
     { label: "ตารางแสดงผลประโยชน์", path: "/iwealthy/table" },
     { label: "กราฟแสดงผลประโยชน์", path: "/iwealthy/chart" },
+    { label: "รายงานวิเคราะห์โครงการ", path: "/iwealthy/report" },
 ];
 
 export default function IWealthyLayout() {
@@ -111,6 +114,7 @@ export default function IWealthyLayout() {
                 <Route path="form" element={<IWealthyFormPage />} />
                 <Route path="table" element={<IWealthyTablePage />} />
                 <Route path="chart" element={<IWealthyChartPage />} />
+                <Route path="report" element={<IWealthyReportPage />} />
             </Routes>
         </div>
 

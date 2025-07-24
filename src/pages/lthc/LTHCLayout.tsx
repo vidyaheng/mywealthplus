@@ -39,6 +39,15 @@ export default function LTHCLayout() {
           </div>
         */}
         
+        <header className="bg-blue-50 p-4 text-center">
+            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-blue-700 to-green-600 bg-clip-text text-transparent">
+                การวางแผนสุขภาพแบบยั่งยืน
+            </h1>
+            <p className="text-sm font-medium text-slate-500 tracking-wider uppercase mt-1">
+                Long-Term Health Care
+            </p>
+        </header>
+
         {/* ส่วนของ Tab Bar */}
         <div className="flex bg-blue-50 px-4 relative">
             {lthcTabs.map((tab) => {

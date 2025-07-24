@@ -17,6 +17,21 @@ import { calculateLthcPlan } from '../hooks/useLthcCalculations';
 // iWealthy Types & Calculations
 import type { Gender, PaymentFrequency, CalculationInput, CalculationResult, SumInsuredReductionRecord, PausePeriodRecord, AddInvestmentRecord, FrequencyChangeRecord, WithdrawalPlanRecord } from '../lib/calculations';
 import { generateIllustrationTables, getSumInsuredFactor, getReductionMultipliers } from '../lib/calculations';
+import {
+    calculateProjectIRR,
+    calculateProjectROI,
+    calculateProjectPI,
+    calculateInvestmentOnlyMIRR,
+    calculateInvestmentOnlyROI, 
+    calculateInvestmentOnlyPI,  
+    calculateMIRRForYear,
+    findBreakEvenPoint,
+    calculateTotalPremiums,
+    //getFinalFundValue,
+    getFinalDisplayedAnnualAccountValue,
+    getInitialDeathBenefit,
+    getMaxDeathBenefit,
+} from '../lib/financialMetrics';
 
 // CI Types & Calculations
 import { 
@@ -96,7 +111,7 @@ interface LthcState {
 }
 
 // 2. Interface สำหรับข้อมูล iWealthy
-interface IWealthyState {
+export interface IWealthyState {
   iWealthyAge: number;
   iWealthyGender: Gender;
   iWealthyPaymentFrequency: PaymentFrequency;
@@ -113,6 +128,21 @@ interface IWealthyState {
   iWealthyIsLoading: boolean;
   iWealthyError: string | null;
   iWealthyReductionsNeedReview: boolean;
+  iWealthyMetrics: {
+        projectIRR: number | null;
+        breakEvenYear: number | null;
+        breakEvenAge: number | null;
+        totalPremiumsPaid: number | null;
+        finalFundValue: number | null;
+        roi: number | null;
+        pi: number | null;
+    } | null;
+  investmentOnlyMIRR: number | null;
+  investmentOnlyROI: number | null;
+  investmentOnlyPI: number | null;
+  annualMIRRData: Map<number, number | null> | null;
+  initialDB: number | null;
+  maxDB: { amount: number; age: number } | null;
   setIWealthyAge: (age: number) => void;
   setIWealthyGender: (gender: Gender) => void;
   setIWealthyPaymentFrequency: (freq: PaymentFrequency) => void;
@@ -396,6 +426,13 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     iWealthyFrequencyChanges: [],
     iWealthyWithdrawalPlan: [],
     iWealthyResult: null,
+    iWealthyMetrics: null,
+    investmentOnlyMIRR: null,
+    investmentOnlyROI: null,
+    investmentOnlyPI: null, 
+    annualMIRRData: null,
+    initialDB: null,
+    maxDB: null,
     iWealthyIsLoading: false,
     iWealthyError: null,
     setIWealthyAge: (age) => { const currentRpp = get().iWealthyRpp; const newSumInsured = currentRpp * getSumInsuredFactor(age); set({ iWealthyAge: age, iWealthySumInsured: newSumInsured }); },
@@ -438,40 +475,122 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
         set({ iWealthyReductionsNeedReview: false });
     },
     runIWealthyCalculation: async () => {
-        set({ iWealthyIsLoading: true, iWealthyError: null, iWealthyResult: null });
-        const s = get();
-        const calculationInput: CalculationInput = {
-            policyholderAge: s.iWealthyAge,
-            policyholderGender: s.iWealthyGender,
-            initialPaymentFrequency: s.iWealthyPaymentFrequency,
-            initialSumInsured: s.iWealthySumInsured,
-            rppPerYear: s.iWealthyRpp,
-            rtuPerYear: s.iWealthyRtu,
-            assumedInvestmentReturnRate: s.iWealthyInvestmentReturn / 100,
-            pausePeriods: s.iWealthyPausePeriods,
-            sumInsuredReductions: s.iWealthySumInsuredReductions,
-            additionalInvestments: s.iWealthyAdditionalInvestments,
-            frequencyChanges: s.iWealthyFrequencyChanges,
-            withdrawalPlan: s.iWealthyWithdrawalPlan,
-        };
-        try {
-            const result = generateIllustrationTables(calculationInput);
-            set({ iWealthyResult: result, iWealthyIsLoading: false });
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'An unexpected calculation error occurred';
-            set({ iWealthyError: errorMessage, iWealthyIsLoading: false });
-        }
-    },
+        // 1. ตั้งค่าสถานะเริ่มต้นและล้างข้อมูลเก่า
+        set({ 
+            iWealthyIsLoading: true, 
+            iWealthyError: null, 
+            iWealthyResult: null, 
+            iWealthyMetrics: null, 
+            investmentOnlyMIRR: null,
+            investmentOnlyROI: null,
+            investmentOnlyPI: null,
+            annualMIRRData: null,
+            initialDB: null,
+            maxDB: null
+        });
 
+        const s = get();
+        const calculationInput: CalculationInput = {
+            policyholderAge: s.iWealthyAge,
+            policyholderGender: s.iWealthyGender,
+            initialPaymentFrequency: s.iWealthyPaymentFrequency,
+            initialSumInsured: s.iWealthySumInsured,
+            rppPerYear: s.iWealthyRpp,
+            rtuPerYear: s.iWealthyRtu,
+            assumedInvestmentReturnRate: s.iWealthyInvestmentReturn / 100,
+            pausePeriods: s.iWealthyPausePeriods,
+            sumInsuredReductions: s.iWealthySumInsuredReductions,
+            additionalInvestments: s.iWealthyAdditionalInvestments,
+            frequencyChanges: s.iWealthyFrequencyChanges,
+            withdrawalPlan: s.iWealthyWithdrawalPlan,
+         };
+
+            try {
+            const result = generateIllustrationTables(calculationInput);
+
+            if (result && result.monthly.length > 0) {
+                // 2. คำนวณ Metrics ทั้งหมด
+                const breakEven = findBreakEvenPoint(result);
+                
+                // Metrics สำหรับโครงการ iWealthy ทั้งหมด
+                const projIRR = calculateProjectIRR(result);
+                const projROI = calculateProjectROI(result);
+                const projPI = calculateProjectPI(result, s.iWealthyInvestmentReturn / 100);
+
+                // Metrics สำหรับการวิเคราะห์แบบ BTID (ใช้เบี้ย Term)
+                const invOnlyMIRR = calculateInvestmentOnlyMIRR(result, s.iWealthyGender, s.iWealthyInvestmentReturn / 100);
+                const invOnlyROI = calculateInvestmentOnlyROI(
+                    result, 
+                    s.iWealthyGender, 
+                    //s.iWealthyInvestmentReturn / 100 // 👈 เพิ่ม argument ตัวนี้
+                );
+                const invOnlyPI = calculateInvestmentOnlyPI(result, s.iWealthyGender, s.iWealthyInvestmentReturn / 100);
+
+                // 3. สร้าง metrics object ที่สมบูรณ์
+                const metrics = {
+                    projectIRR: projIRR,
+                    breakEvenYear: breakEven?.year ?? null,
+                    breakEvenAge: breakEven?.age ?? null,
+                    totalPremiumsPaid: calculateTotalPremiums(result),
+                    finalFundValue: getFinalDisplayedAnnualAccountValue(result),
+                    roi: projROI,
+                    pi: projPI,
+                    
+                };
+
+                const initialDB = getInitialDeathBenefit(result);
+                const maxDB = getMaxDeathBenefit(result);
+                
+                // 4. คำนวณ MIRR รายปีสำหรับกราฟ
+                const mirrData = new Map<number, number | null>();
+                if (breakEven) {
+                    const startYear = breakEven.year;
+                    const endYear = Math.ceil(result.lastProcessedMonth / 12);
+                    for (let year = startYear; year <= endYear; year++) {
+                        const mirr = calculateMIRRForYear(year, result, s.iWealthyGender, s.iWealthyInvestmentReturn / 100);
+                        mirrData.set(year, mirr);
+                    }
+                }
+
+                // 5. บันทึกผลลัพธ์ทั้งหมดลง State
+                set({
+                    iWealthyResult: result,
+                    iWealthyMetrics: metrics,
+                    investmentOnlyMIRR: invOnlyMIRR, 
+                    investmentOnlyROI: invOnlyROI,
+                    investmentOnlyPI: invOnlyPI,
+                    annualMIRRData: mirrData,
+                    initialDB: initialDB,
+                    maxDB: maxDB,
+                    iWealthyIsLoading: false
+                });
+
+            } else {
+                set({ iWealthyResult: result, iWealthyIsLoading: false });
+            }
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'An unexpected calculation error occurred';
+            set({ iWealthyError: errorMessage, iWealthyIsLoading: false });
+        }
+    },
     // ===================================================================
     // SECTION 3: iWealthy UI State & Actions
     // ===================================================================
-    isPauseModalOpen: false, isReduceModalOpen: false, isWithdrawalModalOpen: false, isChangeFreqModalOpen: false, isAddInvestmentModalOpen: false,
-    openPauseModal: () => set({ isPauseModalOpen: true }), closePauseModal: () => set({ isPauseModalOpen: false }),
-    openReduceModal: () => set({ isReduceModalOpen: true }), closeReduceModal: () => set({ isReduceModalOpen: false }),
-    openWithdrawalModal: () => set({ isWithdrawalModalOpen: true }), closeWithdrawalModal: () => set({ isWithdrawalModalOpen: false }),
-    openChangeFreqModal: () => set({ isChangeFreqModalOpen: true }), closeChangeFreqModal: () => set({ isChangeFreqModalOpen: false }),
-    openAddInvestmentModal: () => set({ isAddInvestmentModalOpen: true }), closeAddInvestmentModal: () => set({ isAddInvestmentModalOpen: false }),
+    isPauseModalOpen: false,
+    isReduceModalOpen: false,
+    isWithdrawalModalOpen: false,
+    isChangeFreqModalOpen: false,
+    isAddInvestmentModalOpen: false,
+    openPauseModal: () => set({ isPauseModalOpen: true }),
+    closePauseModal: () => set({ isPauseModalOpen: false }),
+    openReduceModal: () => set({ isReduceModalOpen: true }),
+    closeReduceModal: () => set({ isReduceModalOpen: false }),
+    openWithdrawalModal: () => set({ isWithdrawalModalOpen: true }),
+    closeWithdrawalModal: () => set({ isWithdrawalModalOpen: false }),
+    openChangeFreqModal: () => set({ isChangeFreqModalOpen: true }),
+    closeChangeFreqModal: () => set({ isChangeFreqModalOpen: false }),
+    openAddInvestmentModal: () => set({ isAddInvestmentModalOpen: true }),
+    closeAddInvestmentModal: () => set({ isAddInvestmentModalOpen: false }),
 
 
     // ===================================================================
@@ -482,7 +601,7 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     ciPolicyOriginMode: 'newPolicy',
     ciExistingEntryAge: undefined,
     ciPlanSelections: { 
-        mainRiderChecked: true, lifeReadySA: 500000, lifeReadyPPT: 20, lifeReadyPlan: 18,
+        mainRiderChecked: true, lifeReadySA: 150000, lifeReadyPPT: 18, lifeReadyPlan: 18,
         icareChecked: true, icareSA: 1000000,
         ishieldChecked: false, ishieldSA: 1000000, ishieldPlan: null, 
         rokraiChecked: false, rokraiPlan: null, 
@@ -526,10 +645,10 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
         const s = get();
         try {
             if (s.ciIWealthyMode === 'manual') {
-                const manualResult = await calculateManualPlanCi(s.ciPlanningAge, s.ciGender, s.ciPlanSelections, s.ciManualRpp, s.ciManualRtu, s.ciManualInvReturn, s.ciManualPpt, s.ciManualWithdrawalStartAge, s.ciPolicyOriginMode, s.ciExistingEntryAge);
+                const manualResult = await calculateManualPlanCi(s.ciPlanningAge, s.ciGender, s.ciPlanSelections, s.ciManualRpp, s.ciManualRtu, s.ciManualInvReturn, s.ciManualPpt, s.ciPolicyOriginMode, s.ciExistingEntryAge);
                 set({ ciResult: manualResult, ciIsLoading: false });
             } else { // automatic
-                const autoResult = await calculateAutomaticPlanCi(s.ciPlanningAge, s.ciGender, s.ciPlanSelections, s.ciAutoInvReturn, s.ciAutoPpt, s.ciAutoRppRtuRatio, s.ciAutoWithdrawalStartAge, s.ciPolicyOriginMode, s.ciExistingEntryAge);
+                const autoResult = await calculateAutomaticPlanCi(s.ciPlanningAge, s.ciGender, s.ciPlanSelections, s.ciAutoInvReturn, s.ciAutoPpt, s.ciAutoRppRtuRatio, s.ciPolicyOriginMode, s.ciExistingEntryAge);
                 set({ ciResult: autoResult.outputIllustration, ciSolvedMinPremium: autoResult.minPremiumResult, ciSolvedRpp: autoResult.rppResult, ciSolvedRtu: autoResult.rtuResult, ciError: autoResult.errorMsg ?? null, ciIsLoading: false });
             }
         } catch (err) {

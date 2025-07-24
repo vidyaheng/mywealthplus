@@ -189,6 +189,7 @@ export interface CalculationResult {
 }
 
 const POLICY_TERM_TARGET_AGE = 99;
+const LAST_PAYMENT_AGE = 98;
 const ADMIN_FEE_RATE_ANNUAL = 0.006;
 const RPP_CHARGE_RATES = [0.45, 0.30, 0.15, 0.10];
 const RTU_CHARGE_RATES = [0.03, 0.02, 0.01, 0.01];
@@ -297,6 +298,7 @@ export interface CalculationResult {
     annual: AnnualCalculationOutputRow[]; // ต้องมั่นใจว่า AnnualCalculationOutputRow มี field ที่สอดคล้อง
     finalPolicyStatus: MonthlyCalculationInternalResult['finalPolicyStatus'];
     lastSolventAge: number; // เปลี่ยนเป็น required
+    lastProcessedMonth: number;
 }
 
 
@@ -390,8 +392,20 @@ export function calculateBenefitIllustrationMonthly(
             if (lastChange) effectivePaymentFrequency = lastChange.frequency;
         }
 
-        const isPayingPeriod = input.premiumPayingTermYears ? policyYear <= input.premiumPayingTermYears : true;
+        let isPayingPeriod = true; // ตั้งค่าเริ่มต้นให้จ่ายเบี้ย
 
+        // 1. ตรวจสอบ Premium Paying Term Years (ถ้ามีการกำหนด)
+        if (input.premiumPayingTermYears !== undefined && input.premiumPayingTermYears > 0) {
+            isPayingPeriod = policyYear <= input.premiumPayingTermYears;
+        }
+
+        // 2. เพิ่มเงื่อนไขหยุดจ่ายเบี้ยที่อายุที่กำหนด (LAST_PAYMENT_AGE)
+        // **สำคัญ**: เงื่อนไขนี้ควรตรวจสอบหลังจากเงื่อนไข premiumPayingTermYears
+        // เพื่อให้ถ้ามีการกำหนด premiumPayingTermYears ที่สั้นกว่า LAST_PAYMENT_AGE มันก็ยังหยุดจ่ายตามนั้น
+        // แต่ถ้า premiumPayingTermYears ไม่มี หรือยาวกว่า LAST_PAYMENT_AGE ก็จะหยุดที่ LAST_PAYMENT_AGE แทน
+        if (currentAge > LAST_PAYMENT_AGE) {
+            isPayingPeriod = false; // ถ้าอายุเกินอายุสูงสุดที่ต้องจ่ายเบี้ย ให้หยุดจ่าย
+        }
         let isPaused = false;
         if (m >= (MIN_PAID_MONTHS_FOR_PAUSE + 1)) {
             const activePause = sortedPausePeriods.find(p => {
@@ -710,6 +724,7 @@ export function generateIllustrationTables(input: CalculationInput): Calculation
         annual: annualData,
         finalPolicyStatus: monthlyInternalResult.finalPolicyStatus,
         lastSolventAge: monthlyInternalResult.lastSolventAge,
+        lastProcessedMonth: monthlyInternalResult.lastProcessedMonth,
     };
 }
 

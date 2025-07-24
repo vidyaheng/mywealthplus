@@ -1,6 +1,6 @@
 // src/pages/iwealthy/IWealthyTablePage.tsx
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // +++ STEP 1: เปลี่ยนมา Import Store แทนการรับ Context +++
@@ -10,56 +10,14 @@ import { useAppStore } from '../../stores/appStore';
 //import { AnnualCalculationOutputRow } from '../../lib/calculations';
 import { ChartData } from '../../components/GraphComponent';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+//import { Input } from "@/components/ui/input";
+//import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { ZoomIn, Plus, Minus, Receipt, XCircle } from 'lucide-react';
 import DisplayTable, { AnnualTableView, AnnualDataRowWithTax } from '@/components/DisplayTable'; 
 import FullScreenDisplayModal from '@/components/custom/FullScreenDisplayModal'; 
 import ModalTableView from '@/components/custom/ModalTableView';
 import ModalChartView from '@/components/custom/ModalChartView';
-
-// --- Local Component: TaxBenefitModal (ไม่มีการเปลี่ยนแปลง Logic ภายใน) ---
-interface TaxBenefitModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onConfirm: (percent: number) => void;
-    currentPercent: number | null;
-}
-function TaxBenefitModal({ isOpen, onClose, onConfirm, currentPercent }: TaxBenefitModalProps) {
-    const [percent, setPercent] = useState<string>(currentPercent?.toString() || '');
-    useEffect(() => { setPercent(currentPercent?.toString() || ''); }, [currentPercent]);
-
-    const handleConfirm = () => {
-        const percentValue = parseFloat(percent);
-        if (!isNaN(percentValue) && percentValue >= 0) {
-            onConfirm(percentValue);
-            onClose();
-        } else {
-            alert("กรุณาใส่อัตราภาษีเป็นตัวเลขที่ถูกต้อง");
-        }
-    };
-    
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle>คำนวณผลประโยชน์ทางภาษี</DialogTitle>
-                    <DialogDescription>กรุณากรอกอัตราภาษี (เป็นเปอร์เซ็นต์) ที่คุณต้องการใช้คำนวณ</DialogDescription>
-                </DialogHeader>
-                <div className="grid grid-cols-4 items-center gap-4 py-4">
-                    <label htmlFor="tax-percent" className="text-right">อัตราภาษี</label>
-                    <Input id="tax-percent" type="number" value={percent} onChange={(e) => setPercent(e.target.value)} className="col-span-2" placeholder="เช่น 10, 20" />
-                    <span className="col-span-1 font-semibold">%</span>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button type="button" variant="secondary">ยกเลิก</Button></DialogClose>
-                    <Button type="button" onClick={handleConfirm}>ตกลง</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
+import TaxModal from '@/components/custom/TaxModal';
 
 export default function IWealthyTablePage() {
     // +++ ดึง State และ Actions ทั้งหมดมาจาก useAppStore +++
@@ -83,7 +41,7 @@ export default function IWealthyTablePage() {
     const [pageViewMode, setPageViewMode] = useState<AnnualTableView>('compact');
     const [pageShowCsv, setPageShowCsv] = useState(false);
     const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
-    const [taxBenefitPercent, setTaxBenefitPercent] = useState<number | null>(null);
+    const [taxInfo, setTaxInfo] = useState<{ taxRate: number; usedFirst100k: number; endAge: number; } | null>(null);
     const [isFullScreenModalOpen, setIsFullScreenModalOpen] = useState(false);
     
     // Local states สำหรับ Controls ภายใน Fullscreen Modal
@@ -118,13 +76,27 @@ export default function IWealthyTablePage() {
 
     }, [iWealthyResult]);
 
-    const dataWithTaxBenefit = useMemo((): AnnualDataRowWithTax[] => {
-        if (taxBenefitPercent === null) return filteredAnnualData;
-        return filteredAnnualData.map(row => ({
+    // 1. กรองข้อมูลตาม "อายุ" ที่ระบุใน Modal ก่อน
+const dataWithTaxBenefit = useMemo((): AnnualDataRowWithTax[] => {
+    // ถ้าไม่มีข้อมูลภาษี ก็แสดงข้อมูลทั้งหมดตามปกติ
+    if (!taxInfo) {
+        return filteredAnnualData;
+    }
+
+    // ถ้ามีข้อมูลภาษี ให้ map ข้อมูลทั้งหมดโดยเพิ่มเงื่อนไข
+    return filteredAnnualData.map(row => {
+        // ตรวจสอบอายุในแต่ละแถว
+        const shouldCalculateTax = row.age <= taxInfo.endAge;
+
+        return {
             ...row,
-            taxBenefit: row.totalFeesYear * (taxBenefitPercent / 100)
-        }));
-    }, [filteredAnnualData, taxBenefitPercent]);
+            // ถ้าเงื่อนไขเป็นจริง ให้คำนวณภาษี, ถ้าไม่ ให้เป็น 0
+            taxBenefit: shouldCalculateTax 
+                ? row.totalFeesYear * (taxInfo.taxRate / 100) 
+                : 0
+        };
+    });
+}, [filteredAnnualData, taxInfo]);
 
     const chartDataForModal = useMemo((): ChartData[] => {
         if (!iWealthyResult?.annual) return [];
@@ -146,8 +118,10 @@ export default function IWealthyTablePage() {
     const handleCloseFullScreenModal = () => setIsFullScreenModalOpen(false);
     const handleOpenTaxModal = () => setIsTaxModalOpen(true);
     const handleCloseTaxModal = () => setIsTaxModalOpen(false);
-    const handleConfirmTaxPercent = (percent: number) => setTaxBenefitPercent(percent);
-    const handleResetTaxBenefit = () => setTaxBenefitPercent(null);
+    const handleConfirmTax = (inputs: { taxRate: number; usedFirst100k: number; endAge: number; }) => {
+    setTaxInfo(inputs);
+    };
+    const handleResetTaxBenefit = () => setTaxInfo(null);
     const formatNumber = (num: number | undefined | null): string => {
         if (num == null) return '0'; // ตรวจสอบทั้ง undefined และ null
         return Math.round(num).toLocaleString('en-US'); 
@@ -224,6 +198,7 @@ export default function IWealthyTablePage() {
             onReturnRateChange={setIWealthyInvestmentReturn}
             onRecalculate={runIWealthyCalculation}
             onAgeChange={handleGraphAgeChangeInModal}
+            isFullScreenView={true}
         />
     );
 
@@ -241,8 +216,8 @@ export default function IWealthyTablePage() {
                     <Button variant="outline" size="sm" onClick={() => setPageShowCsv(prev => !prev)} className="h-8 px-2" title={pageShowCsv ? "ซ่อนมูลค่าเวนคืน" : "แสดงมูลค่าเวนคืน"}>
                         {pageShowCsv ? <Minus size={16} /> : <Plus size={16} />}<span className="ml-1 text-xs hidden sm:inline">เวนคืน</span>
                     </Button>
-                    <Button variant="outline" size="sm" onClick={taxBenefitPercent === null ? handleOpenTaxModal : handleResetTaxBenefit} className="h-8 px-2" title={taxBenefitPercent === null ? "คำนวณผลประโยชน์ทางภาษี" : "ยกเลิกการแสดงผลประโยชน์ทางภาษี"}>
-                        {taxBenefitPercent === null ? <Receipt size={16} className="text-teal-700" /> : <XCircle size={16} className="text-red-600" />}<span className="ml-1 text-xs hidden sm:inline">คืนภาษี</span>{taxBenefitPercent !== null && <span className="ml-1.5 text-xs font-bold">({taxBenefitPercent}%)</span>}
+                    <Button variant="outline" size="sm" onClick={taxInfo === null ? handleOpenTaxModal : handleResetTaxBenefit} className="h-8 px-2" title={taxInfo === null ? "คำนวณผลประโยชน์ทางภาษี" : "ยกเลิกการแสดงผลประโยชน์ทางภาษี"}>
+                        {taxInfo === null ? <Receipt size={16} className="text-teal-700" /> : <XCircle size={16} className="text-red-600" />}<span className="ml-1 text-xs hidden sm:inline">คืนภาษี</span>{taxInfo !== null && <span className="ml-1.5 text-xs font-bold">({taxInfo.taxRate}%)</span>}
                     </Button>
                     <Button variant="outline" size="icon" onClick={handleOpenFullScreenModal} className="h-8 w-8" title="แสดงแบบเต็มหน้าจอ">
                         <ZoomIn size={16} />
@@ -254,27 +229,28 @@ export default function IWealthyTablePage() {
                 data={dataWithTaxBenefit}
                 viewMode={pageViewMode}
                 showCsv={pageShowCsv}
-                showTaxBenefitColumn={taxBenefitPercent !== null}
+                showTaxBenefitColumn={taxInfo !== null}
                 formatNumber={formatNumber}
             />
             
-            <TaxBenefitModal 
+            <TaxModal 
                 isOpen={isTaxModalOpen}
                 onClose={handleCloseTaxModal}
-                onConfirm={handleConfirmTaxPercent}
-                currentPercent={taxBenefitPercent}
+                onConfirm={handleConfirmTax}
+                //currentPercent={taxInfo}
             />
 
             {isFullScreenModalOpen && (
                 <FullScreenDisplayModal
                     isOpen={isFullScreenModalOpen}
-                    onClose={handleCloseFullScreenModal}
+                    onClose={handleCloseFullScreenModal} 
                     defaultActiveTab="table"
                     modalTitle="ภาพรวมผลประโยชน์ (iWealthy)"
                     headerInfo={
-                        <div>
+                        <div className="text-xs">
+                            <p>ผู้เอาประกัน: (iWealthy)</p>
                             <p>อายุ: {iWealthyAge} | เพศ: {iWealthyGender === 'male' ? 'ชาย' : 'หญิง'}</p>
-                            <p>ทุนประกันภัยหลัก: {iWealthySumInsured.toLocaleString()} บาท</p>
+                            <p>ทุนประกันภัยหลัก: {formatNumber(iWealthySumInsured)} บาท</p>
                         </div>
                     }
                     tableTabContent={tableTabContentNode}

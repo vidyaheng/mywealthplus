@@ -275,15 +275,34 @@ export { calculateAllCiPremiumsSchedule };
 export const calculateManualPlanCi = async (
     currentPlanningAge: number, gender: Gender, ciSelections: CiPlanSelections,
     iWealthyRpp: number, iWealthyRtu: number, iWealthyInvReturn: number, iWealthyOwnPPT: number,
-    ciWithdrawalStartAge: number, policyOriginMode: PolicyOriginMode,
+    policyOriginMode: PolicyOriginMode,
     existingOriginalEntryAge?: number, maxCiScheduleAge?: number
 ): Promise<AnnualCiOutputRow[]> => {
     const rppActual = Math.max(iWealthyRpp, MINIMUM_RPP);
     const allCiPremiumsData = calculateAllCiPremiumsSchedule(currentPlanningAge, gender, ciSelections, policyOriginMode, existingOriginalEntryAge, maxCiScheduleAge);
     
+    // +++ NEW LOGIC: คำนวณปีที่หยุดจ่ายเบี้ย และปีที่เริ่มถอน +++
+    const lastIWealthyPremiumAge = currentPlanningAge + iWealthyOwnPPT - 1;
+    let lastCiPremiumPaymentAge: number;
+    let withdrawalStartAge: number;
+
+    if (ciSelections.icareChecked || ciSelections.rokraiChecked) {
+        // กรณีเลือกแผนเบี้ยสูง
+        lastCiPremiumPaymentAge = Math.max(60, lastIWealthyPremiumAge);
+        withdrawalStartAge = lastCiPremiumPaymentAge + 1;
+    } else {
+        // กรณีทั่วไป
+        lastCiPremiumPaymentAge = lastIWealthyPremiumAge;
+        withdrawalStartAge = lastIWealthyPremiumAge + 1;
+    }
+    // ตรวจสอบว่าไม่เกินอายุสูงสุด
+    withdrawalStartAge = Math.min(withdrawalStartAge, MAX_POLICY_AGE_TYPE + 1);
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
     const withdrawalPlanForIWealthy: WithdrawalPlanRecord[] = [];
     allCiPremiumsData.forEach(ciRow => {
-        if (ciRow.age >= ciWithdrawalStartAge && ciRow.age <= MAX_POLICY_AGE_TYPE && ciRow.totalCiPremium > 0) {
+        // สร้างรายการถอนสำหรับเบี้ย CI ที่เกิดขึ้น *หลังจาก* ปีที่เริ่มถอน
+        if (ciRow.age >= withdrawalStartAge && ciRow.age <= MAX_POLICY_AGE_TYPE && ciRow.totalCiPremium > 0) {
             withdrawalPlanForIWealthy.push({
                 id: `manual-ci-wd-${ciRow.policyYear}-${ciRow.age}`,
                 type: 'annual', amount: ciRow.totalCiPremium,
@@ -292,10 +311,18 @@ export const calculateManualPlanCi = async (
         }
     });
 
+    // สร้างตาราง CI ที่แสดงการจ่ายเบี้ยตาม Logic ใหม่
+    const adjustedCiPremiumsData = allCiPremiumsData.map(ciRow => {
+        // ถ้าอายุมากกว่าปีที่ต้องจ่ายเบี้ย CI แล้ว ให้เบี้ยเป็น 0
+        if (ciRow.age > lastCiPremiumPaymentAge) {
+            return { ...ciRow, totalCiPremium: 0, lifeReadyPremium: 0, icarePremium: 0, ishieldPremium: 0, rokraiPremium: 0, dciPremium: 0 };
+        }
+        return ciRow;
+    });
+
     const sumInsuredReductions = generateSAReductionsForIWealthy(currentPlanningAge, rppActual);
     const frequencyChanges: FrequencyChangeRecord[] = [{ startAge: currentPlanningAge + 1, endAge: MAX_POLICY_AGE_TYPE, frequency: 'monthly', type: 'age' }];
     const initialSA = Math.max(1, Math.round(getSumInsuredFactor(currentPlanningAge) * rppActual));
-
     const iWealthyInput: CalculationInput = {
         policyholderAge: currentPlanningAge, policyholderGender: gender, initialPaymentFrequency: 'annual',
         initialSumInsured: initialSA, rppPerYear: rppActual, rtuPerYear: iWealthyRtu,
@@ -303,35 +330,59 @@ export const calculateManualPlanCi = async (
         pausePeriods: [], sumInsuredReductions, additionalInvestments: [],
         frequencyChanges, withdrawalPlan: withdrawalPlanForIWealthy,
     };
-    
     const iWealthyResult = await generateIllustrationTables(iWealthyInput);
-    return processIWealthyResultsToCi(allCiPremiumsData, iWealthyResult.annual, ciSelections, initialSA, sumInsuredReductions);
+    
+    // ใช้ตาราง CI ที่ปรับแล้ว (adjusted) เพื่อรวมผลลัพธ์
+    return processIWealthyResultsToCi(adjustedCiPremiumsData, iWealthyResult.annual, ciSelections, initialSA, sumInsuredReductions);
 };
 
 export const calculateAutomaticPlanCi = async (
     currentPlanningAge: number, gender: Gender, ciSelections: CiPlanSelections,
     iWealthyInvReturn: number, iWealthyOwnPPT: number, iWealthyRppRtuRatio: string,
-    ciWithdrawalStartAge: number, policyOriginMode: PolicyOriginMode,
+    policyOriginMode: PolicyOriginMode,
     existingOriginalEntryAge?: number, maxCiScheduleAge?: number
 ): Promise<any> => {
     const allCiPremiumsData = calculateAllCiPremiumsSchedule(currentPlanningAge, gender, ciSelections, policyOriginMode, existingOriginalEntryAge, maxCiScheduleAge);
     
+    // +++ NEW LOGIC: คำนวณปีที่เริ่มถอนตามเงื่อนไขใหม่ +++
+    const lastIWealthyPremiumAge = currentPlanningAge + iWealthyOwnPPT - 1;
+    let withdrawalStartAge: number;
+
+    if (ciSelections.icareChecked || ciSelections.rokraiChecked) {
+        // กรณีเลือกแผนเบี้ยสูง
+        withdrawalStartAge = Math.max(61, lastIWealthyPremiumAge + 1);
+    } else {
+        // กรณีทั่วไป
+        withdrawalStartAge = lastIWealthyPremiumAge + 1;
+    }
+    // ตรวจสอบว่าไม่เกินอายุสูงสุด
+    withdrawalStartAge = Math.min(withdrawalStartAge, MAX_POLICY_AGE_TYPE + 1);
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    
     const solverResult = await findOptimalIWealthyPremiumCi(
         currentPlanningAge, gender, allCiPremiumsData, iWealthyOwnPPT,
-        iWealthyInvReturn, iWealthyRppRtuRatio, ciWithdrawalStartAge
+        iWealthyInvReturn, iWealthyRppRtuRatio,
+        withdrawalStartAge // ส่งค่าที่คำนวณใหม่เข้าไปใน Solver
     );
+
+    // Logic การหยุดจ่ายเบี้ย CI ต้องถูกนำมาใช้ที่นี่ด้วย
+    const lastCiPremiumPaymentAge = withdrawalStartAge - 1;
+    const adjustedCiPremiumsData = allCiPremiumsData.map(ciRow => {
+        if (ciRow.age > lastCiPremiumPaymentAge) {
+            return { ...ciRow, totalCiPremium: 0, lifeReadyPremium: 0, icarePremium: 0, ishieldPremium: 0, rokraiPremium: 0, dciPremium: 0 };
+        }
+        return ciRow;
+    });
 
     const initialSA = Math.max(1, Math.round(getSumInsuredFactor(currentPlanningAge) * (solverResult.solvedRpp ?? 0)));
     const saReductions = generateSAReductionsForIWealthy(currentPlanningAge, (solverResult.solvedRpp ?? 0));
-    
     const processedOutput = processIWealthyResultsToCi(
-        allCiPremiumsData,
+        adjustedCiPremiumsData, // ใช้ตาราง CI ที่ปรับแล้ว
         solverResult.finalIWealthyAnnualData,
         ciSelections,
         initialSA,
         saReductions
     );
-
     return {
         outputIllustration: processedOutput,
         minPremiumResult: solverResult.solvedTotalPremium,

@@ -1,6 +1,6 @@
 // src/pages/iwealthy/IWealthyChartPage.tsx
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../stores/appStore';
 
@@ -21,6 +21,7 @@ export default function IWealthyChartPage() {
         iWealthyResult, iWealthyIsLoading, iWealthyRpp, iWealthyRtu,
         iWealthyAge, iWealthyGender, iWealthySumInsured, iWealthyInvestmentReturn,
         setIWealthyInvestmentReturn, handleIWealthyRppRtuSlider, runIWealthyCalculation,
+        annualMIRRData
     } = useAppStore();
 
     const navigate = useNavigate();
@@ -35,20 +36,22 @@ export default function IWealthyChartPage() {
     const [isFullScreenModalOpen, setIsFullScreenModalOpen] = useState(false);
     const [modalTableViewMode, setModalTableViewMode] = useState<AnnualTableView>('compact');
     const [modalTableShowCsv, setModalTableShowCsv] = useState(false);
+    const [hoveredMirrValue, setHoveredMirrValue] = useState<string | undefined>(undefined);
     
     // --- Handlers (ส่วนใหญ่เหมือนเดิม) ---
-    const openFullScreenModal = () => setIsFullScreenModalOpen(true);
-    const closeFullScreenModal = () => {
+    const openFullScreenModal = useCallback(() => setIsFullScreenModalOpen(true), []);
+    const closeFullScreenModal = useCallback(() => {
         setIsFullScreenModalOpen(false);
         setHoveredGraphData(null); 
         setCurrentAgeForInfoBox(iWealthyAge); 
-    };
+        setHoveredMirrValue(undefined);
+    }, [iWealthyAge]);
     
     // +++ จุดที่แก้ไข +++
-    const formatNumber = (num: number | undefined | null): string => {
+    const formatNumber = useCallback((num: number | undefined | null): string => {
         if (num == null) return '0'; // Handles both undefined and null
         return Math.round(num).toLocaleString('en-US');
-    };
+    }, []);
 
     // +++ จุดที่แก้ไข: เปลี่ยน Logic การกรองข้อมูลให้เหมือนกับหน้า Table +++
     const chartDataForGraph = useMemo((): ChartData[] => {
@@ -82,11 +85,25 @@ export default function IWealthyChartPage() {
     const totalPremiumForSlider = useMemo(() => iWealthyRpp + iWealthyRtu, [iWealthyRpp, iWealthyRtu]);
     const rppPercentForSlider = useMemo(() => (totalPremiumForSlider > 0 ? Math.round((iWealthyRpp / totalPremiumForSlider) * 100) : 100), [iWealthyRpp, totalPremiumForSlider]);
     
-    const handleGraphAgeChange = (ageFromGraph: number) => {
-        setCurrentAgeForInfoBox(ageFromGraph);
-        const dataPoint = chartDataForGraph.find(d => d.age === ageFromGraph);
-        if (dataPoint) setHoveredGraphData(dataPoint);
-    };
+    const handleGraphAgeChange = useCallback((ageFromGraph: number | undefined) => { // เปลี่ยน type เป็น number | undefined
+        if (ageFromGraph !== undefined && !isNaN(ageFromGraph)) { // เพิ่มการตรวจสอบ isNaN
+            setCurrentAgeForInfoBox(ageFromGraph);
+            const dataPoint = chartDataForGraph.find(d => d.age === ageFromGraph);
+            if (dataPoint) {
+                setHoveredGraphData(dataPoint);
+            }
+            const mirrForAge = annualMIRRData?.get(ageFromGraph);
+            if (mirrForAge !== undefined && mirrForAge !== null) {
+                setHoveredMirrValue(`${(mirrForAge * 100).toFixed(2)}%`);
+            } else {
+                setHoveredMirrValue(undefined);
+            }
+        } else { // เมื่อเมาส์ออกจากกราฟ
+            setCurrentAgeForInfoBox(iWealthyAge); // กลับไปใช้ age เริ่มต้น
+            setHoveredGraphData(null);
+            setHoveredMirrValue(undefined);
+        }
+    }, [chartDataForGraph, annualMIRRData, setHoveredGraphData, setCurrentAgeForInfoBox, setHoveredMirrValue, iWealthyAge]);
 
     // --- ตรวจสอบ Loading และ Data (ไม่มีการเปลี่ยนแปลง) ---
     //useEffect(() => {
@@ -109,7 +126,7 @@ export default function IWealthyChartPage() {
 
     // --- สร้าง Content Node สำหรับ Modal (เหมือนเดิม) ---
     const tableTabContentNode = <ModalTableView data={iWealthyResult.annual} onRecalculate={runIWealthyCalculation} viewMode={modalTableViewMode} onViewModeChange={setModalTableViewMode} showCsv={modalTableShowCsv} onShowCsvToggle={() => setModalTableShowCsv(p => !p)} formatNumber={formatNumber} />;
-    const graphTabContentNode = <ModalChartView chartData={chartDataForGraph} hoveredData={hoveredGraphData} setHoveredData={setHoveredGraphData} initialData={initialDataForInfoBox} currentAge={currentAgeForInfoBox} formatNumber={formatNumber} showDeathBenefit={showDeathBenefit} setShowDeathBenefit={setShowDeathBenefit} showAccountValue={showAccountValue} setShowAccountValue={setShowAccountValue} showPremiumAnnual={showPremiumAnnual} setShowPremiumAnnual={setShowPremiumAnnual} showPremiumCumulative={showPremiumCumulative} setShowPremiumCumulative={setShowPremiumCumulative} rppPercent={rppPercentForSlider} totalPremium={totalPremiumForSlider} onPercentChange={handleIWealthyRppRtuSlider} assumedReturnRate={iWealthyInvestmentReturn} onReturnRateChange={setIWealthyInvestmentReturn} onRecalculate={runIWealthyCalculation} onAgeChange={handleGraphAgeChange} isFullScreenView={true} />;
+    //const graphTabContentNode = <ModalChartView chartData={chartDataForGraph} hoveredData={hoveredGraphData} setHoveredData={setHoveredGraphData} initialData={initialDataForInfoBox} currentAge={currentAgeForInfoBox} formatNumber={formatNumber} showDeathBenefit={showDeathBenefit} setShowDeathBenefit={setShowDeathBenefit} showAccountValue={showAccountValue} setShowAccountValue={setShowAccountValue} showPremiumAnnual={showPremiumAnnual} setShowPremiumAnnual={setShowPremiumAnnual} showPremiumCumulative={showPremiumCumulative} setShowPremiumCumulative={setShowPremiumCumulative} rppPercent={rppPercentForSlider} totalPremium={totalPremiumForSlider} onPercentChange={handleIWealthyRppRtuSlider} assumedReturnRate={iWealthyInvestmentReturn} onReturnRateChange={setIWealthyInvestmentReturn} onRecalculate={runIWealthyCalculation} onAgeChange={handleGraphAgeChange} isFullScreenView={true} />;
 
     return (
         <div className="p-4 md:p-6 space-y-4">
@@ -129,7 +146,7 @@ export default function IWealthyChartPage() {
             </div>
             
             {/* +++ Layout ที่แก้ไขแล้ว (Side-by-side on Medium screens) +++ */}
-            <div className="flex flex-col md:flex-row w-full h-[calc(100vh-220px)] gap-4">
+             <div className="flex flex-col md:flex-row w-full h-[calc(100vh-220px)] gap-4">
                 {/* ส่วนของกราฟ (ซ้าย) */}
                 <div className="flex-grow md:w-3/4 border border-gray-200 rounded-lg shadow-sm p-2 bg-white">
                     <Graph
@@ -140,6 +157,9 @@ export default function IWealthyChartPage() {
                         showPremiumAnnual={showPremiumAnnual}
                         showPremiumCumulative={showPremiumCumulative}
                         onAgeChange={handleGraphAgeChange}
+                        hoveredAge={currentAgeForInfoBox} // <--- เพิ่ม: ส่ง hoveredAge ไปยัง Graph
+                        hoveredMirr={hoveredMirrValue} // <--- เพิ่ม: ส่ง hoveredMirr ไปยัง Graph
+                        mirrData={annualMIRRData} // <--- เพิ่ม: ส่ง mirrData ไปยัง Graph
                     />
                 </div>
 
@@ -186,7 +206,35 @@ export default function IWealthyChartPage() {
                         </div>
                     }
                     tableTabContent={tableTabContentNode}
-                    graphTabContent={graphTabContentNode}
+                    graphTabContent={
+                        <ModalChartView 
+                            chartData={chartDataForGraph} 
+                            hoveredData={hoveredGraphData} 
+                            setHoveredData={setHoveredGraphData} 
+                            initialData={initialDataForInfoBox} 
+                            currentAge={currentAgeForInfoBox} 
+                            formatNumber={formatNumber} 
+                            showDeathBenefit={showDeathBenefit} 
+                            setShowDeathBenefit={setShowDeathBenefit} 
+                            showAccountValue={showAccountValue} 
+                            setShowAccountValue={setShowAccountValue} 
+                            showPremiumAnnual={showPremiumAnnual} 
+                            setShowPremiumAnnual={setShowPremiumAnnual} 
+                            showPremiumCumulative={showPremiumCumulative} 
+                            setShowPremiumCumulative={setShowPremiumCumulative} 
+                            rppPercent={rppPercentForSlider} 
+                            totalPremium={totalPremiumForSlider} 
+                            onPercentChange={handleIWealthyRppRtuSlider} 
+                            assumedReturnRate={iWealthyInvestmentReturn} 
+                            onReturnRateChange={setIWealthyInvestmentReturn} 
+                            onRecalculate={runIWealthyCalculation} 
+                            onAgeChange={handleGraphAgeChange} 
+                            isFullScreenView={true} 
+                            hoveredAge={currentAgeForInfoBox} 
+                            hoveredMirr={hoveredMirrValue} 
+                            mirrData={annualMIRRData} // <--- ส่ง mirrData ไปให้ ModalChartView
+                        />
+                    }
                 />
             )}
         </div>

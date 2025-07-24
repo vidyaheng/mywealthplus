@@ -29,12 +29,23 @@ export interface ModalChartViewProps {
     onRecalculate: () => void;
     onAgeChange: (age: number) => void;
     isFullScreenView?: boolean; // Prop ที่แก้ปัญหา error
+    CustomTooltipComponent?: React.ElementType;
+    hoveredAge?: number;
+    hoveredMirr?: string; 
+    mirrData?: Map<number, number | null> | null;
 }
 
 // --- STEP 2: นำโครงสร้าง Layout เดิมของคุณกลับมาใช้ ---
 export default function ModalChartView(props: ModalChartViewProps) {
     // Destructure props isFullScreenView ออกมาเพื่อส่งต่อ
-    const { isFullScreenView = false, ...restOfProps } = props;
+    const { 
+        isFullScreenView = false, 
+        CustomTooltipComponent, 
+        mirrData,
+        hoveredAge,
+        hoveredMirr,
+        ...restOfProps 
+    } = props;
 
     return (
         // ใช้ Layout เดิมของคุณ (แนวตั้ง บน/ล่าง)
@@ -64,6 +75,10 @@ export default function ModalChartView(props: ModalChartViewProps) {
                         showPremiumAnnual={props.showPremiumAnnual}
                         showPremiumCumulative={props.showPremiumCumulative}
                         onAgeChange={props.onAgeChange}
+                        //CustomTooltipComponent={CustomTooltipComponent}
+                        hoveredAge={hoveredAge}
+                        hoveredMirr={hoveredMirr}
+                        //mirrData={mirrData}
                     />
                 </div>
             </div>

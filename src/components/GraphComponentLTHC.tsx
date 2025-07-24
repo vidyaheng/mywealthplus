@@ -54,49 +54,35 @@ const GraphComponentLTHC: React.FC<GraphComponentLTHCProps> = ({
     };
 
     const formatYAxisTick = (tickValue: number) => `${(tickValue / 1000000).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:1})}M`;
+
+    // --- vvvv ลบ getTicks เดิม แล้วใช้โค้ดนี้แทน vvvv ---
     const getTicks = useCallback((dataForTicks: LthcChartDataType[]): number[] => {
-    if (!dataForTicks || dataForTicks.length === 0) return [];
-    const ages = dataForTicks.map(d => d.age).filter(age => typeof age === 'number') as number[];
-    if (ages.length === 0) return [];
+        if (!dataForTicks || dataForTicks.length === 0) return [];
+        
+        const ages = dataForTicks.map(d => d.age);
+        const minAge = Math.min(...ages);
+        const maxAge = Math.max(...ages);
 
-    const minAge = Math.min(...ages);
-    const maxAge = Math.max(...ages);
-    const ticks: number[] = [];
+        const ticks = new Set<number>();
 
-    if (dataForTicks.length < 10 && ages.length > 0) { // ถ้าข้อมูลน้อยกว่า 10 จุด แสดงทุกจุด
-        return [...new Set(ages)].sort((a,b) => a-b); // ใช้ Set เพื่อเอาค่าซ้ำออกก่อน sort
-    }
+        // หาตัวเลขแรกที่ลงท้ายด้วย 0 หรือ 5 ที่มากกว่าหรือเท่ากับ minAge
+        const startTick = Math.ceil(minAge / 5) * 5;
 
-    if (minAge === maxAge && ages.length > 0) return [minAge]; // กรณีมีข้อมูลแค่จุดเดียว
-
-    for (let i = minAge; i <= maxAge; i += 5) { // สร้าง ticks ทุก 5 ปี
-        ticks.push(i);
-    }
-
-    // ตรวจสอบและเพิ่ม minAge ถ้ายังไม่มีและไม่ใกล้กับ tick แรกมากไป
-    if (ticks.length > 0 && minAge < ticks[0] && ticks[0] - minAge >= 2) {
-         if (!ticks.includes(minAge)) ticks.unshift(minAge);
-    } else if (ticks.length === 0 && ages.length > 0) { // ถ้า loop for ไม่ทำงานเลย แต่มี data
-        ticks.push(minAge);
-    }
-
-
-    // ตรวจสอบและเพิ่ม maxAge ถ้ายังไม่มีและไม่ใกล้กับ tick สุดท้ายมากไป
-    if (ticks.length > 0 && ticks[ticks.length - 1] < maxAge) {
-        if (maxAge - ticks[ticks.length - 1] >= 2 || ticks.length === 1 && minAge !== maxAge) {
-           if(!ticks.includes(maxAge)) ticks.push(maxAge);
-        } else if (ticks.length > 1 && !ticks.includes(maxAge)) { // ถ้าใกล้มาก ให้แทนที่ตัวสุดท้าย
-            ticks[ticks.length - 1] = maxAge;
+        // สร้าง Ticks ที่ลงท้ายด้วย 0 หรือ 5 ไปจนถึง maxAge
+        for (let i = startTick; i <= maxAge; i += 5) {
+            ticks.add(i);
         }
-    } else if (ticks.length === 1 && ticks[0] !== maxAge && minAge !== maxAge) { // กรณีมี minAge แต่ยังไม่มี maxAge
-        ticks.push(maxAge);
-    }
+        
+        // เพิ่ม tick แรก (minAge) และ tick สุดท้าย (maxAge) เพื่อให้กราฟเต็มขอบเสมอ
+        ticks.add(minAge);
+        ticks.add(maxAge);
 
-
-    return [...new Set(ticks)].sort((a,b) => a-b); // เอาค่าซ้ำออก (ถ้ามี) และ sort
-}, []);
+        return Array.from(ticks).sort((a, b) => a - b);
+    }, []);
+    // --- ^^^^ จบส่วนที่แก้ไข ^^^^ ---
 
     const memoizedTicks = useMemo(() => getTicks(data), [data, getTicks]);
+
 
 
     // ฟังก์ชันสำหรับ render active dot (วงกลมเมื่อ hover)

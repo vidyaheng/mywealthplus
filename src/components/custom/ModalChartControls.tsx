@@ -113,57 +113,53 @@ const ModalChartControls: React.FC<ModalChartControlsProps> = ({
 
 
     if (isFullScreenView) {
-        // ----- Layout สำหรับ Fullscreen Modal (พยายามจัดแนวนอน, compact) -----
+        // ----- Layout ใหม่สำหรับ Fullscreen Modal (บังคับ 6 คอลัมน์) -----
         return (
-            <div className="bg-blue-900 flex flex-row flex-wrap items-center justify-between w-full text-sm p-1.5 gap-x-1 gap-y-2">
-                {/* Section 1: Checkboxes (เรียงแนวนอนและ wrap, พยายามใช้พื้นที่) */}
-                <div className="flex-auto order-1 min-w-[120px] xs:min-w-[140px] sm:min-w-[160px]">
-                    <div className="flex flex-row flex-wrap justify-center sm:justify-start items-center gap-x-2 gap-y-1">
-                        {/* คอลัมน์ซ้าย: Title "ข้อมูล ณ อายุ" และ ปุ่ม "Update" */}
-                        <div className="flex flex-col space-y-2 flex-shrink-0 items-start py-1 border-r border-gray-200 mr-8"> {/* flex-shrink-0 เพื่อไม่ให้คอลัมน์นี้หด */}
-                            {displayData && (
-                                <div className="text-center">
-                                    <h3 className="w-[180px] font-semibold text-sm text-gray-100 whitespace-nowrap">
-                                        ข้อมูล ณ อายุ: {currentAge || displayData?.age || '-'} ปี
-                                    </h3>
-                                </div>
-                            )}
-                            {onRecalculate && (
-                                <Button
-                                    onClick={onRecalculate}
-                                    size="sm"
-                                    className="ml-[calc(1rem+1rem)] bg-sky-500 hover:bg-sky-600 text-white text-xs px-4 py-1.5 w-full sm:w-auto" // ลองเปลี่ยนสีปุ่มและให้กว้างเต็มในจอเล็ก
-                                >
-                                    Update
-                                </Button>
-                            )}
-                        </div>
-                        {displayData ? (
-                            <>
-                                {createDataRow("mccFSDeathBenefit", "เสียชีวิต", displayData.deathBenefit, "#70A8DB", showDeathBenefit, setShowDeathBenefit)}
-                                {createDataRow("mccFSAccountValue", "มูลค่า กธ", displayData.accountValue, "#F5A623", showAccountValue, setShowAccountValue)}
-                                {createDataRow("mccFSPremiumCumulative", "เบี้ยสะสม", displayData.premiumCumulative, "#99BE60", showPremiumCumulative, setShowPremiumCumulative)}
-                                {createDataRow("mccFSPremiumAnnual", "เบี้ยรายปี", displayData.premiumAnnual, "red", showPremiumAnnual, setShowPremiumAnnual)}
-                            </>
-                        ) : <p className="text-xs text-gray-500 text-center py-2 w-full">เลื่อนเมาส์บนกราฟเพื่อดูข้อมูล</p>}
+            <div className="w-full bg-blue-900 p-3">
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-start">
+                    
+                    {/* --- คอลัมน์ที่ 1: Title และปุ่ม Update --- */}
+                    <div className="flex flex-col space-y-2 items-start">
+                        {displayData && (
+                            <h3 className="font-semibold text-sm text-gray-100 whitespace-nowrap">
+                                ข้อมูล ณ อายุ: {currentAge || displayData?.age || '-'} ปี
+                            </h3>
+                        )}
+                        {onRecalculate && (
+                            <Button
+                                onClick={onRecalculate}
+                                size="sm"
+                                className="bg-sky-500 hover:bg-sky-600 text-white text-xs px-3 py-1"
+                            >
+                                Update
+                            </Button>
+                        )}
                     </div>
-                </div>
 
-                {/* Section 2: Sliders (เรียงแนวตั้งภายใน Section นี้, Section นี้จะพยายามแคบ) */}
-                <div className="flex flex-col space-y-1.5 order-2 w-full xs:w-auto xs:min-w-[160px] sm:max-w-[180px] md:max-w-[200px]">
-                    <div className="flex flex-col items-center w-full">
-                        {/*<h4 className="text-[11px] font-semibold text-gray-100 mb-0.5 whitespace-nowrap">
-                            สัดส่วนเบี้ย RPP/RTU
-                        </h4>*/}
-                        <RppRtuRatioSlider rppPercent={rppPercent} totalPremium={totalPremium} onPercentChange={onPercentChange} compact={true} />
-                    </div>
-                    <div className="w-full">
+                    {/* --- คอลัมน์ที่ 2-5: กล่องข้อมูล --- */}
+                    {displayData ? (
+                        <>
+                            <div>{createDataRow("mccFSDeathBenefit", "เสียชีวิต", displayData.deathBenefit, "#70A8DB", showDeathBenefit, setShowDeathBenefit)}</div>
+                            <div>{createDataRow("mccFSAccountValue", "มูลค่า กธ.", displayData.accountValue, "#F5A623", showAccountValue, setShowAccountValue)}</div>
+                            <div>{createDataRow("mccFSPremiumCumulative", "เบี้ยสะสม", displayData.premiumCumulative, "#99BE60", showPremiumCumulative, setShowPremiumCumulative)}</div>
+                            <div>{createDataRow("mccFSPremiumAnnual", "เบี้ยรายปี", displayData.premiumAnnual, "#E57373", showPremiumAnnual, setShowPremiumAnnual)}</div>
+                        </>
+                    ) : <p className="text-xs text-gray-400 col-span-4 text-center py-4">เลื่อนเมาส์บนกราฟ</p>}
+
+                    {/* --- คอลัมน์ที่ 6: Sliders --- */}
+                    <div className="flex flex-col space-y-4">
+                        <RppRtuRatioSlider 
+                            rppPercent={rppPercent} 
+                            totalPremium={totalPremium} 
+                            onPercentChange={onPercentChange} 
+                            compact={true} 
+                        />
                         <InvestmentReturnInput
-                            label="ผลตอบแทนคาดหวัง (%ต่อปี)"
-                            // labelClassName ถูกลบออกแล้ว
-                            value={assumedReturnRate} onChange={onReturnRateChange} min={0} max={10} step={0.25}
-                            displayPrecision={2} showInputField={false} sliderOnlyCompact={true} isFullScreenView={isFullScreenView}
-                            // อาจจะต้องเพิ่ม prop สำหรับปรับขนาด label ภายใน InvestmentReturnInput ถ้าต้องการให้เล็กกว่า text-xs default
+                            value={assumedReturnRate} 
+                            onChange={onReturnRateChange} 
+                            min={0} max={10} step={0.25}
+                            sliderOnlyCompact={true} 
+                            isFullScreenView={isFullScreenView}
                         />
                     </div>
                 </div>

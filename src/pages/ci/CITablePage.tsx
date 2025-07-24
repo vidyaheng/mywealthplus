@@ -11,9 +11,10 @@ import { Label } from "@/components/ui/label";
 import { formatNumber } from '@/components/ci/utils/helpers';
 
 // --- Props Interface ---
+// --- REMOVED: ลบ iWealthyWithdrawalStartAge ออกจาก Props ---
 type CITablePageProps = Pick<
     UseCiPlannerReturn,
-    'isLoading' | 'error' | 'result' | 'ciPremiumsSchedule' | 'useIWealthy' | 'iWealthyWithdrawalStartAge'
+    'isLoading' | 'error' | 'result' | 'ciPremiumsSchedule' | 'useIWealthy'
 >;
 
 // --- Component Definition ---
@@ -23,64 +24,38 @@ export default function CITablePage({
     result,
     ciPremiumsSchedule,
     useIWealthy,
-    iWealthyWithdrawalStartAge
+    // --- REMOVED: ไม่ต้องรับ Prop นี้แล้ว ---
+    // iWealthyWithdrawalStartAge 
 }: CITablePageProps) {
 
-    // --- State Management for UI Interaction ---
+    // --- State and Render Guards (เหมือนเดิม) ---
     const [showCiOnlyView, setShowCiOnlyView] = useState(false);
     const [showRppRtu, setShowRppRtu] = useState<boolean>(false);
+    if (isLoading) { return <div className="flex justify-center items-center h-full min-h-[600px]">กำลังโหลดข้อมูลตาราง...</div>; }
+    if (error) { return <div className="flex justify-center items-center h-full min-h-[600px] text-red-600">เกิดข้อผิดพลาด: {error}</div>; }
+    if (!result) { return ( <div className="flex justify-center items-center h-full min-h-[600px] text-muted-foreground"><p>ไม่มีข้อมูลสำหรับแสดงผล กรุณากด "คำนวณ" ที่หน้ากรอกข้อมูล</p></div> ); }
 
-    // --- Render Guards ---
-    if (isLoading) {
-        return <div className="flex justify-center items-center h-full min-h-[600px]">กำลังโหลดข้อมูลตาราง...</div>;
-    }
-    if (error) {
-        return <div className="flex justify-center items-center h-full min-h-[600px] text-red-600">เกิดข้อผิดพลาด: {error}</div>;
-    }
-    if (!result) {
-        return (
-            <div className="flex justify-center items-center h-full min-h-[600px] text-muted-foreground">
-                <p>ไม่มีข้อมูลสำหรับแสดงผล กรุณากด "คำนวณ" ที่หน้ากรอกข้อมูล</p>
-            </div>
-        );
-    }
+    // --- Pre-render Calculations for Totals (ปรับปรุงเล็กน้อย) ---
+    const ciPremiumTotals = (ciPremiumsSchedule ?? []).reduce( (acc, row) => { acc.lifeReady += row.lifeReadyPremium ?? 0; acc.icare += row.icarePremium ?? 0; acc.ishield += row.ishieldPremium ?? 0; acc.rokrai += row.rokraiPremium ?? 0; acc.dci += row.dciPremium ?? 0; acc.total += row.totalCiPremium ?? 0; return acc; }, { lifeReady: 0, icare: 0, ishield: 0, rokrai: 0, dci: 0, total: 0 } );
 
-    // --- Pre-render Calculations for Totals ---
-    const ciPremiumTotals = (ciPremiumsSchedule ?? []).reduce(
-        (acc, row) => {
-            acc.lifeReady += row.lifeReadyPremium ?? 0;
-            acc.icare += row.icarePremium ?? 0;
-            acc.ishield += row.ishieldPremium ?? 0;
-            acc.rokrai += row.rokraiPremium ?? 0;
-            acc.dci += row.dciPremium ?? 0;
-            acc.total += row.totalCiPremium ?? 0;
-            return acc;
-        },
-        { lifeReady: 0, icare: 0, ishield: 0, rokrai: 0, dci: 0, total: 0 }
-    );
+    const iWealthyTotals = result.reduce( (acc, row) => {
+        // --- CHANGED: คำนวณเบี้ย CI ที่จ่ายทั้งหมดจากข้อมูลใน result โดยตรง ---
+        // ไม่ต้องใช้ iWealthyWithdrawalStartAge อีกต่อไป
+        acc.totalCIPaid += row.totalCiPackagePremiumPaid ?? 0;
+        acc.rpp += row.iWealthyRpp ?? 0;
+        acc.rtu += row.iWealthyRtu ?? 0;
+        acc.totalIWealthyPaid += row.iWealthyTotalPremium ?? 0;
+        acc.totalWithdrawal += row.iWealthyWithdrawal ?? 0;
+        return acc;
+    }, { totalCIPaid: 0, rpp: 0, rtu: 0, totalIWealthyPaid: 0, totalWithdrawal: 0 } );
 
-    const iWealthyTotals = result.reduce(
-        (acc, row) => {
-            if (row.age < iWealthyWithdrawalStartAge) {
-                acc.totalCIPaid += row.totalCiPackagePremiumPaid ?? 0;
-            }
-            acc.rpp += row.iWealthyRpp ?? 0;
-            acc.rtu += row.iWealthyRtu ?? 0;
-            acc.totalIWealthyPaid += row.iWealthyTotalPremium ?? 0;
-            acc.totalWithdrawal += row.iWealthyWithdrawal ?? 0;
-            return acc;
-        },
-        { totalCIPaid: 0, rpp: 0, rtu: 0, totalIWealthyPaid: 0, totalWithdrawal: 0 }
-    );
-
-    // --- Render Variables ---
     const isIWealthyMode = useIWealthy;
     const toggleLabel = showCiOnlyView ? 'แสดงตาราง iWealthy' : 'แสดงตารางเบี้ย CI';
 
     return (
         <div className="space-y-8">
             
-            {/* ตารางที่ 1: สรุปเบี้ยประกันภัย CI */}
+            {/* ตารางที่ 1: สรุปเบี้ยประกันภัย CI (ไม่มีการเปลี่ยนแปลง) */}
             {(!isIWealthyMode || showCiOnlyView) && ciPremiumsSchedule && ciPremiumsSchedule.length > 0 && (
                 <Card className="bg-white dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
                     <CardHeader>
@@ -89,12 +64,7 @@ export default function CITablePage({
                             {isIWealthyMode && (
                                 <div className="flex items-center space-x-2">
                                     <Label htmlFor="view-toggle-ci" className="text-sm font-normal">{toggleLabel}</Label>
-                                    <Switch 
-                                        id="view-toggle-ci" 
-                                        checked={showCiOnlyView} 
-                                        onCheckedChange={setShowCiOnlyView}
-                                        className="data-[state=checked]:bg-blue-600"
-                                    />
+                                    <Switch id="view-toggle-ci" checked={showCiOnlyView} onCheckedChange={setShowCiOnlyView} className="data-[state=checked]:bg-blue-600"/>
                                 </div>
                             )}
                         </div>
@@ -162,12 +132,7 @@ export default function CITablePage({
                                     <TableHead className="text-center w-[60px]">ปีที่</TableHead>
                                     <TableHead className="text-center w-[60px]">อายุ</TableHead>
                                     <TableHead className="text-right">เบี้ย CI รวม</TableHead>
-                                    {showRppRtu && (
-                                        <>
-                                            <TableHead className="text-right">iWealthy RPP</TableHead>
-                                            <TableHead className="text-right">iWealthy RTU</TableHead>
-                                        </>
-                                    )}
+                                    {showRppRtu && ( <> <TableHead className="text-right">iWealthy RPP</TableHead> <TableHead className="text-right">iWealthy RTU</TableHead> </> )}
                                     <TableHead className="text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <span>เบี้ยรวม iWealthy</span>
@@ -186,15 +151,14 @@ export default function CITablePage({
                                     <TableRow key={`res-${row.policyYear}-${row.age}`}>
                                         <TableCell className="text-center">{row.policyYear}</TableCell>
                                         <TableCell className="text-center">{row.age}</TableCell>
+                                        
+                                        {/* --- CHANGED: แสดงผลเบี้ย CI ตรงๆ จากข้อมูลที่ได้รับมา --- */}
+                                        {/* ไม่ต้องมีเงื่อนไข if เช็คกับ iWealthyWithdrawalStartAge อีกต่อไป */}
                                         <TableCell className="text-right">
-                                            {row.age < iWealthyWithdrawalStartAge ? formatNumber(row.totalCiPackagePremiumPaid) : '0'}
+                                            {formatNumber(row.totalCiPackagePremiumPaid)}
                                         </TableCell>
-                                        {showRppRtu && (
-                                            <>
-                                                <TableCell className="text-right text-muted-foreground">{formatNumber(row.iWealthyRpp)}</TableCell>
-                                                <TableCell className="text-right text-muted-foreground">{formatNumber(row.iWealthyRtu)}</TableCell>
-                                            </>
-                                        )}
+
+                                        {showRppRtu && ( <> <TableCell className="text-right text-muted-foreground">{formatNumber(row.iWealthyRpp)}</TableCell> <TableCell className="text-right text-muted-foreground">{formatNumber(row.iWealthyRtu)}</TableCell> </> )}
                                         <TableCell className="text-right">{formatNumber(row.iWealthyTotalPremium)}</TableCell>
                                         <TableCell className="text-right">{formatNumber(row.iWealthyWithdrawal)}</TableCell>
                                         <TableCell className="text-right font-semibold">{formatNumber(Math.round(row.iWealthyEoyAccountValue ?? 0))}</TableCell>
@@ -206,12 +170,7 @@ export default function CITablePage({
                                 <TableRow>
                                     <TableCell colSpan={2}>ผลรวม</TableCell>
                                     <TableCell className="text-right">{formatNumber(iWealthyTotals.totalCIPaid)}</TableCell>
-                                    {showRppRtu && (
-                                        <>
-                                            <TableCell className="text-right">{formatNumber(iWealthyTotals.rpp)}</TableCell>
-                                            <TableCell className="text-right">{formatNumber(iWealthyTotals.rtu)}</TableCell>
-                                        </>
-                                    )}
+                                    {showRppRtu && ( <> <TableCell className="text-right">{formatNumber(iWealthyTotals.rpp)}</TableCell> <TableCell className="text-right">{formatNumber(iWealthyTotals.rtu)}</TableCell> </> )}
                                     <TableCell className="text-right">{formatNumber(iWealthyTotals.totalIWealthyPaid)}</TableCell>
                                     <TableCell className="text-right">{formatNumber(iWealthyTotals.totalWithdrawal)}</TableCell>
                                     <TableCell colSpan={2}></TableCell>

@@ -173,7 +173,7 @@ export default function DisplayTable({
         </tbody>
         <tfoot className="border-t"> {/* เพิ่ม border-t ให้ tfoot */}
           <tr className={`${footerCellStickyBg} font-semibold`}>
-            {/* --- ปรับ className ของ td ใน footer --- */}
+            
             <td className={`${tdBaseClass} text-center font-semibold`}>รวม</td>
             <td className={`${tdBaseClass} text-center`}>-</td>
             <td className={`${tdBaseClass} text-right`}>{formatNumber(totals.premiumRPPYear)}</td>
