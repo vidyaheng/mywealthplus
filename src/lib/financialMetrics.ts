@@ -123,11 +123,13 @@ export function calculateMIRRForYear(
   gender: Gender,
   investmentReturnRate: number
 ): number | null {
+  console.log(`\n\n--- 🕵️ [MIRR DEBUG] Calculating for Surrender Year: ${surrenderYear} ---`);
   const annualCashFlows: number[] = [];
   const activeYears = result.annual.filter(y => y.policyYear <= surrenderYear);
 
   for (let i = 0; i < activeYears.length; i++) {
       const yearRow = activeYears[i];
+      console.log(`[Year ${yearRow.policyYear}, Age ${yearRow.age}] EOY_DB: ${yearRow.eoyDeathBenefit.toFixed(2)}, EOY_AV: ${yearRow.eoyAccountValue.toFixed(2)}`);
       const netAmountAtRisk = Math.max(0, yearRow.eoyDeathBenefit - yearRow.eoyAccountValue);
       const termPremiumForYear = calculatePlb15TermPremium(yearRow.age, gender, netAmountAtRisk);
       

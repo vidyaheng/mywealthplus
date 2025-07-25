@@ -1,6 +1,7 @@
 // src/data/plb15Rates.ts
 
-import type { Gender } from '../lib/calculations'; // Import Type จากไฟล์เดิม
+import type { Gender } from '../lib/calculations';
+import { COI_RATES } from './coiRates';
 
 /**
  * โครงสร้างข้อมูลสำหรับเบี้ยประกัน Term แต่ละช่วงอายุ
@@ -12,8 +13,37 @@ export interface TermRateEntry {
   femaleRate: number;
 }
 
-// ข้อมูลเบี้ยประกัน PLB15 (Term 15 ปี) ตั้งแต่อายุ 20-59 ปี
-export const PLB15_RATES: TermRateEntry[] = [
+// --- ค่าคงที่สำหรับแบบจำลองทางคณิตศาสตร์ ---
+const MALE_LOADING_FACTOR = 1.53;
+const FEMALE_LOADING_FACTOR = 1.41;
+const MAX_AGE = 99;
+
+// ข้อมูลเบี้ยประกัน PLB15 (Term 15 ปี) ฉบับสมบูรณ์
+// โดยช่วงอายุ 0-19 ปี เป็นค่าที่ได้จากการประมาณการด้วยแบบจำลอง
+// และช่วงอายุ 20-59 ปี เป็นข้อมูลตามตารางเดิม
+export const PLB15_RATES_EXTENDED: TermRateEntry[] = [
+  // -- Estimated Rates (Age 0-19) --
+  { age: 0, maleRate: 2.22, femaleRate: 1.83 },
+  { age: 1, maleRate: 0.99, femaleRate: 0.82 },
+  { age: 2, maleRate: 1.01, femaleRate: 0.83 },
+  { age: 3, maleRate: 1.04, femaleRate: 0.84 },
+  { age: 4, maleRate: 1.08, femaleRate: 0.86 },
+  { age: 5, maleRate: 1.13, femaleRate: 0.89 },
+  { age: 6, maleRate: 1.18, femaleRate: 0.92 },
+  { age: 7, maleRate: 1.24, femaleRate: 0.95 },
+  { age: 8, maleRate: 1.31, femaleRate: 0.98 },
+  { age: 9, maleRate: 1.39, femaleRate: 1.02 },
+  { age: 10, maleRate: 1.48, femaleRate: 1.07 },
+  { age: 11, maleRate: 1.59, femaleRate: 1.12 },
+  { age: 12, maleRate: 1.70, femaleRate: 1.18 },
+  { age: 13, maleRate: 1.82, femaleRate: 1.24 },
+  { age: 14, maleRate: 1.95, femaleRate: 1.30 },
+  { age: 15, maleRate: 2.08, femaleRate: 1.36 },
+  { age: 16, maleRate: 2.21, femaleRate: 1.43 },
+  { age: 17, maleRate: 2.35, femaleRate: 1.50 },
+  { age: 18, maleRate: 2.48, femaleRate: 1.56 },
+  { age: 19, maleRate: 2.61, femaleRate: 1.63 },
+  // -- Original Rates (Age 20-59) --
   { age: 20, maleRate: 4.42, femaleRate: 2.74 },
   { age: 21, maleRate: 4.49, femaleRate: 2.76 },
   { age: 22, maleRate: 4.56, femaleRate: 2.79 },
@@ -39,7 +69,7 @@ export const PLB15_RATES: TermRateEntry[] = [
   { age: 42, maleRate: 9.76, femaleRate: 5.24 },
   { age: 43, maleRate: 10.36, femaleRate: 5.55 },
   { age: 44, maleRate: 11.01, femaleRate: 5.90 },
-  { age: 55, maleRate: 11.73, femaleRate: 6.29 },
+  { age: 45, maleRate: 11.73, femaleRate: 6.29 },
   { age: 46, maleRate: 12.52, femaleRate: 6.73 },
   { age: 47, maleRate: 13.40, femaleRate: 7.22 },
   { age: 48, maleRate: 14.37, femaleRate: 7.78 },
@@ -56,47 +86,51 @@ export const PLB15_RATES: TermRateEntry[] = [
   { age: 59, maleRate: 36.66, femaleRate: 22.82 },
 ];
 
-// --- ค่าคงที่สำหรับการประมาณการเบี้ยประกันหลังอายุ 59 ปี ---
-const LAST_KNOWN_AGE = 59;
-// จากการวิเคราะห์ข้อมูล 5 ปีสุดท้าย อัตราเบี้ยชายโตเฉลี่ยปีละ 10% และหญิง 12%
-const MALE_ANNUAL_GROWTH_RATE = 0.10; // 10%
-const FEMALE_ANNUAL_GROWTH_RATE = 0.12; // 12%
+// สร้าง Map เพื่อให้การค้นหา COI และ PLB15 เร็วขึ้น (O(1) complexity)
+const coiRateMap = new Map(COI_RATES.map(rate => [rate.age, rate]));
+const plb15RateMap = new Map(PLB15_RATES_EXTENDED.map(rate => [rate.age, rate]));
 
+/**
+ * ฟังก์ชันผู้ช่วยสำหรับดึงค่า COI ณ อายุและเพศที่กำหนด
+ */
+function getCoiRate(age: number, gender: Gender): number {
+    const rate = coiRateMap.get(age);
+    if (!rate) {
+        const lastRate = COI_RATES[COI_RATES.length - 1];
+        return gender === 'male' ? lastRate.maleRate : lastRate.femaleRate;
+    }
+    return gender === 'male' ? rate.maleRate : rate.femaleRate;
+}
 
 /**
  * ดึงอัตราเบี้ยประกัน Term 15 ปี (PLB15) ต่อทุน 1,000 บาท
- * หากอายุเกิน 59 ปี จะทำการประมาณการเบี้ยโดยใช้อัตราเติบโตแบบทบต้น
  * @param age - อายุ
  * @param gender - เพศ
  * @returns อัตราเบี้ยประกัน
  */
 export function getPlb15TermRate(age: number, gender: Gender): number {
-  const effectiveAge = Math.max(20, Math.min(age, 98)); // จำกัดอายุในช่วงที่สมเหตุสมผล
+    const effectiveAge = Math.max(0, Math.min(age, MAX_AGE)); // ปรับอายุขั้นต่ำเป็น 0
 
-  const rateEntry = PLB15_RATES.find(entry => entry.age === effectiveAge);
-
-  if (rateEntry) {
-    return gender === 'male' ? rateEntry.maleRate : rateEntry.femaleRate;
-  }
-
-  // หากอายุเกินขอบเขตข้อมูล (มากกว่า 59 ปี) ให้ทำการประมาณการ
-  if (effectiveAge > LAST_KNOWN_AGE) {
-    const lastRateEntry = PLB15_RATES[PLB15_RATES.length - 1];
-    const yearsToExtrapolate = effectiveAge - LAST_KNOWN_AGE;
-    
-    if (gender === 'male') {
-      const extrapolatedRate = lastRateEntry.maleRate * Math.pow(1 + MALE_ANNUAL_GROWTH_RATE, yearsToExtrapolate);
-      return extrapolatedRate;
-    } else {
-      const extrapolatedRate = lastRateEntry.femaleRate * Math.pow(1 + FEMALE_ANNUAL_GROWTH_RATE, yearsToExtrapolate);
-      return extrapolatedRate;
+    // 1. ค้นหาเบี้ยจากตารางข้อมูลหลัก (0-59 ปี)
+    const rateEntry = plb15RateMap.get(effectiveAge);
+    if (rateEntry) {
+        return gender === 'male' ? rateEntry.maleRate : rateEntry.femaleRate;
     }
-  }
-  
-  // ในกรณีที่ไม่คาดคิด ให้คืนค่าสุดท้าย
-  return gender === 'male' ? PLB15_RATES[PLB15_RATES.length - 1].maleRate : PLB15_RATES[PLB15_RATES.length - 1].femaleRate;
-}
 
+    // 2. หากไม่พบ (อายุ >= 60) ให้ใช้แบบจำลองในการประมาณการ
+    const termLength = Math.min(15, MAX_AGE - effectiveAge + 1);
+    if (termLength <= 0) return 0; // ควรไม่เกิดขึ้น แต่ป้องกันไว้
+
+    let totalCoi = 0;
+    for (let i = 0; i < termLength; i++) {
+        totalCoi += getCoiRate(effectiveAge + i, gender);
+    }
+    
+    const avgCoi = totalCoi / termLength;
+    const loadingFactor = gender === 'male' ? MALE_LOADING_FACTOR : FEMALE_LOADING_FACTOR;
+    
+    return avgCoi * loadingFactor;
+}
 
 /**
  * ฟังก์ชันผู้ช่วยสำหรับคำนวณเบี้ยประกัน Term 15 ปี ทั้งหมดต่อปี
@@ -106,10 +140,10 @@ export function getPlb15TermRate(age: number, gender: Gender): number {
  * @returns เบี้ยประกันที่ต้องจ่ายต่อปี
  */
 export function calculatePlb15TermPremium(age: number, gender: Gender, sumAssured: number): number {
-  if (sumAssured <= 0) return 0;
-  
-  const ratePerThousand = getPlb15TermRate(age, gender);
-  const premium = ratePerThousand * (sumAssured / 1000);
-  
-  return premium;
+    if (sumAssured <= 0) return 0;
+    
+    const ratePerThousand = getPlb15TermRate(age, gender);
+    const premium = ratePerThousand * (sumAssured / 1000);
+    
+    return Math.round(premium * 100) / 100;
 }

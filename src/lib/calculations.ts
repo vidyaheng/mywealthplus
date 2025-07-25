@@ -681,7 +681,7 @@ export function aggregateToAnnual(
             const nominalSumAssured = yearDataPartial.eoySumInsured ?? 0;
             const hybridDeathBenefit = Math.max(
                 nominalSumAssured * 1.2,
-                realEoyAccountValue * 1.2,
+                nominalEoyAccountValue * 1.2,
                 nominalSumAssured
             );
             yearDataPartial.eoyDeathBenefit = hybridDeathBenefit;

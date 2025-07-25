@@ -543,14 +543,25 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
                 
                 // 4. คำนวณ MIRR รายปีสำหรับกราฟ
                 const mirrData = new Map<number, number | null>();
-                if (breakEven) {
-                    const startYear = breakEven.year;
-                    const endYear = Math.ceil(result.lastProcessedMonth / 12);
-                    for (let year = startYear; year <= endYear; year++) {
-                        const mirr = calculateMIRRForYear(year, result, s.iWealthyGender, s.iWealthyInvestmentReturn / 100);
-                        mirrData.set(year, mirr);
+                    if (breakEven && result.annual.length > 0) {
+                        const startYear = breakEven.year;
+                        const endYear = Math.ceil(result.lastProcessedMonth / 12);
+
+                        // สร้าง Map ของ policyYear ไปยัง age เพื่อให้ค้นหาได้เร็ว
+                        const yearToAgeMap = new Map(result.annual.map(row => [row.policyYear, row.age]));
+
+                        for (let year = startYear; year <= endYear; year++) {
+                            const mirr = calculateMIRRForYear(year, result, s.iWealthyGender, s.iWealthyInvestmentReturn / 100);
+                            
+                            // ✅ ดึงอายุที่ถูกต้องจาก Map ที่สร้างไว้
+                            const ageForKey = yearToAgeMap.get(year);
+
+                            // ✅ ใช้ 'age' เป็น Key ในการ set ข้อมูล
+                            if (ageForKey !== undefined) {
+                                mirrData.set(ageForKey, mirr);
+                            }
+                        }
                     }
-                }
 
                 // 5. บันทึกผลลัพธ์ทั้งหมดลง State
                 set({

@@ -119,7 +119,8 @@ export const IWealthyReportPage = () => {
                             </div>
                             <div>
                                 <strong className="text-slate-600">ความคุ้มครองสูงสุด:</strong> 
-                                {maxDB?.amount.toLocaleString() ?? '0'} บาท <span className="text-slate-500">(ณ อายุ {maxDB?.age} ปี)</span>
+                                {maxDB?.amount.toLocaleString('en-US', { maximumFractionDigits: 0 }) ?? '0'} บาท
+                                <div className="text-slate-500 text-xs">(ณ อายุ {maxDB?.age} ปี)</div>
                             </div>
                         </div>
 
