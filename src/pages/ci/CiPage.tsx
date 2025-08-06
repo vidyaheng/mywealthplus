@@ -35,6 +35,8 @@ export default function CiPage() {
     iWealthyInvestmentReturn: store.ciIWealthyMode === 'manual' ? store.ciManualInvReturn : store.ciAutoInvReturn,
     iWealthyOwnPPT: store.ciIWealthyMode === 'manual' ? store.ciManualPpt : store.ciAutoPpt,
     iWealthyWithdrawalStartAge: store.ciIWealthyMode === 'manual' ? store.ciManualWithdrawalStartAge : store.ciAutoWithdrawalStartAge,
+    ciUseCustomWithdrawalAge: store.ciUseCustomWithdrawalAge,
+    setCiUseCustomWithdrawalAge: store.setCiUseCustomWithdrawalAge,
     manualRpp: store.ciManualRpp,
     manualRtu: store.ciManualRtu,
     autoRppRtuRatio: store.ciAutoRppRtuRatio,
