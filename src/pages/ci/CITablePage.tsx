@@ -45,7 +45,7 @@ export default function CITablePage({
         acc.rpp += row.iWealthyRpp ?? 0;
         acc.rtu += row.iWealthyRtu ?? 0;
         acc.totalIWealthyPaid += row.iWealthyTotalPremium ?? 0;
-        acc.totalWithdrawal += row.iWealthyWithdrawal ?? 0;
+        acc.totalWithdrawal += Math.round(row.iWealthyWithdrawal ?? 0);
         return acc;
     }, { totalCIPaid: 0, rpp: 0, rtu: 0, totalIWealthyPaid: 0, totalWithdrawal: 0 } );
 
@@ -160,7 +160,7 @@ export default function CITablePage({
 
                                         {showRppRtu && ( <> <TableCell className="text-right text-muted-foreground">{formatNumber(row.iWealthyRpp)}</TableCell> <TableCell className="text-right text-muted-foreground">{formatNumber(row.iWealthyRtu)}</TableCell> </> )}
                                         <TableCell className="text-right">{formatNumber(row.iWealthyTotalPremium)}</TableCell>
-                                        <TableCell className="text-right">{formatNumber(row.iWealthyWithdrawal)}</TableCell>
+                                        <TableCell className="text-right">{formatNumber(Math.round(row.iWealthyWithdrawal ?? 0))}</TableCell>
                                         <TableCell className="text-right font-semibold">{formatNumber(Math.round(row.iWealthyEoyAccountValue ?? 0))}</TableCell>
                                         <TableCell className="text-right font-semibold">{formatNumber(Math.round(row.totalCombinedDeathBenefit ?? 0))}</TableCell>
                                     </TableRow>

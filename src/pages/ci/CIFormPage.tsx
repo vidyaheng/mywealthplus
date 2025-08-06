@@ -37,7 +37,7 @@ const SectionTitle = ({ children, icon, className }: { children: React.ReactNode
 // --- Component Definition ---
 export default function CIFormPage(props: UseCiPlannerReturn) {
     // --- All store logic, state, effects, and handlers remain the same ---
-    const { policyholderEntryAge, setPolicyholderEntryAge, policyholderGender, setPolicyholderGender, policyOriginMode, setPolicyOriginMode, existingPolicyEntryAge, setExistingPolicyEntryAge, selectedCiPlans, setSelectedCiPlans, useIWealthy, setUseIWealthy, iWealthyMode, setIWealthyMode, iWealthyInvestmentReturn, setIWealthyInvestmentReturn, iWealthyOwnPPT, setIWealthyOwnPPT, iWealthyWithdrawalStartAge, setIWealthyWithdrawalStartAge, manualRpp, setManualRpp, manualRtu, setManualRtu, autoRppRtuRatio, setAutoRppRtuRatio, isLoading, error, ciPremiumsSchedule, calculatedMinPremium, calculatedRpp, calculatedRtu, runCalculation } = props;
+    const { policyholderEntryAge, setPolicyholderEntryAge, policyholderGender, setPolicyholderGender, policyOriginMode, setPolicyOriginMode, existingPolicyEntryAge, setExistingPolicyEntryAge, selectedCiPlans, setSelectedCiPlans, useIWealthy, setUseIWealthy, iWealthyMode, setIWealthyMode, iWealthyInvestmentReturn, setIWealthyInvestmentReturn, iWealthyOwnPPT, setIWealthyOwnPPT, iWealthyWithdrawalStartAge, setIWealthyWithdrawalStartAge, manualRpp, setManualRpp, manualRtu, setManualRtu, autoRppRtuRatio, setAutoRppRtuRatio, isLoading, error, ciPremiumsSchedule, calculatedMinPremium, calculatedRpp, calculatedRtu, runCalculation, ciUseCustomWithdrawalAge, setCiUseCustomWithdrawalAge } = props;
     const handleCiSelectionChange=<K extends keyof CiPlanSelections>(key:K,value:CiPlanSelections[K])=>{setSelectedCiPlans(e=>{const t={...e,[key]:value};return"mainRiderChecked"===key&&!value&&(t.rokraiChecked=!1,t.dciChecked=!1),"icareChecked"===key&&(t.icareSA=value?1e6:0),"ishieldChecked"===key&&(value?(t.ishieldPlan="20",t.ishieldSA=5e5):(t.ishieldPlan=null,t.ishieldSA=0)),"rokraiChecked"===key&&(t.rokraiPlan=value?"XL":null),"dciChecked"===key&&(t.dciSA=value?3e5:0),"mainRiderChecked"===key&&(value?(t.lifeReadyPlan=18,t.lifeReadySA=15e4):(t.lifeReadyPlan=null,t.lifeReadySA=0,t.rokraiChecked=!1,t.rokraiPlan=null,t.dciChecked=!1,t.dciSA=0)),t})};
     const firstYearCiPremium = ciPremiumsSchedule?.[0]?.totalCiPremium;
     let iWealthySummaryText: string | null = null; if (useIWealthy) { if (iWealthyMode === 'manual' && (manualRpp > 0 || manualRtu > 0)) { iWealthySummaryText = `Manual: RPP ${formatNumber(manualRpp)}, RTU ${formatNumber(manualRtu)}`; } else if (iWealthyMode === 'automatic' && calculatedMinPremium !== undefined) { iWealthySummaryText = `Auto: RPP ${formatNumber(calculatedRpp)}, RTU ${formatNumber(calculatedRtu)} (รวม ${formatNumber(calculatedMinPremium)})`; } }
@@ -55,6 +55,13 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
     const includedPlansText = includedPlans.length > 0 
         ? `(ประกอบไปด้วยแผน: ${includedPlans.join(' + ')})` 
         : '';
+
+        // สร้างตัวเลือกอายุสำหรับ Dropdown "อายุที่เริ่มถอน"
+    // โดยเริ่มจากอายุผู้เอาประกันปัจจุบัน ไปจนถึง 99 ปี
+    const withdrawalAgeOptions = Array.from(
+        { length: (99 - policyholderEntryAge) + 1 },
+        (_, i) => policyholderEntryAge + i
+    );
 
     return (
         <div className="space-y-4">
@@ -211,8 +218,55 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                             <div className="space-y-2">
                                 <div><Label className="block mb-1 text-xs">ผลตอบแทนที่คาดหวัง (%)</Label><Input type="number" value={iWealthyInvestmentReturn} onChange={(e) => setIWealthyInvestmentReturn(Number(e.target.value)||0)} className="h-9 text-xs" /></div>
                                 <div><Label className="block mb-1 text-xs">ระยะเวลาชำระเบี้ย iWealthy (ปี)</Label><Input type="number" value={iWealthyOwnPPT} onChange={(e) => setIWealthyOwnPPT(Number(e.target.value)||0)} className="h-9 text-xs" /></div>
+                                {/* --- เพิ่ม Toggle ที่นี่ --- */}
+                                <div className="flex items-center space-x-2 pt-2">
+                                    <Switch
+                                        id="custom-withdrawal-age-toggle"
+                                        checked={ciUseCustomWithdrawalAge}
+                                        onCheckedChange={setCiUseCustomWithdrawalAge}
+                                        className="data-[state=checked]:bg-blue-600"
+                                    />
+                                    <Label htmlFor="custom-withdrawal-age-toggle" className="text-xs font-normal">
+                                        กำหนดอายุที่เริ่มถอนเอง
+                                    </Label>
+                                </div>
+
+                                {/* --- แก้ไขเงื่อนไขการแสดง Dropdown --- */}
+                                {ciUseCustomWithdrawalAge && (
+                                    <div className="pl-6 pt-1">
+                                        <Label className="block mb-1 text-xs text-muted-foreground">อายุที่เริ่มถอนจ่ายเบี้ย CI</Label>
+                                        <Select
+                                            value={String(iWealthyWithdrawalStartAge)}
+                                            onValueChange={(value) => setIWealthyWithdrawalStartAge(Number(value))}
+                                        >
+                                            <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="เลือกอายุ" /></SelectTrigger>
+                                            <SelectContent>
+                                                {withdrawalAgeOptions.map(age => (
+                                                    <SelectItem key={age} value={String(age)} className="text-xs">{age}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
                                 {iWealthyMode === 'manual' && ( <>
-                                    <div><Label className="block mb-1 text-xs">อายุที่เริ่มถอนจ่ายเบี้ย CI</Label><Input type="number" value={iWealthyWithdrawalStartAge} onChange={(e) => setIWealthyWithdrawalStartAge(Number(e.target.value)||0)} className="h-9 text-xs" /></div>
+                                    <div>
+                                        <Label className="block mb-1 text-xs">อายุที่เริ่มถอนจ่ายเบี้ย CI</Label>
+                                        <Select
+                                            value={String(iWealthyWithdrawalStartAge)}
+                                            onValueChange={(value) => setIWealthyWithdrawalStartAge(Number(value))}
+                                        >
+                                            <SelectTrigger className="h-9 text-xs">
+                                                <SelectValue placeholder="เลือกอายุ" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {withdrawalAgeOptions.map(age => (
+                                                    <SelectItem key={age} value={String(age)} className="text-xs">
+                                                        {age}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                     <Separator className="!my-3"/>
                                     <h3 className="font-semibold text-xs text-purple-600">กำหนดเบี้ย (Manual)</h3>
                                     <div><Label className="block mb-1 text-xs">เบี้ยหลัก RPP ต่อปี</Label><Input type="number" value={manualRpp} onChange={(e) => setManualRpp(Number(e.target.value)||0)} min={18000} step={1000} className="h-9 text-xs" /></div>

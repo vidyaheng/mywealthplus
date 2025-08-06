@@ -203,7 +203,7 @@ function getCOIRate(age: number, gender: Gender): number | null {
     const effectiveAge = Math.max(COI_RATES[0].age, Math.min(age, COI_RATES[COI_RATES.length - 1].age));
     const rateEntry: CoiRateEntry | undefined = COI_RATES.find(entry => entry.age === effectiveAge);
     if (!rateEntry) {
-        console.error(`[getCOIRate] COI rate not found for effective age: ${effectiveAge}`);
+        //console.error(`[getCOIRate] COI rate not found for effective age: ${effectiveAge}`);
         return null;
     }
     return gender === 'male' ? rateEntry.maleRate : rateEntry.femaleRate;
@@ -548,6 +548,18 @@ export function calculateBenefitIllustrationMonthly(
         const eomCSV = finalEomValueForDisplay * (1 - srRate);
         const eomDB = policyIsLapsed ? currentSumAssured : Math.max(currentSumAssured * 1.2, finalEomValueForDisplay * 1.2, currentSumAssured);
 
+        {/*if (!policyIsLapsed) { // แสดง Log เฉพาะเดือนที่กรมธรรม์ยังไม่ Lapsed
+            console.group(`[Debug DB] Year: ${policyYear}, Month: ${monthInYear} (Age: ${currentAge})`);
+            console.log(`ทุนประกัน (Sum Assured):`, currentSumAssured.toLocaleString());
+            console.log(`มูลค่าบัญชี (Account Value):`, finalEomValueForDisplay.toLocaleString());
+            console.log(`--- เปรียบเทียบ 3 ค่า ---`);
+            console.log(`1. 120% ของทุนประกัน:`, (currentSumAssured * 1.2).toLocaleString());
+            console.log(`2. 120% ของมูลค่าบัญชี:`, (finalEomValueForDisplay * 1.2).toLocaleString());
+            console.log(`3. 100% ของทุนประกัน:`, currentSumAssured.toLocaleString());
+            console.log(`ผลประโยชน์กรณีเสียชีวิต (ค่าสูงสุด):`, eomDB.toLocaleString());
+            console.groupEnd();
+        */}
+
         monthlyResults.push({
             policyYear, monthInYear, monthTotal: m, age: currentAge, rppPaid: rpp_month, rtuPaid: rtu_month,
             lstuPaidGross: lstu_gross_month, lstuFee: lstuFee_month, totalPremiumPaid: totalPremium_gross_month,
@@ -681,7 +693,7 @@ export function aggregateToAnnual(
             const nominalSumAssured = yearDataPartial.eoySumInsured ?? 0;
             const hybridDeathBenefit = Math.max(
                 nominalSumAssured * 1.2,
-                nominalEoyAccountValue * 1.2,
+                realEoyAccountValue * 1.2,
                 nominalSumAssured
             );
             yearDataPartial.eoyDeathBenefit = hybridDeathBenefit;
@@ -715,10 +727,10 @@ export function aggregateToAnnual(
 }
 
 export function generateIllustrationTables(input: CalculationInput): CalculationResult {
-    console.log("[calculations.ts] Input to generateIllustrationTables:", JSON.parse(JSON.stringify(input)));
+    //console.log("[calculations.ts] Input to generateIllustrationTables:", JSON.parse(JSON.stringify(input)));
     const monthlyInternalResult = calculateBenefitIllustrationMonthly(input);
     const annualData = aggregateToAnnual(monthlyInternalResult.monthlyRows, input.assumedInvestmentReturnRate);
-    console.log("[generateIllustrationTables] Generated Annual Data Preview (First 5):", annualData.slice(0, 5));
+    //console.log("[generateIllustrationTables] Generated Annual Data Preview (First 5):", annualData.slice(0, 5));
     return {
         monthly: monthlyInternalResult.monthlyRows,
         annual: annualData,

@@ -94,9 +94,13 @@ export default function CiPlannerPage() {
         }, [store.ciIWealthyMode, store.ciManualPpt, store.ciAutoPpt, store.setCiManualPpt, store.setCiAutoPpt]),
         
         // --- ADDED BACK: เพิ่มกลับเข้ามาเป็นฟังก์ชันว่างๆ เพื่อให้ Type ถูกต้อง ---
-        setIWealthyWithdrawalStartAge: useCallback(() => {
-            // ไม่ต้องทำอะไร เพราะค่านี้ถูกคำนวณอัตโนมัติใน backend แล้ว
-        }, []),
+        setIWealthyWithdrawalStartAge: useCallback((value: React.SetStateAction<number>) => {
+            // สมมติว่าใน store มี state ชื่อ ciManualWithdrawalStartAge
+            store.setCiManualWithdrawalStartAge(typeof value === 'function' ? value(store.ciManualWithdrawalStartAge) : value);
+        }, [store.setCiManualWithdrawalStartAge, store.ciManualWithdrawalStartAge]),
+        setCiUseCustomWithdrawalAge: useCallback((value: React.SetStateAction<boolean>) => { // <<-- เพิ่ม Setter ใหม่
+            store.setCiUseCustomWithdrawalAge(typeof value === 'function' ? value(store.ciUseCustomWithdrawalAge) : value);
+        }, [store.setCiUseCustomWithdrawalAge, store.ciUseCustomWithdrawalAge]),
     };
     
     const planner: UseCiPlannerReturn = {
@@ -118,10 +122,11 @@ export default function CiPlannerPage() {
         iWealthyOwnPPT: store.ciIWealthyMode === 'manual' ? store.ciManualPpt : store.ciAutoPpt,
         // --- REMOVED: ค่านี้ไม่จำเป็นต้องส่งไปแล้ว เพราะ Logic อยู่ใน Backend ---
         // แต่ Type ยังต้องการอยู่ เราจึงส่งค่า placeholder ไป
-        iWealthyWithdrawalStartAge: 0,
+        iWealthyWithdrawalStartAge: store.ciManualWithdrawalStartAge,
         manualRpp: store.ciManualRpp,
         manualRtu: store.ciManualRtu,
         autoRppRtuRatio: store.ciAutoRppRtuRatio,
+        ciUseCustomWithdrawalAge: store.ciUseCustomWithdrawalAge,
         ...wrappedSetters,
         runCalculation: store.runCiCalculation,
     };

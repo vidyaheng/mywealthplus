@@ -1,9 +1,10 @@
 import IWealthyTablePage from './iWealthyTablePage';
 import IWealthyChartPage from './iWealthyChartPage';
 import { useAppStore } from '@/stores/appStore';
-//import { Button } from '@/components/ui/button'; // สำหรับปุ่ม Print
+import { useState, useEffect, useRef } from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { ReportDocument } from './ReportDocument';
+import html2canvas from 'html2canvas';
 
 // --- [ส่วนใหม่] ---
 // Helper สำหรับจัดรูปแบบวันที่เป็นภาษาไทย
@@ -30,7 +31,6 @@ const KPICard = ({ title, value, unit = '', description }: { title: string; valu
     );
 };
 
-
 // --- Component หลักของหน้ารายงาน ---
 export const IWealthyReportPage = () => {
     // --- [ส่วนที่แก้ไข] ---
@@ -48,6 +48,33 @@ export const IWealthyReportPage = () => {
     const investmentOnlyMIRR = useAppStore(state => state.investmentOnlyMIRR);
     const investmentOnlyROI = useAppStore(state => state.investmentOnlyROI);
     const investmentOnlyPI = useAppStore(state => state.investmentOnlyPI);
+    const totalWithdrawals = useAppStore(state => state.iWealthyMetrics?.totalWithdrawals);
+    // --- [เพิ่ม] State และ Ref สำหรับการจับภาพกราฟ ---
+    const chartContainerRef = useRef<HTMLDivElement>(null);
+    const [chartImage, setChartImage] = useState<string | null>(null);
+    const [isClient, setIsClient] = useState(false); 
+
+    // --- [เพิ่ม] useEffect สำหรับสร้างภาพจากกราฟ ---
+    useEffect(() => {
+        // ฟังก์ชันนี้จะทำงานเมื่อข้อมูลพร้อม และ component ถูก render ในฝั่ง client แล้ว
+        if (chartContainerRef.current && isClient) {
+            // หน่วงเวลาเล็กน้อยเพื่อให้กราฟมีเวลาวาด animation จนเสร็จ
+            setTimeout(() => {
+                html2canvas(chartContainerRef.current!, { 
+                    backgroundColor: null, // ทำให้พื้นหลังโปร่งใส
+                    scale: 2, // เพิ่มความละเอียดของภาพ
+                }).then((canvas) => {
+                    const dataUrl = canvas.toDataURL('image/png');
+                    setChartImage(dataUrl); // เก็บภาพในรูปแบบ Data URL ไว้ใน state
+                });
+            }, 500);
+        }
+    }, [isClient, result]); // ทำงานใหม่เมื่อ isClient หรือ result เปลี่ยน
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
     
     if (isLoading) return <div className="text-center p-10">กำลังจัดทำรายงานและบทวิเคราะห์...</div>;
     if (!result || !metrics) return <div className="text-center p-10 text-gray-500">กรุณากดคำนวณเพื่อจัดทำรายงาน</div>;
@@ -56,17 +83,45 @@ export const IWealthyReportPage = () => {
     // --- ส่วนของ UI และ Layout ---
     return (
         <div className="bg-gray-100 font-sans">
-            {/* ปุ่มสำหรับสั่งพิมพ์ จะถูกซ่อนเวลาพิมพ์ */}
-            <div className="p-4 text-right print:hidden">
-                <PDFDownloadLink
-                    document={<ReportDocument metrics={metrics} result={result} />}
-                    fileName={`iWealthy-Report-${new Date().toISOString().slice(0,10)}.pdf`}
-                >
-                    {({ loading }) => 
-                        loading ? 'กำลังสร้างเอกสาร...' : 'ดาวน์โหลดรายงาน PDF'
-                    }
-                </PDFDownloadLink>
+            {/* --- [ใหม่] ส่วนสำหรับ Render กราฟเพื่อจับภาพ (จะถูกซ่อนไว้) --- */}
+            <div ref={chartContainerRef} style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '800px', height: '300px', zIndex: -1 }}>
+                <IWealthyChartPage
+                    chartRefForCapture={chartContainerRef} // <--- ส่ง ref ให้ IWealthyChartPage
+                    isCaptureMode={true} // <--- บอก IWealthyChartPage ว่านี่คือโหมด capture ให้ซ่อน Control Box
+                    captureHeight="300px"
+                />
             </div>
+
+            <div className="p-4 text-right print:hidden">
+                {isClient && (
+                    <PDFDownloadLink
+                        document={
+                            <ReportDocument 
+                                metrics={metrics}
+                                result={result}
+                                iWealthyAge={iWealthyAge}
+                                iWealthyGender={iWealthyGender}
+                                iWealthyInvestmentReturn={iWealthyInvestmentReturn}
+                                initialDB={initialDB}
+                                maxDB={maxDB}
+                                investmentOnlyMIRR={investmentOnlyMIRR}
+                                investmentOnlyROI={investmentOnlyROI}
+                                investmentOnlyPI={investmentOnlyPI}
+                                chartImage={chartImage}
+                                totalWithdrawals={totalWithdrawals ?? null} 
+                            />
+                        }
+                        fileName={`iWealthy-Report-${new Date().toISOString().slice(0,10)}.pdf`}
+                        className="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition-colors"
+                    >
+                        {({ loading, error }) => {
+                            if (error) console.error("PDF Creation Error:", error);
+                            return loading ? 'กำลังสร้างเอกสาร...' : 'ดาวน์โหลดรายงาน PDF';
+                        }}
+                    </PDFDownloadLink>
+                )}
+            </div>
+         
 
             {/* == เริ่มส่วนของรายงานที่จะพิมพ์ == */}
             <div id="printable-report" className="max-w-4xl mx-auto bg-white p-8 shadow-lg print:shadow-none">
@@ -85,13 +140,13 @@ export const IWealthyReportPage = () => {
 
                 {/* --- 2. บทสรุปสำหรับผู้บริหาร --- */}
                 <section className="mt-6">
-                    <h2 className="text-xl font-semibold text-sky-800 border-l-4 border-sky-800 pl-3 mb-3">บทสรุปสำหรับนักลงทุน</h2>
+                    <h2 className="text-xl font-semibold text-sky-800 border-l-4 border-sky-800 pl-3 mb-3">บทสรุปสำหรับผู้เอาประกัน</h2>
                     <p className="text-slate-700 leading-relaxed">
                         แผนประกันควบการลงทุน iWealthy นี้ได้รับการวิเคราะห์และคาดการณ์ว่าจะสามารถสร้าง 
                         <b>อัตราผลตอบแทนทบต้นที่แท้จริง (MIRR) ที่ <span className="font-bold text-lg text-green-700">{investmentOnlyMIRR !== null ? (investmentOnlyMIRR * 100).toFixed(2) : 'N/A'}%</span> ต่อปี</b>. 
-                        เมื่อเปรียบเทียบกับแผนการลงทุนแบบ BTID (Buy Term and Invest the Difference) โดยคาดว่า <b>จุดคุ้มทุน (Breakeven Point) คือปีที่ {metrics.breakEvenYear ?? '-'}</b> (เมื่ออายุ {metrics.breakEvenAge ?? '-'} ปี) 
+                        วิเคราะห์แบบ BTID (Buy Term and Invest the Difference) โดยคาดว่า <b>จุดคุ้มทุน (Breakeven Point) คือปีที่ {metrics.breakEvenYear ?? '-'}</b> (เมื่ออายุ {metrics.breakEvenAge ?? '-'} ปี) 
                         และมีมูลค่าบัญชีกรมธรรม์ ณ สิ้นสุดโครงการที่ประมาณ <b>{metrics.finalFundValue?.toLocaleString(undefined, { maximumFractionDigits: 0 }) ?? '0'} บาท</b>. 
-                        แผนการลงทุนนี้จึงนำเสนอโอกาสในการสร้างความมั่งคั่งระยะยาวพร้อมความคุ้มครองชีวิตที่มั่นคง
+                        พร้อมความคุ้มครองชีวิตสูงสุด <b> {maxDB?.amount.toLocaleString('en-US', { maximumFractionDigits: 0 }) ?? '0'} บาท ณ อายุ {maxDB?.age} ปี</b> แผนการลงทุนนี้จึงนำเสนอโอกาสในการสร้างความมั่งคั่งระยะยาวพร้อมความคุ้มครองชีวิตที่มั่นคง
                     </p>
                 </section>
 
@@ -138,7 +193,7 @@ export const IWealthyReportPage = () => {
                                 title="MIRR (วิเคราะห์แบบ BTID)" 
                                 value={investmentOnlyMIRR !== null ? (investmentOnlyMIRR * 100).toFixed(2) : 'N/A'} 
                                 unit="%" 
-                                description="ผลตอบแทนส่วนลงทุนเทียบ Term"
+                                description="ผลตอบแทนส่วนลงทุน (BTID) ต่อปี"
                             />
                             <KPICard 
                                 title="จุดคุ้มทุน (มูลค่าเวนคืน ≥ เบี้ยสะสม)" 
@@ -155,10 +210,11 @@ export const IWealthyReportPage = () => {
                                 unit="บาท"
                             />
                             <KPICard 
-                                title="มูลค่าบัญชี ณ สิ้นสุด" 
-                                value={metrics.finalFundValue?.toLocaleString() ?? '0'} 
+                                title="ผลประโยชน์รวมตลอดสัญญา" 
+                                value={((metrics.finalFundValue ?? 0) + (totalWithdrawals ?? 0)).toLocaleString()} 
                                 unit="บาท"
-                            />
+                                description="มูลค่าสิ้นสุด + เงินถอนรวม"
+                             />
                         </div>
 
                         {/* --- แถวที่ 3 --- */}
@@ -167,7 +223,7 @@ export const IWealthyReportPage = () => {
                                 title="ROI (วิเคราะห์แบบ BTID)" 
                                 value={investmentOnlyROI !== null ? investmentOnlyROI.toFixed(2) : 'N/A'}
                                 unit="%"
-                                description="กำไรส่วนลงทุนเทียบ Term"
+                                description="กำไรส่วนลงทุน (ฺBTID) / เงินลงทุน"
                             />
                             <KPICard 
                                 title="PI (วิเคราะห์แบบ BTID)" 
@@ -183,7 +239,7 @@ export const IWealthyReportPage = () => {
                 {/* --- 5. การวิเคราะห์เชิงภาพ (กราฟ) --- */}
                 <section className="mt-8 page-break-before">
                     <h2 className="text-xl font-semibold text-sky-800 border-l-4 border-sky-800 pl-3 mb-3">การวิเคราะห์แนวโน้มผลประโยชน์</h2>
-                    <IWealthyChartPage />
+                    <IWealthyChartPage isCaptureMode={false} />
                 </section>
 
                 {/* --- 6. ตารางผลประโยชน์รายปี --- */}

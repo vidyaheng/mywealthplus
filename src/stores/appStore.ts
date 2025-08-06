@@ -27,6 +27,7 @@ import {
     calculateMIRRForYear,
     findBreakEvenPoint,
     calculateTotalPremiums,
+    calculateTotalWithdrawals,
     //getFinalFundValue,
     getFinalDisplayedAnnualAccountValue,
     getInitialDeathBenefit,
@@ -134,6 +135,7 @@ export interface IWealthyState {
         breakEvenAge: number | null;
         totalPremiumsPaid: number | null;
         finalFundValue: number | null;
+        totalWithdrawals: number | null;
         roi: number | null;
         pi: number | null;
     } | null;
@@ -203,6 +205,7 @@ interface CIPlannerState {
     ciSolvedMinPremium?: number;
     ciSolvedRpp?: number;
     ciSolvedRtu?: number;
+    ciUseCustomWithdrawalAge: boolean;
     setCiPlanningAge: Dispatch<SetStateAction<number>>;
     setCiGender: Dispatch<SetStateAction<Gender>>;
     setCiPolicyOriginMode: Dispatch<SetStateAction<CiPolicyOriginMode>>;
@@ -219,6 +222,7 @@ interface CIPlannerState {
     setCiAutoPpt: Dispatch<SetStateAction<number>>;
     setCiAutoRppRtuRatio: Dispatch<SetStateAction<string>>;
     setCiAutoWithdrawalStartAge: Dispatch<SetStateAction<number>>;
+    setCiUseCustomWithdrawalAge: Dispatch<SetStateAction<boolean>>;
     runCiCalculation: () => Promise<void>;
 }
 
@@ -533,6 +537,7 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
                     breakEvenAge: breakEven?.age ?? null,
                     totalPremiumsPaid: calculateTotalPremiums(result),
                     finalFundValue: getFinalDisplayedAnnualAccountValue(result),
+                    totalWithdrawals: calculateTotalWithdrawals(result),
                     roi: projROI,
                     pi: projPI,
                     
@@ -620,6 +625,7 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     } as CiPlanSelections,
     ciUseIWealthy: false,
     ciIWealthyMode: 'automatic',
+    ciUseCustomWithdrawalAge: false,
     ciManualRpp: 100000,
     ciManualRtu: 0,
     ciManualInvReturn: 5,
@@ -651,19 +657,52 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     setCiAutoPpt: (arg) => set(state => ({ ciAutoPpt: typeof arg === 'function' ? arg(state.ciAutoPpt) : arg })),
     setCiAutoRppRtuRatio: (arg) => set(state => ({ ciAutoRppRtuRatio: typeof arg === 'function' ? arg(state.ciAutoRppRtuRatio) : arg })),
     setCiAutoWithdrawalStartAge: (arg) => set(state => ({ ciAutoWithdrawalStartAge: typeof arg === 'function' ? arg(state.ciAutoWithdrawalStartAge) : arg })),
-    runCiCalculation: async () => {
-        set({ ciIsLoading: true, ciError: null, ciResult: null });
-        const s = get();
-        try {
-            if (s.ciIWealthyMode === 'manual') {
-                const manualResult = await calculateManualPlanCi(s.ciPlanningAge, s.ciGender, s.ciPlanSelections, s.ciManualRpp, s.ciManualRtu, s.ciManualInvReturn, s.ciManualPpt, s.ciPolicyOriginMode, s.ciExistingEntryAge);
-                set({ ciResult: manualResult, ciIsLoading: false });
-            } else { // automatic
-                const autoResult = await calculateAutomaticPlanCi(s.ciPlanningAge, s.ciGender, s.ciPlanSelections, s.ciAutoInvReturn, s.ciAutoPpt, s.ciAutoRppRtuRatio, s.ciPolicyOriginMode, s.ciExistingEntryAge);
-                set({ ciResult: autoResult.outputIllustration, ciSolvedMinPremium: autoResult.minPremiumResult, ciSolvedRpp: autoResult.rppResult, ciSolvedRtu: autoResult.rtuResult, ciError: autoResult.errorMsg ?? null, ciIsLoading: false });
-            }
-        } catch (err) {
-            set({ ciError: err instanceof Error ? err.message : 'An unexpected CI error occurred', ciIsLoading: false });
-        }
-    },
+    setCiUseCustomWithdrawalAge: (arg) => set(state => ({ ciUseCustomWithdrawalAge: typeof arg === 'function' ? arg(state.ciUseCustomWithdrawalAge) : arg })),
+    runCiCalculation: async () => {
+        // เพิ่มการ reset ค่าผลลัพธ์เก่าๆ ตอนเริ่มคำนวณ
+        set({ ciIsLoading: true, ciError: null, ciResult: null, ciSolvedMinPremium: undefined, ciSolvedRpp: undefined, ciSolvedRtu: undefined });
+        const s = get();
+
+        try {
+            // 1. ตรวจสอบสถานะ Toggle และเตรียมค่า "อายุที่เริ่มถอน" ที่จะส่งไป
+            // ถ้า Toggle ปิดอยู่ ค่านี้จะเป็น undefined
+            const customWithdrawalAge = s.ciUseCustomWithdrawalAge
+                ? (s.ciIWealthyMode === 'manual' ? s.ciManualWithdrawalStartAge : s.ciAutoWithdrawalStartAge)
+                : undefined;
+
+            if (s.ciIWealthyMode === 'manual') {
+                // 2. เรียกฟังก์ชัน Manual พร้อมส่ง customWithdrawalAge เป็นพารามิเตอร์ตัวสุดท้าย
+                const manualResult = await calculateManualPlanCi(
+                    s.ciPlanningAge, s.ciGender, s.ciPlanSelections,
+                    s.ciManualRpp, s.ciManualRtu, s.ciManualInvReturn, s.ciManualPpt,
+                    s.ciPolicyOriginMode,
+                    s.ciExistingEntryAge,
+                    undefined, // maxCiScheduleAge (ถ้ามี)
+                    customWithdrawalAge
+                );
+                set({ ciResult: manualResult, ciIsLoading: false });
+
+            } else { // automatic
+                // 3. เรียกฟังก์ชัน Automatic พร้อมส่ง customWithdrawalAge เป็นพารามิเตอร์ตัวสุดท้าย
+                const autoResult = await calculateAutomaticPlanCi(
+                    s.ciPlanningAge, s.ciGender, s.ciPlanSelections,
+                    s.ciAutoInvReturn, s.ciAutoPpt, s.ciAutoRppRtuRatio,
+                    s.ciPolicyOriginMode,
+                    s.ciExistingEntryAge,
+                    undefined, // maxCiScheduleAge (ถ้ามี)
+                    customWithdrawalAge
+                );
+                set({
+                    ciResult: autoResult.outputIllustration,
+                    ciSolvedMinPremium: autoResult.minPremiumResult,
+                    ciSolvedRpp: autoResult.rppResult,
+                    ciSolvedRtu: autoResult.rtuResult,
+                    ciError: autoResult.errorMsg ?? null,
+                    ciIsLoading: false
+                });
+            }
+        } catch (err) {
+            set({ ciError: err instanceof Error ? err.message : 'An unexpected CI error occurred', ciIsLoading: false });
+        }
+    },
 }));

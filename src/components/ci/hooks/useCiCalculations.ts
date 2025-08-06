@@ -275,14 +275,16 @@ export { calculateAllCiPremiumsSchedule };
 export const calculateManualPlanCi = async (
     currentPlanningAge: number, gender: Gender, ciSelections: CiPlanSelections,
     iWealthyRpp: number, iWealthyRtu: number, iWealthyInvReturn: number, iWealthyOwnPPT: number,
-    policyOriginMode: PolicyOriginMode,
-    existingOriginalEntryAge?: number, maxCiScheduleAge?: number
+    policyOriginMode: PolicyOriginMode, // <<-- 1. ย้ายมาอยู่ตรงนี้
+    existingOriginalEntryAge?: number,
+    maxCiScheduleAge?: number,
+    manualWithdrawalStartAge?: number
 ): Promise<AnnualCiOutputRow[]> => {
     const rppActual = Math.max(iWealthyRpp, MINIMUM_RPP);
     const allCiPremiumsData = calculateAllCiPremiumsSchedule(currentPlanningAge, gender, ciSelections, policyOriginMode, existingOriginalEntryAge, maxCiScheduleAge);
     
     // +++ NEW LOGIC: คำนวณปีที่หยุดจ่ายเบี้ย และปีที่เริ่มถอน +++
-    const lastIWealthyPremiumAge = currentPlanningAge + iWealthyOwnPPT - 1;
+    {/*const lastIWealthyPremiumAge = currentPlanningAge + iWealthyOwnPPT - 1;
     let lastCiPremiumPaymentAge: number;
     let withdrawalStartAge: number;
 
@@ -296,8 +298,24 @@ export const calculateManualPlanCi = async (
         withdrawalStartAge = lastIWealthyPremiumAge + 1;
     }
     // ตรวจสอบว่าไม่เกินอายุสูงสุด
-    withdrawalStartAge = Math.min(withdrawalStartAge, MAX_POLICY_AGE_TYPE + 1);
+    withdrawalStartAge = Math.min(withdrawalStartAge, MAX_POLICY_AGE_TYPE + 1);*/}
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    let withdrawalStartAge: number;
+    if (manualWithdrawalStartAge) {
+        // ถ้าผู้ใช้กำหนดอายุมาเอง (เปิด Toggle) ให้ใช้ค่านั้น
+        withdrawalStartAge = manualWithdrawalStartAge;
+    } else {
+        // ถ้าไม่ได้กำหนด (ปิด Toggle) ให้คำนวณแบบอัตโนมัติเหมือนเดิม
+        const lastIWealthyPremiumAge = currentPlanningAge + iWealthyOwnPPT - 1;
+        if (ciSelections.icareChecked || ciSelections.rokraiChecked) {
+            withdrawalStartAge = Math.max(60, lastIWealthyPremiumAge) + 1;
+        } else {
+            withdrawalStartAge = lastIWealthyPremiumAge + 1;
+        }
+        withdrawalStartAge = Math.min(withdrawalStartAge, MAX_POLICY_AGE_TYPE + 1);
+    }
+    const lastCiPremiumPaymentAge = withdrawalStartAge - 1;
 
     const withdrawalPlanForIWealthy: WithdrawalPlanRecord[] = [];
     allCiPremiumsData.forEach(ciRow => {
@@ -339,25 +357,27 @@ export const calculateManualPlanCi = async (
 export const calculateAutomaticPlanCi = async (
     currentPlanningAge: number, gender: Gender, ciSelections: CiPlanSelections,
     iWealthyInvReturn: number, iWealthyOwnPPT: number, iWealthyRppRtuRatio: string,
-    policyOriginMode: PolicyOriginMode,
-    existingOriginalEntryAge?: number, maxCiScheduleAge?: number
+    policyOriginMode: PolicyOriginMode, // <<-- 1. ย้ายมาอยู่ตรงนี้
+    existingOriginalEntryAge?: number,
+    maxCiScheduleAge?: number,
+    userDefinedWithdrawalStartAge?: number
 ): Promise<any> => {
     const allCiPremiumsData = calculateAllCiPremiumsSchedule(currentPlanningAge, gender, ciSelections, policyOriginMode, existingOriginalEntryAge, maxCiScheduleAge);
     
-    // +++ NEW LOGIC: คำนวณปีที่เริ่มถอนตามเงื่อนไขใหม่ +++
-    const lastIWealthyPremiumAge = currentPlanningAge + iWealthyOwnPPT - 1;
     let withdrawalStartAge: number;
-
-    if (ciSelections.icareChecked || ciSelections.rokraiChecked) {
-        // กรณีเลือกแผนเบี้ยสูง
-        withdrawalStartAge = Math.max(61, lastIWealthyPremiumAge + 1);
+    if (userDefinedWithdrawalStartAge) {
+        // ถ้าผู้ใช้กำหนดอายุมาเอง (เปิด Toggle) ให้ใช้ค่านั้น
+        withdrawalStartAge = userDefinedWithdrawalStartAge;
     } else {
-        // กรณีทั่วไป
-        withdrawalStartAge = lastIWealthyPremiumAge + 1;
+        // ถ้าไม่ได้กำหนด (ปิด Toggle) ให้คำนวณแบบอัตโนมัติเหมือนเดิม
+        const lastIWealthyPremiumAge = currentPlanningAge + iWealthyOwnPPT - 1;
+        if (ciSelections.icareChecked || ciSelections.rokraiChecked) {
+            withdrawalStartAge = Math.max(61, lastIWealthyPremiumAge + 1);
+        } else {
+            withdrawalStartAge = lastIWealthyPremiumAge + 1;
+        }
+        withdrawalStartAge = Math.min(withdrawalStartAge, MAX_POLICY_AGE_TYPE + 1);
     }
-    // ตรวจสอบว่าไม่เกินอายุสูงสุด
-    withdrawalStartAge = Math.min(withdrawalStartAge, MAX_POLICY_AGE_TYPE + 1);
-    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     
     const solverResult = await findOptimalIWealthyPremiumCi(
         currentPlanningAge, gender, allCiPremiumsData, iWealthyOwnPPT,

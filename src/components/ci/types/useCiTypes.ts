@@ -137,6 +137,13 @@ export interface UseCiPlannerReturn {
     setIWealthyOwnPPT: React.Dispatch<React.SetStateAction<number>>;
     iWealthyWithdrawalStartAge: number;
     setIWealthyWithdrawalStartAge: React.Dispatch<React.SetStateAction<number>>;
+    
+    // --- จุดที่แก้ไข ---
+    // เพิ่ม State และ Setter สำหรับ Toggle "กำหนดอายุที่เริ่มถอนเอง"
+    ciUseCustomWithdrawalAge: boolean;
+    setCiUseCustomWithdrawalAge: React.Dispatch<React.SetStateAction<boolean>>;
+    // -------------------------------------------------------------
+
     manualRpp: number;
     setManualRpp: React.Dispatch<React.SetStateAction<number>>;
     manualRtu: number;

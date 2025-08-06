@@ -1,6 +1,6 @@
 // src/components/GraphComponent.tsx
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, forwardRef } from 'react';
 import {
     LineChart, Line, XAxis, YAxis,
     CartesianGrid, ResponsiveContainer, ReferenceLine,
@@ -112,7 +112,7 @@ interface GraphProps {
     CustomTooltipComponent?: React.ElementType;
 }
 
-const Graph: React.FC<GraphProps> = ({
+const Graph = forwardRef<HTMLDivElement, GraphProps>(({
     data,
     setHoveredData,
     showDeathBenefit,
@@ -124,7 +124,7 @@ const Graph: React.FC<GraphProps> = ({
     hoveredMirr,
     //mirrData,
     //CustomTooltipComponent,
-}) => {
+}, ref) => { 
     
     const getTicks = useCallback((dataForTicks: ChartData[]): number[] => {
         if (!dataForTicks || dataForTicks.length === 0) return [];
@@ -201,7 +201,7 @@ const Graph: React.FC<GraphProps> = ({
 }, [setHoveredData, onAgeChange]);
 
     return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" ref={ref}>
             <LineChart
                 data={data}
                 onMouseMove={handleMouseMove}
@@ -237,6 +237,8 @@ const Graph: React.FC<GraphProps> = ({
             </LineChart>
         </ResponsiveContainer>
     );
-};
+});
+
+Graph.displayName = 'Graph'; 
 
 export default React.memo(Graph); 
