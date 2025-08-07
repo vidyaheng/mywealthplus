@@ -1,7 +1,8 @@
 // src/pages/ci/CIFormPage.tsx
 
 // --- Imports ---
-import type { UseCiPlannerReturn, CiPlanSelections, IShieldPlan, LifeReadyPlan, RokRaiSoShieldPlan, IWealthyMode } from '@/components/ci/types/useCiTypes';
+// 1. เพิ่ม StopPaymentConfig ใน import
+import type { UseCiPlannerReturn, CiPlanSelections, IShieldPlan, LifeReadyPlan, RokRaiSoShieldPlan, IWealthyMode, StopPaymentConfig } from '@/components/ci/types/useCiTypes';
 import { FaVenusMars, FaBirthdayCake, FaFileAlt } from "react-icons/fa";
 import { FaWandMagicSparkles } from "react-icons/fa6";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ const LifeReadyPlanOptionsData: { label: string; value: LifeReadyPlan }[] = [ { 
 const RokRaiSoShieldPlanOptionsData: { label: string; value: RokRaiSoShieldPlan }[] = [ { label: "แผน S", value: "S" }, { label: "แผน M", value: "M" }, { label: "แผน L", value: "L" }, { label: "แผน XL", value: "XL" }, ];
 const ageOptionsData = Array.from({ length: (70 - 18 + 1) }, (_, i) => 18 + i);
 
-// --- Helper Components (ปรับสไตล์ให้สอดคล้อง) ---
+// --- Helper Components ---
 const Card = ({ children, className }: { children: React.ReactNode, className?: string }) => (
     <div className={`p-3 border rounded-lg shadow-sm bg-white space-y-3 ${className}`}>
         {children}
@@ -36,7 +37,6 @@ const SectionTitle = ({ children, icon, className }: { children: React.ReactNode
 
 // --- Component Definition ---
 export default function CIFormPage(props: UseCiPlannerReturn) {
-    // --- All store logic, state, effects, and handlers remain the same ---
     const { policyholderEntryAge, setPolicyholderEntryAge, policyholderGender, setPolicyholderGender, policyOriginMode, setPolicyOriginMode, existingPolicyEntryAge, setExistingPolicyEntryAge, selectedCiPlans, setSelectedCiPlans, useIWealthy, setUseIWealthy, iWealthyMode, setIWealthyMode, iWealthyInvestmentReturn, setIWealthyInvestmentReturn, iWealthyOwnPPT, setIWealthyOwnPPT, iWealthyWithdrawalStartAge, setIWealthyWithdrawalStartAge, manualRpp, setManualRpp, manualRtu, setManualRtu, autoRppRtuRatio, setAutoRppRtuRatio, isLoading, error, ciPremiumsSchedule, calculatedMinPremium, calculatedRpp, calculatedRtu, runCalculation, ciUseCustomWithdrawalAge, setCiUseCustomWithdrawalAge } = props;
     const handleCiSelectionChange=<K extends keyof CiPlanSelections>(key:K,value:CiPlanSelections[K])=>{setSelectedCiPlans(e=>{const t={...e,[key]:value};return"mainRiderChecked"===key&&!value&&(t.rokraiChecked=!1,t.dciChecked=!1),"icareChecked"===key&&(t.icareSA=value?1e6:0),"ishieldChecked"===key&&(value?(t.ishieldPlan="20",t.ishieldSA=5e5):(t.ishieldPlan=null,t.ishieldSA=0)),"rokraiChecked"===key&&(t.rokraiPlan=value?"XL":null),"dciChecked"===key&&(t.dciSA=value?3e5:0),"mainRiderChecked"===key&&(value?(t.lifeReadyPlan=18,t.lifeReadySA=15e4):(t.lifeReadyPlan=null,t.lifeReadySA=0,t.rokraiChecked=!1,t.rokraiPlan=null,t.dciChecked=!1,t.dciSA=0)),t})};
     const firstYearCiPremium = ciPremiumsSchedule?.[0]?.totalCiPremium;
@@ -56,10 +56,44 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
         ? `(ประกอบไปด้วยแผน: ${includedPlans.join(' + ')})` 
         : '';
 
-        // สร้างตัวเลือกอายุสำหรับ Dropdown "อายุที่เริ่มถอน"
-    // โดยเริ่มจากอายุผู้เอาประกันปัจจุบัน ไปจนถึง 99 ปี
     const withdrawalAgeOptions = Array.from(
         { length: (99 - policyholderEntryAge) + 1 },
+        (_, i) => policyholderEntryAge + i
+    );
+
+    const handleStopPaymentChange = (
+        planKey: 'icareStopPayment' | 'ishieldStopPayment' | 'lifeReadyStopPayment' | 'rokraiStopPayment' | 'dciStopPayment',
+        field: keyof StopPaymentConfig,
+        value: boolean | number
+    ) => {
+        setSelectedCiPlans(prev => {
+            const newSelections = { ...prev };
+            const stopConfig = { ...newSelections[planKey] };
+            (stopConfig as any)[field] = value;
+            newSelections[planKey] = stopConfig;
+            return newSelections;
+        });
+    };
+
+    // --- 2. สร้างตัวเลือกอายุสำหรับทุกแผน ---
+    const iCareStopAgeOptions = Array.from(
+        { length: (85 - policyholderEntryAge) },
+        (_, i) => policyholderEntryAge + i
+    );
+    const iShieldStopAgeOptions = Array.from(
+        { length: (85 - policyholderEntryAge) },
+        (_, i) => policyholderEntryAge + i
+    );
+    const lifeReadyStopAgeOptions = Array.from(
+        { length: (99 - policyholderEntryAge) },
+        (_, i) => policyholderEntryAge + i
+    );
+    const rokraiStopAgeOptions = Array.from(
+        { length: (99 - policyholderEntryAge) },
+        (_, i) => policyholderEntryAge + i
+    );
+    const dciStopAgeOptions = Array.from(
+        { length: (74 - policyholderEntryAge) },
         (_, i) => policyholderEntryAge + i
     );
 
@@ -112,14 +146,52 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                                 />
                                 <span className={`font-semibold text-sm ${selectedCiPlans.icareChecked ? 'text-blue-700' : 'text-slate-800'}`}>iCare</span>
                             </Label>
-                            {selectedCiPlans.icareChecked && (<div className="pl-6 space-y-1"><Select value={String(selectedCiPlans.icareSA)} onValueChange={(v) => handleCiSelectionChange('icareSA', Number(v))}><SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger><SelectContent>{ICarePlansData.map((p) => (<SelectItem key={p.value} value={String(p.value)} className="text-xs">{p.label}</SelectItem>))}</SelectContent></Select><p className="text-[11px] text-muted-foreground">ทุนประกันส่วนหลัก: {formatNumber(100000)} (คุ้มครองถึง 85)</p></div>)}
-                            {firstYearPremiums?.icarePremium !== undefined && (
-                                        <p className="text-xs text-blue-600 font-medium">เบี้ยปีแรก: {formatNumber(firstYearPremiums.icarePremium)} บาท</p>
+                            {selectedCiPlans.icareChecked && (
+                                <div className="pl-6 space-y-2">
+                                    <div>
+                                        {/* 3. แก้ไข Typo onValuechange */}
+                                        <Select value={String(selectedCiPlans.icareSA)} onValueChange={(v) => handleCiSelectionChange('icareSA', Number(v))}>
+                                            <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                            <SelectContent>{ICarePlansData.map((p) => (<SelectItem key={p.value} value={String(p.value)} className="text-xs">{p.label}</SelectItem>))}</SelectContent>
+                                        </Select>
+                                        <p className="text-[11px] text-muted-foreground mt-1">ทุนประกันส่วนหลัก: {formatNumber(100000)} (คุ้มครองถึง 85)</p>
+                                    </div>
+                                    <div className="flex items-center space-x-2 pt-2">
+                                        <Switch
+                                            id="icare-stop-toggle"
+                                            checked={selectedCiPlans.icareStopPayment.useCustomStopAge}
+                                            onCheckedChange={(checked) => handleStopPaymentChange('icareStopPayment', 'useCustomStopAge', checked)}
+                                            className="data-[state=checked]:bg-blue-600"
+                                        />
+                                        <Label htmlFor="icare-stop-toggle" className="text-xs font-normal">
+                                            กำหนดปีที่หยุดจ่ายเอง
+                                        </Label>
+                                    </div>
+                                    {selectedCiPlans.icareStopPayment.useCustomStopAge && (
+                                        <div className="pl-6">
+                                            <Label className="block mb-1 text-xs text-muted-foreground">หยุดจ่ายเบี้ยเมื่ออายุ</Label>
+                                            <Select
+                                                value={String(selectedCiPlans.icareStopPayment.stopAge)}
+                                                onValueChange={(age) => handleStopPaymentChange('icareStopPayment', 'stopAge', Number(age))}
+                                            >
+                                                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    {iCareStopAgeOptions.map(age => (
+                                                        <SelectItem key={age} value={String(age)} className="text-xs">{age}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     )}
+                                </div>
+                            )}
+                            {firstYearPremiums?.icarePremium !== undefined && (
+                                <p className="text-xs text-blue-600 font-medium">เบี้ยปีแรก: {formatNumber(firstYearPremiums.icarePremium)} บาท</p>
+                            )}
                         </div>
                         <Separator />
                         <div className="space-y-2">
-                             <Label className="flex items-center space-x-2 cursor-pointer">
+                            <Label className="flex items-center space-x-2 cursor-pointer">
                                 <Checkbox 
                                     id="ishieldChecked" 
                                     checked={selectedCiPlans.ishieldChecked} 
@@ -128,14 +200,54 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                                 />
                                 <span className={`font-semibold text-sm ${selectedCiPlans.ishieldChecked ? 'text-purple-700' : 'text-slate-800'}`}>iShield</span>
                             </Label>
-                             {selectedCiPlans.ishieldChecked && (<div className="pl-6 space-y-2"><Select value={selectedCiPlans.ishieldPlan ?? ''} onValueChange={(v) => handleCiSelectionChange('ishieldPlan', v as IShieldPlan|null)}><SelectTrigger className="h-9 text-xs"><SelectValue/></SelectTrigger><SelectContent>{IShieldPlanOptionsData.map((p) => (<SelectItem key={p.value} value={p.value} className="text-xs">{p.label}</SelectItem>))}</SelectContent></Select><Input type="number" min={500000} step={100000} value={selectedCiPlans.ishieldSA} onChange={(e) => handleCiSelectionChange('ishieldSA', Number(e.target.value))} className="h-9 text-xs" /><p className="text-[11px] text-muted-foreground">คุ้มครองถึงอายุ 85</p></div>)}
-                             {firstYearPremiums?.ishieldPremium !== undefined && (
+                            {selectedCiPlans.ishieldChecked && (
+                                <div className="pl-6 space-y-2">
+                                    <div>
+                                        <Select value={selectedCiPlans.ishieldPlan ?? ''} onValueChange={(v) => handleCiSelectionChange('ishieldPlan', v as IShieldPlan|null)}>
+                                            <SelectTrigger className="h-9 text-xs"><SelectValue/></SelectTrigger>
+                                            <SelectContent>{IShieldPlanOptionsData.map((p) => (<SelectItem key={p.value} value={p.value} className="text-xs">{p.label}</SelectItem>))}</SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <Input type="number" min={500000} step={100000} value={selectedCiPlans.ishieldSA} onChange={(e) => handleCiSelectionChange('ishieldSA', Number(e.target.value))} className="h-9 text-xs" />
+                                        <p className="text-[11px] text-muted-foreground mt-1">คุ้มครองถึงอายุ 85</p>
+                                    </div>
+                                    <div className="flex items-center space-x-2 pt-2">
+                                        <Switch
+                                            id="ishield-stop-toggle"
+                                            checked={selectedCiPlans.ishieldStopPayment.useCustomStopAge}
+                                            onCheckedChange={(checked) => handleStopPaymentChange('ishieldStopPayment', 'useCustomStopAge', checked)}
+                                            className="data-[state=checked]:bg-purple-600"
+                                        />
+                                        <Label htmlFor="ishield-stop-toggle" className="text-xs font-normal">
+                                            กำหนดปีที่หยุดจ่ายเอง
+                                        </Label>
+                                    </div>
+                                    {selectedCiPlans.ishieldStopPayment.useCustomStopAge && (
+                                        <div className="pl-6">
+                                            <Label className="block mb-1 text-xs text-muted-foreground">หยุดจ่ายเบี้ยเมื่ออายุ</Label>
+                                            <Select
+                                                value={String(selectedCiPlans.ishieldStopPayment.stopAge)}
+                                                onValueChange={(age) => handleStopPaymentChange('ishieldStopPayment', 'stopAge', Number(age))}
+                                            >
+                                                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    {iShieldStopAgeOptions.map(age => (
+                                                        <SelectItem key={age} value={String(age)} className="text-xs">{age}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            {firstYearPremiums?.ishieldPremium !== undefined && (
                                 <p className="text-xs text-purple-600 font-medium">เบี้ยปีแรก: {formatNumber(firstYearPremiums.ishieldPremium)} บาท</p>
-                             )}
+                            )}
                         </div>
                         <Separator />
-                         <div className="space-y-1">
-                             <Label className="flex items-center space-x-2 cursor-pointer">
+                        <div className="space-y-1">
+                            <Label className="flex items-center space-x-2 cursor-pointer">
                                 <Checkbox 
                                     id="mainRiderChecked" 
                                     checked={selectedCiPlans.mainRiderChecked} 
@@ -163,8 +275,44 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                         <div className="space-y-3">
                             <div className="p-3 space-y-2 rounded-md bg-green-50">
                                 <p className="text-sm font-semibold text-green-800">LifeReady (สัญญาหลัก)</p>
-                                <div><Label className="block mb-1 text-xs">ระยะเวลาชำระเบี้ย</Label><Select value={selectedCiPlans.lifeReadyPlan ? String(selectedCiPlans.lifeReadyPlan) : ''} onValueChange={(v) => handleCiSelectionChange('lifeReadyPlan', Number(v) as LifeReadyPlan|null)}><SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger><SelectContent>{LifeReadyPlanOptionsData.map((p) => (<SelectItem key={p.value} value={String(p.value)} className="text-xs">{p.label}</SelectItem>))}</SelectContent></Select></div>
-                                <div><Label className="block mb-1 text-xs">ทุนประกัน</Label><Input type="number" value={selectedCiPlans.lifeReadySA} onChange={(e) => handleCiSelectionChange('lifeReadySA', Number(e.target.value))} min={150000} step={50000} className="h-9 text-xs"/></div>
+                                <div>
+                                    <Label className="block mb-1 text-xs">ระยะเวลาชำระเบี้ย</Label>
+                                    <Select value={selectedCiPlans.lifeReadyPlan ? String(selectedCiPlans.lifeReadyPlan) : ''} onValueChange={(v) => handleCiSelectionChange('lifeReadyPlan', Number(v) as LifeReadyPlan|null)}>
+                                        <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                        <SelectContent>{LifeReadyPlanOptionsData.map((p) => (<SelectItem key={p.value} value={String(p.value)} className="text-xs">{p.label}</SelectItem>))}</SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <Label className="block mb-1 text-xs">ทุนประกัน</Label>
+                                    <Input type="number" value={selectedCiPlans.lifeReadySA} onChange={(e) => handleCiSelectionChange('lifeReadySA', Number(e.target.value))} min={150000} step={50000} className="h-9 text-xs"/>
+                                </div>
+                                <div className="flex items-center space-x-2 pt-2">
+                                    <Switch
+                                        id="lifeready-stop-toggle"
+                                        checked={selectedCiPlans.lifeReadyStopPayment.useCustomStopAge}
+                                        onCheckedChange={(checked) => handleStopPaymentChange('lifeReadyStopPayment', 'useCustomStopAge', checked)}
+                                        className="data-[state=checked]:bg-green-600"
+                                    />
+                                    <Label htmlFor="lifeready-stop-toggle" className="text-xs font-normal">
+                                        กำหนดปีที่ต้องการเวนคืน
+                                    </Label>
+                                </div>
+                                {selectedCiPlans.lifeReadyStopPayment.useCustomStopAge && (
+                                    <div className="pl-6">
+                                        <Label className="block mb-1 text-xs text-muted-foreground">เวนคืนเมื่ออายุ</Label>
+                                        <Select
+                                            value={String(selectedCiPlans.lifeReadyStopPayment.stopAge)}
+                                            onValueChange={(age) => handleStopPaymentChange('lifeReadyStopPayment', 'stopAge', Number(age))}
+                                        >
+                                            <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                {lifeReadyStopAgeOptions.map(age => (
+                                                    <SelectItem key={age} value={String(age)} className="text-xs">{age}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
                                 {firstYearPremiums?.lifeReadyPremium !== undefined && (
                                     <p className="text-xs text-green-600 font-medium pt-1">เบี้ยปีแรก: {formatNumber(firstYearPremiums.lifeReadyPremium)} บาท</p>
                                 )}
@@ -180,7 +328,44 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                                     />
                                     <span className={`font-semibold text-sm ${selectedCiPlans.rokraiChecked ? 'text-orange-700' : 'text-slate-800'}`}>RokeRaiSoShield</span>
                                 </Label>
-                                {selectedCiPlans.rokraiChecked && (<div className="pl-6"><Select value={selectedCiPlans.rokraiPlan ?? ''} onValueChange={(v) => handleCiSelectionChange('rokraiPlan', v as RokRaiSoShieldPlan|null)}><SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger><SelectContent>{RokRaiSoShieldPlanOptionsData.map((p) => (<SelectItem key={p.value} value={p.value} className="text-xs">{p.label}</SelectItem>))}</SelectContent></Select><p className="mt-1 text-[11px] text-muted-foreground">คุ้มครองถึง 99</p></div>)}
+                                {selectedCiPlans.rokraiChecked && (
+                                    <div className="pl-6 space-y-2">
+                                        <div>
+                                            <Select value={selectedCiPlans.rokraiPlan ?? ''} onValueChange={(v) => handleCiSelectionChange('rokraiPlan', v as RokRaiSoShieldPlan|null)}>
+                                                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                                <SelectContent>{RokRaiSoShieldPlanOptionsData.map((p) => (<SelectItem key={p.value} value={p.value} className="text-xs">{p.label}</SelectItem>))}</SelectContent>
+                                            </Select>
+                                            <p className="mt-1 text-[11px] text-muted-foreground">คุ้มครองถึง 99</p>
+                                        </div>
+                                        <div className="flex items-center space-x-2 pt-2">
+                                            <Switch
+                                                id="rokrai-stop-toggle"
+                                                checked={selectedCiPlans.rokraiStopPayment.useCustomStopAge}
+                                                onCheckedChange={(checked) => handleStopPaymentChange('rokraiStopPayment', 'useCustomStopAge', checked)}
+                                                className="data-[state=checked]:bg-orange-600"
+                                            />
+                                            <Label htmlFor="rokrai-stop-toggle" className="text-xs font-normal">
+                                                กำหนดปีที่หยุดจ่ายเอง
+                                            </Label>
+                                        </div>
+                                        {selectedCiPlans.rokraiStopPayment.useCustomStopAge && (
+                                            <div className="pl-6">
+                                                <Label className="block mb-1 text-xs text-muted-foreground">หยุดจ่ายเบี้ยเมื่ออายุ</Label>
+                                                <Select
+                                                    value={String(selectedCiPlans.rokraiStopPayment.stopAge)}
+                                                    onValueChange={(age) => handleStopPaymentChange('rokraiStopPayment', 'stopAge', Number(age))}
+                                                >
+                                                    <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        {rokraiStopAgeOptions.map(age => (
+                                                            <SelectItem key={age} value={String(age)} className="text-xs">{age}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                                 {firstYearPremiums?.rokraiPremium !== undefined && (
                                     <p className="text-xs text-orange-600 font-medium">เบี้ยปีแรก: {formatNumber(firstYearPremiums.rokraiPremium)} บาท</p>
                                 )}
@@ -196,7 +381,41 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                                     />
                                     <span className={`font-semibold text-sm ${selectedCiPlans.dciChecked ? 'text-teal-700' : 'text-slate-800'}`}>DCI</span>
                                 </Label>
-                                {selectedCiPlans.dciChecked && (<div className="pl-6"><Input type="number" value={selectedCiPlans.dciSA} onChange={(e) => handleCiSelectionChange('dciSA', Number(e.target.value))} min={100000} step={50000} className="h-9 text-xs" /><p className="mt-1 text-[11px] text-muted-foreground">คุ้มครองถึงอายุ 74</p></div>)}
+                                {selectedCiPlans.dciChecked && (
+                                    <div className="pl-6 space-y-2">
+                                        <div>
+                                            <Input type="number" value={selectedCiPlans.dciSA} onChange={(e) => handleCiSelectionChange('dciSA', Number(e.target.value))} min={100000} step={50000} className="h-9 text-xs" />
+                                            <p className="mt-1 text-[11px] text-muted-foreground">คุ้มครองถึงอายุ 74</p>
+                                        </div>
+                                        <div className="flex items-center space-x-2 pt-2">
+                                            <Switch
+                                                id="dci-stop-toggle"
+                                                checked={selectedCiPlans.dciStopPayment.useCustomStopAge}
+                                                onCheckedChange={(checked) => handleStopPaymentChange('dciStopPayment', 'useCustomStopAge', checked)}
+                                                className="data-[state=checked]:bg-teal-600"
+                                            />
+                                            <Label htmlFor="dci-stop-toggle" className="text-xs font-normal">
+                                                กำหนดปีที่หยุดจ่ายเอง
+                                            </Label>
+                                        </div>
+                                        {selectedCiPlans.dciStopPayment.useCustomStopAge && (
+                                            <div className="pl-6">
+                                                <Label className="block mb-1 text-xs text-muted-foreground">หยุดจ่ายเบี้ยเมื่ออายุ</Label>
+                                                <Select
+                                                    value={String(selectedCiPlans.dciStopPayment.stopAge)}
+                                                    onValueChange={(age) => handleStopPaymentChange('dciStopPayment', 'stopAge', Number(age))}
+                                                >
+                                                    <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        {dciStopAgeOptions.map(age => (
+                                                            <SelectItem key={age} value={String(age)} className="text-xs">{age}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                                 {firstYearPremiums?.dciPremium !== undefined && (
                                     <p className="text-xs text-teal-600 font-medium">เบี้ยปีแรก: {formatNumber(firstYearPremiums.dciPremium)} บาท</p>
                                 )}
@@ -218,7 +437,6 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                             <div className="space-y-2">
                                 <div><Label className="block mb-1 text-xs">ผลตอบแทนที่คาดหวัง (%)</Label><Input type="number" value={iWealthyInvestmentReturn} onChange={(e) => setIWealthyInvestmentReturn(Number(e.target.value)||0)} className="h-9 text-xs" /></div>
                                 <div><Label className="block mb-1 text-xs">ระยะเวลาชำระเบี้ย iWealthy (ปี)</Label><Input type="number" value={iWealthyOwnPPT} onChange={(e) => setIWealthyOwnPPT(Number(e.target.value)||0)} className="h-9 text-xs" /></div>
-                                {/* --- เพิ่ม Toggle ที่นี่ --- */}
                                 <div className="flex items-center space-x-2 pt-2">
                                     <Switch
                                         id="custom-withdrawal-age-toggle"
@@ -230,14 +448,15 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                                         กำหนดอายุที่เริ่มถอนเอง
                                     </Label>
                                 </div>
-
-                                {/* --- แก้ไขเงื่อนไขการแสดง Dropdown --- */}
                                 {ciUseCustomWithdrawalAge && (
                                     <div className="pl-6 pt-1">
                                         <Label className="block mb-1 text-xs text-muted-foreground">อายุที่เริ่มถอนจ่ายเบี้ย CI</Label>
                                         <Select
                                             value={String(iWealthyWithdrawalStartAge)}
-                                            onValueChange={(value) => setIWealthyWithdrawalStartAge(Number(value))}
+                                            onValueChange={(value) => {
+                                                console.log(`[CIFormPage] อายุที่เลือก: ${value}`);
+                                                setIWealthyWithdrawalStartAge(Number(value));
+                                            }}
                                         >
                                             <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="เลือกอายุ" /></SelectTrigger>
                                             <SelectContent>
@@ -249,24 +468,6 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                                     </div>
                                 )}
                                 {iWealthyMode === 'manual' && ( <>
-                                    <div>
-                                        <Label className="block mb-1 text-xs">อายุที่เริ่มถอนจ่ายเบี้ย CI</Label>
-                                        <Select
-                                            value={String(iWealthyWithdrawalStartAge)}
-                                            onValueChange={(value) => setIWealthyWithdrawalStartAge(Number(value))}
-                                        >
-                                            <SelectTrigger className="h-9 text-xs">
-                                                <SelectValue placeholder="เลือกอายุ" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {withdrawalAgeOptions.map(age => (
-                                                    <SelectItem key={age} value={String(age)} className="text-xs">
-                                                        {age}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
                                     <Separator className="!my-3"/>
                                     <h3 className="font-semibold text-xs text-purple-600">กำหนดเบี้ย (Manual)</h3>
                                     <div><Label className="block mb-1 text-xs">เบี้ยหลัก RPP ต่อปี</Label><Input type="number" value={manualRpp} onChange={(e) => setManualRpp(Number(e.target.value)||0)} min={18000} step={1000} className="h-9 text-xs" /></div>
@@ -274,7 +475,6 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                                 </> )}
                                 {iWealthyMode === 'automatic' && ( <>
                                     <Separator className="!my-3"/>
-                                    {/*<h3 className="font-semibold text-xs text-purple-600">เลือกกำหนดสัดส่วน RPP:RTU</h3>*/}
                                     <div><Label className="block mb-1 text-xs">สัดส่วน RPP : RTU</Label><Select value={autoRppRtuRatio} onValueChange={setAutoRppRtuRatio}><SelectTrigger className="w-full h-9 text-xs"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="100:0" className="text-xs">100 : 0</SelectItem><SelectItem value="80:20" className="text-xs">80 : 20</SelectItem><SelectItem value="70:30" className="text-xs">70 : 30</SelectItem><SelectItem value="60:40" className="text-xs">60 : 40</SelectItem><SelectItem value="50:50" className="text-xs">50 : 50</SelectItem></SelectContent></Select></div>
                                 </> )}
                             </div>

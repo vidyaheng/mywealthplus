@@ -95,12 +95,27 @@ export default function CiPlannerPage() {
         
         // --- ADDED BACK: เพิ่มกลับเข้ามาเป็นฟังก์ชันว่างๆ เพื่อให้ Type ถูกต้อง ---
         setIWealthyWithdrawalStartAge: useCallback((value: React.SetStateAction<number>) => {
-            // สมมติว่าใน store มี state ชื่อ ciManualWithdrawalStartAge
+        console.log(`[CiPlannerPage] ได้รับค่าอายุ: ${value}, โหมดปัจจุบัน: ${store.ciIWealthyMode}`);
+            // 1. ตรวจสอบโหมดที่กำลังใช้งานอยู่
+        if (store.ciIWealthyMode === 'manual') {
+            // 2. ถ้าเป็น Manual ให้บันทึกลง State ของ Manual
             store.setCiManualWithdrawalStartAge(typeof value === 'function' ? value(store.ciManualWithdrawalStartAge) : value);
-        }, [store.setCiManualWithdrawalStartAge, store.ciManualWithdrawalStartAge]),
-        setCiUseCustomWithdrawalAge: useCallback((value: React.SetStateAction<boolean>) => { // <<-- เพิ่ม Setter ใหม่
-            store.setCiUseCustomWithdrawalAge(typeof value === 'function' ? value(store.ciUseCustomWithdrawalAge) : value);
-        }, [store.setCiUseCustomWithdrawalAge, store.ciUseCustomWithdrawalAge]),
+        } else {
+            // 3. ถ้าเป็น Auto ให้บันทึกลง State ของ Auto
+            store.setCiAutoWithdrawalStartAge(typeof value === 'function' ? value(store.ciAutoWithdrawalStartAge) : value);
+        }
+    }, [
+        // 4. เพิ่ม dependencies ที่จำเป็นทั้งหมด
+        store.ciIWealthyMode, 
+        store.ciManualWithdrawalStartAge, 
+        store.setCiManualWithdrawalStartAge,
+        store.ciAutoWithdrawalStartAge,
+        store.setCiAutoWithdrawalStartAge
+    ]),
+
+        setCiUseCustomWithdrawalAge: useCallback((value: React.SetStateAction<boolean>) => {
+        store.setCiUseCustomWithdrawalAge(typeof value === 'function' ? value(store.ciUseCustomWithdrawalAge) : value);
+    }, [store.setCiUseCustomWithdrawalAge, store.ciUseCustomWithdrawalAge]),
     };
     
     const planner: UseCiPlannerReturn = {

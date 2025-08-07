@@ -357,32 +357,35 @@ export const calculateManualPlanCi = async (
 export const calculateAutomaticPlanCi = async (
     currentPlanningAge: number, gender: Gender, ciSelections: CiPlanSelections,
     iWealthyInvReturn: number, iWealthyOwnPPT: number, iWealthyRppRtuRatio: string,
-    policyOriginMode: PolicyOriginMode, // <<-- 1. ย้ายมาอยู่ตรงนี้
+    policyOriginMode: PolicyOriginMode,
     existingOriginalEntryAge?: number,
     maxCiScheduleAge?: number,
     userDefinedWithdrawalStartAge?: number
 ): Promise<any> => {
     const allCiPremiumsData = calculateAllCiPremiumsSchedule(currentPlanningAge, gender, ciSelections, policyOriginMode, existingOriginalEntryAge, maxCiScheduleAge);
     
+    // --- แก้ไข Logic การตัดสินใจใหม่ทั้งหมด ---
     let withdrawalStartAge: number;
     if (userDefinedWithdrawalStartAge) {
-        // ถ้าผู้ใช้กำหนดอายุมาเอง (เปิด Toggle) ให้ใช้ค่านั้น
+        // 1. ถ้าผู้ใช้กำหนดอายุมาเอง (เปิด Toggle) ให้ใช้ค่านั้นทันที
         withdrawalStartAge = userDefinedWithdrawalStartAge;
     } else {
-        // ถ้าไม่ได้กำหนด (ปิด Toggle) ให้คำนวณแบบอัตโนมัติเหมือนเดิม
+        // 2. ถ้าไม่ได้กำหนด (ปิด Toggle) ถึงจะใช้ Logic การคำนวณแบบอัตโนมัติ
         const lastIWealthyPremiumAge = currentPlanningAge + iWealthyOwnPPT - 1;
         if (ciSelections.icareChecked || ciSelections.rokraiChecked) {
+            // เงื่อนไขบังคับอายุ 61 จะทำงานเฉพาะในกรณีนี้เท่านั้น
             withdrawalStartAge = Math.max(61, lastIWealthyPremiumAge + 1);
         } else {
             withdrawalStartAge = lastIWealthyPremiumAge + 1;
         }
         withdrawalStartAge = Math.min(withdrawalStartAge, MAX_POLICY_AGE_TYPE + 1);
     }
+    // -----------------------------------------
     
     const solverResult = await findOptimalIWealthyPremiumCi(
         currentPlanningAge, gender, allCiPremiumsData, iWealthyOwnPPT,
         iWealthyInvReturn, iWealthyRppRtuRatio,
-        withdrawalStartAge // ส่งค่าที่คำนวณใหม่เข้าไปใน Solver
+        withdrawalStartAge // ส่งค่าที่ถูกต้องเข้าไปใน Solver
     );
 
     // Logic การหยุดจ่ายเบี้ย CI ต้องถูกนำมาใช้ที่นี่ด้วย
@@ -397,7 +400,7 @@ export const calculateAutomaticPlanCi = async (
     const initialSA = Math.max(1, Math.round(getSumInsuredFactor(currentPlanningAge) * (solverResult.solvedRpp ?? 0)));
     const saReductions = generateSAReductionsForIWealthy(currentPlanningAge, (solverResult.solvedRpp ?? 0));
     const processedOutput = processIWealthyResultsToCi(
-        adjustedCiPremiumsData, // ใช้ตาราง CI ที่ปรับแล้ว
+        adjustedCiPremiumsData,
         solverResult.finalIWealthyAnnualData,
         ciSelections,
         initialSA,

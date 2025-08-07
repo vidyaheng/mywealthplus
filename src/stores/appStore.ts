@@ -618,10 +618,15 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     ciExistingEntryAge: undefined,
     ciPlanSelections: { 
         mainRiderChecked: true, lifeReadySA: 150000, lifeReadyPPT: 18, lifeReadyPlan: 18,
+        lifeReadyStopPayment: { useCustomStopAge: false, stopAge: 98 },
         icareChecked: true, icareSA: 1000000,
+        icareStopPayment: { useCustomStopAge: false, stopAge: 84 },
         ishieldChecked: false, ishieldSA: 1000000, ishieldPlan: null, 
+        ishieldStopPayment: { useCustomStopAge: false, stopAge: 84 },
         rokraiChecked: false, rokraiPlan: null, 
+        rokraiStopPayment: { useCustomStopAge: false, stopAge: 98 },
         dciChecked: false, dciSA: 1000000,
+        dciStopPayment: { useCustomStopAge: false, stopAge: 74 },
     } as CiPlanSelections,
     ciUseIWealthy: false,
     ciIWealthyMode: 'automatic',
@@ -659,38 +664,71 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     setCiAutoWithdrawalStartAge: (arg) => set(state => ({ ciAutoWithdrawalStartAge: typeof arg === 'function' ? arg(state.ciAutoWithdrawalStartAge) : arg })),
     setCiUseCustomWithdrawalAge: (arg) => set(state => ({ ciUseCustomWithdrawalAge: typeof arg === 'function' ? arg(state.ciUseCustomWithdrawalAge) : arg })),
     runCiCalculation: async () => {
-        // เพิ่มการ reset ค่าผลลัพธ์เก่าๆ ตอนเริ่มคำนวณ
-        set({ ciIsLoading: true, ciError: null, ciResult: null, ciSolvedMinPremium: undefined, ciSolvedRpp: undefined, ciSolvedRtu: undefined });
+        // 1. เริ่มต้น: รีเซ็ตสถานะและผลลัพธ์เก่าทั้งหมด
+        set({ 
+            ciIsLoading: true, 
+            ciError: null, 
+            ciResult: null, 
+            ciSolvedMinPremium: undefined, 
+            ciSolvedRpp: undefined, 
+            ciSolvedRtu: undefined 
+        });
+        
+        // 2. ดึงค่า State ล่าสุดทั้งหมดออกมาจาก Store
         const s = get();
 
-        try {
-            // 1. ตรวจสอบสถานะ Toggle และเตรียมค่า "อายุที่เริ่มถอน" ที่จะส่งไป
-            // ถ้า Toggle ปิดอยู่ ค่านี้จะเป็น undefined
-            const customWithdrawalAge = s.ciUseCustomWithdrawalAge
-                ? (s.ciIWealthyMode === 'manual' ? s.ciManualWithdrawalStartAge : s.ciAutoWithdrawalStartAge)
-                : undefined;
+        // --- LOG ชุดที่ 1: ตรวจสอบค่า State ก่อนเริ่ม Logic ---
+        console.log("===================================");
+        console.log("[appStore] เริ่ม runCiCalculation");
+        console.log(`> โหมดที่เลือก: ${s.ciIWealthyMode}`);
+        console.log(`> เปิด Toggle กำหนดอายุเอง?: ${s.ciUseCustomWithdrawalAge}`);
+        console.log(`> อายุที่เลือก (Auto State): ${s.ciAutoWithdrawalStartAge}`);
+        console.log(`> อายุที่เลือก (Manual State): ${s.ciManualWithdrawalStartAge}`);
+        console.log("-----------------------------------");
 
+        try {
+            // 3. เตรียมค่า "อายุที่เริ่มถอน" ที่จะส่งไปคำนวณ
+            // นี่คือ Logic ที่สำคัญที่สุด
+            let customWithdrawalAge: number | undefined = undefined;
+
+            if (s.ciUseCustomWithdrawalAge) {
+                // ถ้า Toggle "กำหนดอายุเอง" เปิดอยู่...
+                if (s.ciIWealthyMode === 'manual') {
+                    // และเป็นโหมด Manual ให้ใช้ค่าจาก state ของ Manual
+                    customWithdrawalAge = s.ciManualWithdrawalStartAge;
+                } else {
+                    // และเป็นโหมด Auto ให้ใช้ค่าจาก state ของ Auto
+                    customWithdrawalAge = s.ciAutoWithdrawalStartAge;
+                }
+            }
+            // ถ้า Toggle ปิดอยู่ customWithdrawalAge จะยังคงเป็น undefined
+
+            // --- LOG ชุดที่ 2: ตรวจสอบค่าสุดท้ายที่จะส่งไปคำนวณ ---
+            console.log(`[appStore] ค่า customWithdrawalAge ที่จะส่งไปคำนวณ: ${customWithdrawalAge}`);
+            console.log("===================================");
+
+            // 4. แยกการคำนวณตามโหมดที่เลือก
             if (s.ciIWealthyMode === 'manual') {
-                // 2. เรียกฟังก์ชัน Manual พร้อมส่ง customWithdrawalAge เป็นพารามิเตอร์ตัวสุดท้าย
+                // --- โหมด Manual ---
                 const manualResult = await calculateManualPlanCi(
                     s.ciPlanningAge, s.ciGender, s.ciPlanSelections,
                     s.ciManualRpp, s.ciManualRtu, s.ciManualInvReturn, s.ciManualPpt,
                     s.ciPolicyOriginMode,
                     s.ciExistingEntryAge,
-                    undefined, // maxCiScheduleAge (ถ้ามี)
-                    customWithdrawalAge
+                    undefined, 
+                    customWithdrawalAge // ส่งค่าอายุที่เตรียมไว้เข้าไป
                 );
                 set({ ciResult: manualResult, ciIsLoading: false });
 
-            } else { // automatic
-                // 3. เรียกฟังก์ชัน Automatic พร้อมส่ง customWithdrawalAge เป็นพารามิเตอร์ตัวสุดท้าย
+            } else { 
+                // --- โหมด Automatic ---
                 const autoResult = await calculateAutomaticPlanCi(
                     s.ciPlanningAge, s.ciGender, s.ciPlanSelections,
                     s.ciAutoInvReturn, s.ciAutoPpt, s.ciAutoRppRtuRatio,
                     s.ciPolicyOriginMode,
                     s.ciExistingEntryAge,
-                    undefined, // maxCiScheduleAge (ถ้ามี)
-                    customWithdrawalAge
+                    undefined,
+                    customWithdrawalAge // ส่งค่าอายุที่เตรียมไว้เข้าไปเช่นกัน
                 );
                 set({
                     ciResult: autoResult.outputIllustration,
@@ -702,6 +740,7 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
                 });
             }
         } catch (err) {
+            // จัดการ Error ที่ไม่คาดคิด
             set({ ciError: err instanceof Error ? err.message : 'An unexpected CI error occurred', ciIsLoading: false });
         }
     },

@@ -35,19 +35,29 @@ export type LifeReadyPlan = 6 | 12 | 18 | 99;
 export type IShieldPlan = "05" | "10" | "15" | "20";
 export type RokRaiSoShieldPlan = "S" | "M" | "L" | "XL"; // ใช้ชื่อนี้เป็นชื่อหลัก
 
+export interface StopPaymentConfig {
+    useCustomStopAge: boolean;
+    stopAge: number;
+}
+
 export interface CiPlanSelections {
     icareChecked: boolean;
     icareSA: number;
+    icareStopPayment: StopPaymentConfig;
     ishieldChecked: boolean;
     ishieldPlan: IShieldPlan | null;
     ishieldSA: number;
+    ishieldStopPayment: StopPaymentConfig;
     mainRiderChecked: boolean;
     lifeReadyPlan: LifeReadyPlan | null;
     lifeReadySA: number;
+    lifeReadyStopPayment: StopPaymentConfig;
     rokraiChecked: boolean;
     rokraiPlan: RokRaiSoShieldPlan | null; // แก้ไขให้ใช้ชื่อ Type ที่ตรงกัน
+    rokraiStopPayment: StopPaymentConfig;
     dciChecked: boolean;
     dciSA: number;
+    dciStopPayment: StopPaymentConfig;
 }
 
 // --- iWealthy Calculation Related Types ---

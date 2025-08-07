@@ -444,6 +444,12 @@ export function calculateBenefitIllustrationMonthly(
             premiumCharge_rtu_month = rtu_month * (RTU_CHARGE_RATES[chargeIdx] || 0);
         }
         totalPremiumCharge_month = premiumCharge_rpp_month + premiumCharge_rtu_month + lstuFee_month;
+
+        // +++ โค้ดใหม่ +++
+        // ทำการคัดลอกมูลค่า "ก่อน" ที่จะหัก Premium Charge เก็บไว้สำหรับคำนวณ COI
+        const valueForCoiCalculation = calculatedEomValueThisMonth;
+        // +++ สิ้นสุดโค้ดใหม่ +++
+
         calculatedEomValueThisMonth -= totalPremiumCharge_month;
 
         if (calculatedEomValueThisMonth < -0.01 && !policyIsLapsed) {
@@ -454,7 +460,10 @@ export function calculateBenefitIllustrationMonthly(
         if (!policyIsLapsed) {
             const coiRate = getCOIRate(currentAge, input.policyholderGender);
             if (coiRate !== null) {
-                const avBeforeCOI = calculatedEomValueThisMonth;
+                // +++ โค้ดใหม่ +++
+                // เปลี่ยนมาใช้ตัวแปรที่เก็บค่าไว้ก่อนหน้าแทน
+                const avBeforeCOI = valueForCoiCalculation;
+                // +++ สิ้นสุดโค้ดใหม่ +++
                 const dbForCOI = Math.max(currentSumAssured * 1.2, ( (policyYear === 1 && monthInYear === 1) ? 0 : avBeforeCOI) * 1.2, currentSumAssured);
                 const sar = Math.max(0, dbForCOI - ((policyYear === 1 && monthInYear === 1) ? 0 : avBeforeCOI) );
                 coi_month = Math.max(0, (sar / 1000) * coiRate / 12);
