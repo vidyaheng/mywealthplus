@@ -1,5 +1,3 @@
-// src/components/ci/CITablePage.tsx
-
 import { useState } from 'react';
 
 // --- Imports ---
@@ -11,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { formatNumber } from '@/components/ci/utils/helpers';
 
 // --- Props Interface ---
-// --- REMOVED: ลบ iWealthyWithdrawalStartAge ออกจาก Props ---
 type CITablePageProps = Pick<
     UseCiPlannerReturn,
     'isLoading' | 'error' | 'result' | 'ciPremiumsSchedule' | 'useIWealthy'
@@ -24,8 +21,6 @@ export default function CITablePage({
     result,
     ciPremiumsSchedule,
     useIWealthy,
-    // --- REMOVED: ไม่ต้องรับ Prop นี้แล้ว ---
-    // iWealthyWithdrawalStartAge 
 }: CITablePageProps) {
 
     // --- State and Render Guards (เหมือนเดิม) ---
@@ -35,12 +30,23 @@ export default function CITablePage({
     if (error) { return <div className="flex justify-center items-center h-full min-h-[600px] text-red-600">เกิดข้อผิดพลาด: {error}</div>; }
     if (!result) { return ( <div className="flex justify-center items-center h-full min-h-[600px] text-muted-foreground"><p>ไม่มีข้อมูลสำหรับแสดงผล กรุณากด "คำนวณ" ที่หน้ากรอกข้อมูล</p></div> ); }
 
-    // --- Pre-render Calculations for Totals (ปรับปรุงเล็กน้อย) ---
+    // --- จุดที่แก้ไข 1: เพิ่ม Logic การกรองข้อมูล ---
+    // ค้นหาปีแรกที่มูลค่ากรมธรรม์สิ้นปี (EOY Account Value) เป็น 0 หรือติดลบ
+    const firstZeroValueIndex = result.findIndex(row => (row.iWealthyEoyAccountValue ?? 0) <= 0);
+
+    // สร้าง Array ใหม่สำหรับแสดงผล โดยตัดข้อมูลตั้งแต่ปีที่มูลค่าเป็น 0 ออกไป
+    // ถ้าไม่เจอปีที่มูลค่าเป็น 0 เลย (firstZeroValueIndex === -1) ก็ให้แสดงผลทั้งหมด
+    const displayResult = firstZeroValueIndex === -1
+        ? result
+        : result.slice(0, firstZeroValueIndex);
+    // ---------------------------------------------
+
+    // --- Pre-render Calculations for Totals ---
     const ciPremiumTotals = (ciPremiumsSchedule ?? []).reduce( (acc, row) => { acc.lifeReady += row.lifeReadyPremium ?? 0; acc.icare += row.icarePremium ?? 0; acc.ishield += row.ishieldPremium ?? 0; acc.rokrai += row.rokraiPremium ?? 0; acc.dci += row.dciPremium ?? 0; acc.total += row.totalCiPremium ?? 0; return acc; }, { lifeReady: 0, icare: 0, ishield: 0, rokrai: 0, dci: 0, total: 0 } );
 
-    const iWealthyTotals = result.reduce( (acc, row) => {
-        // --- CHANGED: คำนวณเบี้ย CI ที่จ่ายทั้งหมดจากข้อมูลใน result โดยตรง ---
-        // ไม่ต้องใช้ iWealthyWithdrawalStartAge อีกต่อไป
+    // --- จุดที่แก้ไข 2: ใช้ข้อมูลที่กรองแล้ว (displayResult) มาคำนวณผลรวม ---
+    // เพื่อให้ยอดรวมท้ายตารางตรงกับข้อมูลที่แสดงผล
+    const iWealthyTotals = displayResult.reduce( (acc, row) => {
         acc.totalCIPaid += row.totalCiPackagePremiumPaid ?? 0;
         acc.rpp += row.iWealthyRpp ?? 0;
         acc.rtu += row.iWealthyRtu ?? 0;
@@ -114,7 +120,7 @@ export default function CITablePage({
             )}
 
             {/* ตารางที่ 2: ภาพรวมผลประโยชน์ CI และ iWealthy */}
-            {isIWealthyMode && !showCiOnlyView && result && result.length > 0 && (
+            {isIWealthyMode && !showCiOnlyView && displayResult && displayResult.length > 0 && (
                 <Card className="bg-white dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
                     <CardHeader>
                         <div className="flex justify-between items-center">
@@ -147,17 +153,14 @@ export default function CITablePage({
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {result.map(row => (
+                                {/* --- จุดที่แก้ไข 3: ใช้ข้อมูลที่กรองแล้ว (displayResult) มาแสดงผลในตาราง --- */}
+                                {displayResult.map(row => (
                                     <TableRow key={`res-${row.policyYear}-${row.age}`}>
                                         <TableCell className="text-center">{row.policyYear}</TableCell>
                                         <TableCell className="text-center">{row.age}</TableCell>
-                                        
-                                        {/* --- CHANGED: แสดงผลเบี้ย CI ตรงๆ จากข้อมูลที่ได้รับมา --- */}
-                                        {/* ไม่ต้องมีเงื่อนไข if เช็คกับ iWealthyWithdrawalStartAge อีกต่อไป */}
                                         <TableCell className="text-right">
                                             {formatNumber(row.totalCiPackagePremiumPaid)}
                                         </TableCell>
-
                                         {showRppRtu && ( <> <TableCell className="text-right text-muted-foreground">{formatNumber(row.iWealthyRpp)}</TableCell> <TableCell className="text-right text-muted-foreground">{formatNumber(row.iWealthyRtu)}</TableCell> </> )}
                                         <TableCell className="text-right">{formatNumber(row.iWealthyTotalPremium)}</TableCell>
                                         <TableCell className="text-right">{formatNumber(Math.round(row.iWealthyWithdrawal ?? 0))}</TableCell>

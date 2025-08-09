@@ -1,5 +1,3 @@
-// src/components/ci/GraphComponentCI.tsx
-
 import React, { useCallback, useMemo } from 'react';
 import {
     ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -36,6 +34,17 @@ const GraphComponentCI: React.FC<GraphComponentCIProps> = ({
     showCiPremium, showIWealthyPremium, showWithdrawal, showIWealthyAV, showTotalDB
 }) => {
 
+    // --- จุดที่แก้ไข: เพิ่ม Logic การกรองข้อมูลเหมือนในตาราง ---
+    // ค้นหาปีแรกที่มูลค่าบัญชี (AV) เป็น 0 หรือติดลบ
+    const firstZeroValueIndex = data.findIndex(point => (point.iWealthyAV ?? 0) <= 0);
+
+    // สร้าง Array ใหม่สำหรับแสดงผล โดยรวมปีที่มูลค่าเป็น 0 เข้าไปด้วย
+    // ถ้าไม่เจอ ก็ให้แสดงผลทั้งหมด
+    const displayData = firstZeroValueIndex === -1
+        ? data
+        : data.slice(0, firstZeroValueIndex + 1);
+    // ---------------------------------------------------------
+
     // --- ฟังก์ชันสำหรับสร้าง Ticks บนแกน X ให้สวยงาม ---
     const getNiceTicks = useCallback((chartData: CiChartDataType[]): number[] => {
         if (!chartData || chartData.length === 0) return [];
@@ -62,8 +71,8 @@ const GraphComponentCI: React.FC<GraphComponentCIProps> = ({
         return [...new Set(ticks)].sort((a,b) => a-b);
     }, []);
     
-    // เรียกใช้ฟังก์ชันและ memoize ผลลัพธ์ไว้
-    const memoizedTicks = useMemo(() => getNiceTicks(data), [data, getNiceTicks]);
+    // เรียกใช้ฟังก์ชันและ memoize ผลลัพธ์ไว้ โดยใช้ displayData
+    const memoizedTicks = useMemo(() => getNiceTicks(displayData), [displayData, getNiceTicks]);
 
     // --- Handlers สำหรับการโต้ตอบกับกราฟ ---
     const handleMouseMove = (e: any) => {
@@ -85,7 +94,7 @@ const GraphComponentCI: React.FC<GraphComponentCIProps> = ({
     return (
         <ResponsiveContainer width="100%" height="100%" minHeight={400}>
             <LineChart
-                data={data}
+                data={displayData} // ใช้ displayData ที่กรองแล้ว
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
                 margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
