@@ -22,16 +22,25 @@ const ageToPolicyYear = (age: number, entryAge: number) => Math.max(1, age - ent
 // --- Sub-component: แสดงรายการพักชำระเบี้ย (ปรับขนาดตัวอักษร) ---
 function PausePeriodItem({ record, onDelete }: { record: PausePeriodRecord, onDelete: (id: string | undefined) => void; }) {
   const iWealthyAge = useAppStore.getState().iWealthyAge;
+
+  // ✅ กำหนดสีตาม isAutoAdjusted
+  const ageColor = record.isAutoAdjusted ? 'text-orange-600' : 'text-indigo-600';
+
+  // ✅ กำหนดข้อความบรรยายตาม isAutoAdjusted
+  const descriptionText = record.isAutoAdjusted
+    ? '(ถูกปรับตามอายุเริ่มต้นใหม่โดยอัตโนมัติ)'
+    : `(ปีที่ ${ageToPolicyYear(record.startAge, iWealthyAge)} ถึง ${ageToPolicyYear(record.endAge, iWealthyAge)})`;
+
   return (
     <div className="flex items-center justify-between p-2.5 bg-zinc-50 border rounded-lg hover:bg-zinc-100 transition-colors">
       <div className="flex items-center gap-3">
         <CalendarClock className="w-5 h-5 text-indigo-500" />
         <div>
           <p className="font-medium text-sm text-zinc-800">
-            พักชำระช่วงอายุ <span className="text-indigo-600">{record.startAge} - {record.endAge}</span> ปี
+            พักชำระช่วงอายุ <span className={ageColor}>{record.startAge} - {record.endAge}</span> ปี
           </p>
           <p className="text-xs text-zinc-500">
-            (ปีที่ {ageToPolicyYear(record.startAge, iWealthyAge)} ถึง {ageToPolicyYear(record.endAge, iWealthyAge)})
+            {descriptionText}
           </p>
         </div>
       </div>
@@ -64,14 +73,22 @@ export default function PausePremiumModal() {
 
   // --- Effects & Handlers (ไม่มีการเปลี่ยนแปลง) ---
   useEffect(() => {
-    if (isPauseModalOpen) {
-      const sortedPlan = [...iWealthyPausePeriods].sort((a, b) => a.startAge - b.startAge);
-      setPlannedPauses(sortedPlan);
-      const nextStart = sortedPlan.length > 0 ? Math.max(...sortedPlan.map(p => p.endAge)) + 1 : iWealthyAge + 1;
-      setStartAge(Math.min(nextStart, maxPossibleAge));
-      setEndAge(maxPossibleAge);
-    }
-  }, [isPauseModalOpen, iWealthyPausePeriods, iWealthyAge, maxPossibleAge]);
+    if (isPauseModalOpen) {
+
+      console.log("[PausePremiumModal] 🔎 Modal ถูกเปิดขึ้น");
+      console.log("[PausePremiumModal] ข้อมูลจาก Store (iWealthyPausePeriods):", iWealthyPausePeriods);
+
+      const sortedPlan = [...iWealthyPausePeriods].sort((a, b) => a.startAge - b.startAge);
+      setPlannedPauses(sortedPlan);
+
+      console.log("[PausePremiumModal] ข้อมูลใน Local State (plannedPauses):", sortedPlan);
+
+      const nextStart = sortedPlan.length > 0 ? Math.max(...sortedPlan.map(p => p.endAge)) + 1 : iWealthyAge + 1;
+      setStartAge(Math.min(nextStart, maxPossibleAge));
+      setEndAge(maxPossibleAge);
+    }
+  }, [isPauseModalOpen, iWealthyPausePeriods, iWealthyAge, maxPossibleAge]);
+
 
   const handleStartAgeChange = (value: string) => {
     const newStartAge = parseInt(value, 10);
@@ -81,7 +98,7 @@ export default function PausePremiumModal() {
   const handleEndAgeChange = (value: string) => setEndAge(parseInt(value, 10));
   const handleAddPeriod = useCallback(() => {
     if (!isFormValid) return;
-    const newPause: PausePeriodRecord = { id: uuidv4(), startAge, endAge, type: 'age' };
+    const newPause: PausePeriodRecord = { id: uuidv4(), startAge, endAge, type: 'age', isAutoAdjusted: false };
     const updatedPauses = [...plannedPauses, newPause].sort((a, b) => a.startAge - b.startAge);
     setPlannedPauses(updatedPauses);
     const nextStart = endAge + 1;
@@ -98,6 +115,8 @@ export default function PausePremiumModal() {
     setItemToDeleteId(null);
   }, [itemToDeleteId, plannedPauses, iWealthyAge, maxPossibleAge]);
   const handleSavePlan = () => {
+    console.log("[PausePremiumModal] 💾 กำลังบันทึกแผน...");
+    console.log("[PausePremiumModal] ข้อมูลที่จะถูกส่งไป Store:", plannedPauses);
     setIWealthyPausePeriods(plannedPauses);
     closePauseModal();
   };
@@ -115,6 +134,15 @@ export default function PausePremiumModal() {
               วางแผนหยุดพักชำระเบี้ย
             </DialogTitle>
           </DialogHeader>
+
+          {iWealthyPausePeriods.some(p => p.isAutoAdjusted) && (
+            <div className="!mt-3 flex items-start gap-2.5 p-3 text-amber-900 bg-amber-100/60 rounded-lg border border-amber-200/80">
+              <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-500" />
+              <p className="text-xs">
+                แผนพักชำระเบี้ยถูกปรับอายุโดยอัตโนมัติเพื่อให้สอดคล้องกับอายุเริ่มต้นใหม่ กรุณาตรวจสอบและยืนยันอีกครั้ง
+              </p>
+            </div>
+          )}
 
           {/* +++ ลด Padding และระยะห่างของ Grid +++ */}
           <div className="overflow-y-auto p-4 grid grid-cols-1 lg:grid-cols-2 gap-x-6 bg-slate-100/50">

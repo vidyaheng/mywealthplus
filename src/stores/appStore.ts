@@ -227,6 +227,10 @@ interface CIPlannerState {
 }
 
 // --- Helper Function (สำหรับใช้ภายใน Store) ---
+
+const ageToPolicyYear = (age: number, entryAge: number) => Math.max(1, age - entryAge + 1);
+const policyYearToAge = (policyYear: number, entryAge: number) => entryAge + policyYear - 1;
+
 const adjustReductions = (rpp: number, reductions: SumInsuredReductionRecord[]): {
     adjustedList: SumInsuredReductionRecord[];
     wasAdjusted: boolean;
@@ -439,7 +443,53 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     maxDB: null,
     iWealthyIsLoading: false,
     iWealthyError: null,
-    setIWealthyAge: (age) => { const currentRpp = get().iWealthyRpp; const newSumInsured = currentRpp * getSumInsuredFactor(age); set({ iWealthyAge: age, iWealthySumInsured: newSumInsured }); },
+    setIWealthyAge: (newAge) => {
+    const state = get();
+    const currentAge = state.iWealthyAge;
+
+    // 1. ปรับเบี้ยและทุนประกันใหม่ตามอายุ
+    const currentRpp = state.iWealthyRpp;
+    const newSumInsured = currentRpp * getSumInsuredFactor(newAge);
+
+    // 2. ปรับแผนพักชำระเบี้ยให้สอดคล้องกับอายุใหม่
+    const adjustedPausePeriods = state.iWealthyPausePeriods.map(p => {
+        let startYear: number, endYear: number;
+        
+        // ใช้ค่า Policy Year ที่เก็บไว้เป็นหลัก หากมี
+        if (p.startPolicyYear !== undefined && p.endPolicyYear !== undefined) {
+            startYear = p.startPolicyYear;
+            endYear = p.endPolicyYear;
+        } else {
+            // ถ้าเป็นแผนเดิมที่ยังไม่ได้เก็บ Policy Year ให้คำนวณจาก Age เดิม
+            startYear = ageToPolicyYear(p.startAge, currentAge);
+            endYear = ageToPolicyYear(p.endAge, currentAge);
+        }
+
+        // คำนวณอายุใหม่จาก Policy Year ที่คงที่
+        const newStartAge = policyYearToAge(startYear, newAge);
+        const newEndAge = Math.min(policyYearToAge(endYear, newAge), 98);
+
+        // คืนค่า object ที่ปรับปรุงแล้ว
+        return {
+            ...p,
+            startAge: newStartAge,
+            endAge: newEndAge,
+            startPolicyYear: startYear,
+            endPolicyYear: endYear,
+            isAutoAdjusted: true // ตั้ง flag เป็น true เพื่อแสดงผลสีส้ม
+        };
+    });
+    
+    console.log("[appStore] 🎨 แผนพักชำระเบี้ยถูกปรับโดยอัตโนมัติ:");
+    console.log(adjustedPausePeriods);
+
+    // 3. ตั้งค่า State ใหม่
+    set({
+        iWealthyAge: newAge,
+        iWealthySumInsured: newSumInsured,
+        iWealthyPausePeriods: adjustedPausePeriods,
+    });
+},
     setIWealthyGender: (gender) => set({ iWealthyGender: gender }),
     setIWealthyPaymentFrequency: (freq) => set({ iWealthyPaymentFrequency: freq }),
     setIWealthyRpp: (rpp) => {
@@ -468,7 +518,23 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
             set({ iWealthyRpp: newRpp, iWealthyRtu: newRtu, iWealthySumInsured: newSumInsured, iWealthySumInsuredReductions: adjustedList, iWealthyReductionsNeedReview: get().iWealthyReductionsNeedReview || wasAdjusted });
         }
     },
-    setIWealthyPausePeriods: (periods) => set({ iWealthyPausePeriods: periods }),
+    setIWealthyPausePeriods: (periods) => {
+    const state = get();
+    const currentEntryAge = state.iWealthyAge;
+
+    // วนลูปเพื่อเก็บค่า policy year และ reset flag isAutoAdjusted
+    const updatedPeriods = periods.map(p => ({
+        ...p,
+        startPolicyYear: ageToPolicyYear(p.startAge, currentEntryAge),
+        endPolicyYear: ageToPolicyYear(p.endAge, currentEntryAge),
+        //isAutoAdjusted: false
+    }));
+
+    console.log("[appStore] ✅ แผนพักชำระเบี้ยถูกบันทึกด้วยตนเอง:");
+    console.log(updatedPeriods);
+
+    set({ iWealthyPausePeriods: updatedPeriods });
+},
     setIWealthySumInsuredReductions: (reductions) => {
         set({ iWealthySumInsuredReductions: reductions, iWealthyReductionsNeedReview: false });
     },

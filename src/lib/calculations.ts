@@ -50,6 +50,9 @@ export interface PausePeriodRecord {
     startAge: number;
     endAge: number;
     type: 'age' | 'year';
+    startPolicyYear?: number;
+    endPolicyYear?: number;
+    isAutoAdjusted?: boolean;
 }
 
 export interface SumInsuredReductionRecord {
@@ -209,7 +212,7 @@ function getCOIRate(age: number, gender: Gender): number | null {
     return gender === 'male' ? rateEntry.maleRate : rateEntry.femaleRate;
 }
 
-function getPaymentsPerYear(frequency: PaymentFrequency): number {
+export function getPaymentsPerYear(frequency: PaymentFrequency): number {
     switch (frequency) {
         case 'monthly': return 12;
         case 'quarterly': return 4;
@@ -315,9 +318,6 @@ export function calculateBenefitIllustrationMonthly(
     const monthlyInvestmentRate = input.assumedInvestmentReturnRate / 12;
     const monthlyAdminFeeRate = ADMIN_FEE_RATE_ANNUAL / 12;
     const policyDurationMonths = (POLICY_TERM_TARGET_AGE - input.policyholderAge + 1) * 12;
-    //const premiumPayingTermYears = input.premiumPayingTermYears > 0
-    //    ? input.premiumPayingTermYears
-    //    : (MAX_POLICY_AGE_TYPE - input.policyholderAge + 1);
 
     // --- ตัวแปรสำหรับติดตามสถานะต่างๆ ตลอดการคำนวณ ---
     let currentAccountValue_BOM = 0;
@@ -330,7 +330,7 @@ export function calculateBenefitIllustrationMonthly(
     // --- ตัวแปรสำหรับติดตามสถานะของกรมธรรม์ ---
     let policyIsLapsed: boolean = false;
     let lapseReason: MonthlyCalculationOutputRow['policyStatusThisMonth'] = 'Active';
-    let finalLastSolventAge: number = POLICY_TERM_TARGET_AGE; // Assume solvent till end, will be updated if lapsed
+    let finalLastSolventAge: number = POLICY_TERM_TARGET_AGE;
 
     // --- เตรียมข้อมูลแผนต่างๆ โดยการเรียงลำดับ ---
     const sortedFrequencyChanges = [...(input.frequencyChanges || [])].sort((a, b) => a.startAge - b.startAge);
@@ -349,11 +349,9 @@ export function calculateBenefitIllustrationMonthly(
         const currentAge = input.policyholderAge + policyYear - 1;
 
         const bomValueForCurrentMonth = currentAccountValue_BOM;
-        let calculatedEomValueThisMonth = bomValueForCurrentMonth; // Start with BOM for current month's EOM calculation
+        let calculatedEomValueThisMonth = bomValueForCurrentMonth;
         let currentMonthStatusForOutput: MonthlyCalculationOutputRow['policyStatusThisMonth'] = 'Active';
-        //let eomValueRawBeforeAnyLapseDecision = bomValueForCurrentMonth; // For calculatedEomValueBeforeLapse
-
-        // ค่า default สำหรับผลลัพธ์รายเดือน
+        
         // --- ตั้งค่าตัวแปรรายเดือนให้เป็น 0 ก่อนเริ่มคำนวณ ---
         let rpp_month = 0, rtu_month = 0, lstu_gross_month = 0, lstuFee_month = 0;
         let totalPremium_gross_month = 0;
@@ -362,7 +360,7 @@ export function calculateBenefitIllustrationMonthly(
         let withdrawal_month = 0, withdrawalFee_month = 0;
         let investmentBaseForMonth = 0, investmentReturn_month = 0, royaltyBonus_month = 0;
 
-        // --- ตรวจสอบสถานะขาดอายุ: ถ้าขาดอายุแล้ว ให้ข้ามไปเดือนถัดไป ---
+        // --- ตรวจสอบสถานะขาดอายุ ---
         if (policyIsLapsed) {
             currentAccountValue_BOM = 0;
             const monthlyRowLapsed: MonthlyCalculationOutputRow = {
@@ -372,7 +370,7 @@ export function calculateBenefitIllustrationMonthly(
                 totalPremiumCharge: 0, bomValue: bomValueForCurrentMonth, withdrawalFee: 0,
                 investmentBase: 0, investmentReturnEarned: 0, royaltyBonusAmount: 0,
                 eomValue: 0, cashSurrenderValue: 0, deathBenefit: currentSumAssured, currentSumAssured,
-                policyStatusThisMonth: lapseReason, calculatedEomValueBeforeLapse: 0, // Value before this specific lapse
+                policyStatusThisMonth: lapseReason, calculatedEomValueBeforeLapse: 0,
             };
             monthlyResults.push(monthlyRowLapsed);
             continue;
@@ -392,19 +390,12 @@ export function calculateBenefitIllustrationMonthly(
             if (lastChange) effectivePaymentFrequency = lastChange.frequency;
         }
 
-        let isPayingPeriod = true; // ตั้งค่าเริ่มต้นให้จ่ายเบี้ย
-
-        // 1. ตรวจสอบ Premium Paying Term Years (ถ้ามีการกำหนด)
+        let isPayingPeriod = true;
         if (input.premiumPayingTermYears !== undefined && input.premiumPayingTermYears > 0) {
             isPayingPeriod = policyYear <= input.premiumPayingTermYears;
         }
-
-        // 2. เพิ่มเงื่อนไขหยุดจ่ายเบี้ยที่อายุที่กำหนด (LAST_PAYMENT_AGE)
-        // **สำคัญ**: เงื่อนไขนี้ควรตรวจสอบหลังจากเงื่อนไข premiumPayingTermYears
-        // เพื่อให้ถ้ามีการกำหนด premiumPayingTermYears ที่สั้นกว่า LAST_PAYMENT_AGE มันก็ยังหยุดจ่ายตามนั้น
-        // แต่ถ้า premiumPayingTermYears ไม่มี หรือยาวกว่า LAST_PAYMENT_AGE ก็จะหยุดที่ LAST_PAYMENT_AGE แทน
         if (currentAge > LAST_PAYMENT_AGE) {
-            isPayingPeriod = false; // ถ้าอายุเกินอายุสูงสุดที่ต้องจ่ายเบี้ย ให้หยุดจ่าย
+            isPayingPeriod = false;
         }
         let isPaused = false;
         if (m >= (MIN_PAID_MONTHS_FOR_PAUSE + 1)) {
@@ -444,12 +435,8 @@ export function calculateBenefitIllustrationMonthly(
             premiumCharge_rtu_month = rtu_month * (RTU_CHARGE_RATES[chargeIdx] || 0);
         }
         totalPremiumCharge_month = premiumCharge_rpp_month + premiumCharge_rtu_month + lstuFee_month;
-
-        // +++ โค้ดใหม่ +++
-        // ทำการคัดลอกมูลค่า "ก่อน" ที่จะหัก Premium Charge เก็บไว้สำหรับคำนวณ COI
-        const valueForCoiCalculation = calculatedEomValueThisMonth;
-        // +++ สิ้นสุดโค้ดใหม่ +++
-
+        
+        // หัก Premium Charge ออกจากยอดเงิน
         calculatedEomValueThisMonth -= totalPremiumCharge_month;
 
         if (calculatedEomValueThisMonth < -0.01 && !policyIsLapsed) {
@@ -460,22 +447,28 @@ export function calculateBenefitIllustrationMonthly(
         if (!policyIsLapsed) {
             const coiRate = getCOIRate(currentAge, input.policyholderGender);
             if (coiRate !== null) {
-                // +++ โค้ดใหม่ +++
-                // เปลี่ยนมาใช้ตัวแปรที่เก็บค่าไว้ก่อนหน้าแทน
-                const avBeforeCOI = valueForCoiCalculation;
-                // +++ สิ้นสุดโค้ดใหม่ +++
-                const dbForCOI = Math.max(currentSumAssured * 1.2, ( (policyYear === 1 && monthInYear === 1) ? 0 : avBeforeCOI) * 1.2, currentSumAssured);
-                const sar = Math.max(0, dbForCOI - ((policyYear === 1 && monthInYear === 1) ? 0 : avBeforeCOI) );
+                // [แก้ไข] ใช้ bomValueForCurrentMonth (มูลค่าต้นเดือน) เป็นฐานในการคำนวณโดยตรง
+                const accountValueForCoi = bomValueForCurrentMonth;
+
+                const dbForCOI = Math.max(
+                    currentSumAssured * 1.2,
+                    ((policyYear === 1 && monthInYear === 1) ? 0 : accountValueForCoi) * 1.2,
+                    currentSumAssured
+                );
+                
+                // [แก้ไข] การคำนวณ Sum at Risk จะหักออกด้วยมูลค่าต้นเดือน (BOM) เท่านั้น
+                const sar = Math.max(0, dbForCOI - ((policyYear === 1 && monthInYear === 1) ? 0 : accountValueForCoi));
+
                 coi_month = Math.max(0, (sar / 1000) * coiRate / 12);
                 calculatedEomValueThisMonth -= coi_month;
+
                 if (calculatedEomValueThisMonth < -0.01 && !policyIsLapsed) {
                     policyIsLapsed = true; lapseReason = 'Lapsed_COI_Admin'; finalLastSolventAge = currentAge;
                 }
             }
         }
         if (!policyIsLapsed) {
-            //const avBeforeAdmin = calculatedEomValueThisMonth;
-            const adminFeeBase = (policyYear === 1 && monthInYear === 1) ? Math.max(0, totalPremium_gross_month - totalPremiumCharge_month) : bomValueForCurrentMonth; // Or avBeforeAdmin
+            const adminFeeBase = (policyYear === 1 && monthInYear === 1) ? Math.max(0, totalPremium_gross_month - totalPremiumCharge_month) : bomValueForCurrentMonth;
             adminFee_month = Math.max(0, adminFeeBase * monthlyAdminFeeRate);
             calculatedEomValueThisMonth -= adminFee_month;
             if (calculatedEomValueThisMonth < -0.01 && !policyIsLapsed) {
@@ -507,7 +500,7 @@ export function calculateBenefitIllustrationMonthly(
         if (!policyIsLapsed && withdrawalFee_month > 0) {
             calculatedEomValueThisMonth -= withdrawalFee_month;
             if (calculatedEomValueThisMonth < -0.01 && !policyIsLapsed) {
-                policyIsLapsed = true; lapseReason = 'Lapsed_Charges'; // Or a specific 'Lapsed_WithdrawalFee'
+                policyIsLapsed = true; lapseReason = 'Lapsed_Charges';
                 finalLastSolventAge = currentAge;
             }
         }
@@ -519,55 +512,42 @@ export function calculateBenefitIllustrationMonthly(
 
         // 7. Royalty Bonus (only if not lapsed yet)
         royaltyBonus_month = 0;
-            if (!policyIsLapsed && monthInYear === 12) {
-                // เปลี่ยนจาก paidMonthsCount >= 72 เป็น paidPeriodsCount >= 6
-                const paid6Y = paidPeriodsCount >= ROYALTY_BONUS_ELIGIBILITY_YEARS;
-                const eligible6Y = paid6Y && !wasWithdrawalInFirst6Years;
-                const pausedThisY = sortedPausePeriods.some(p => {
-                    if (p.type === 'year') {
-                        return policyYear >= p.startAge && policyYear <= p.endAge;
-                    } else { // 'age' หรือ default
-                        return currentAge >= p.startAge && currentAge <= p.endAge;
-                    }
-                });
-                const withdrewThisY = withdrawal_month > 0;
-                if (eligible6Y  && isPayingPeriod && !pausedThisY && !withdrewThisY) {
-                    if (eomValuesLast12Months.length === 12) {
-                        royaltyBonus_month = Math.max(0, (eomValuesLast12Months.reduce((a, b) => a + b, 0) / 12) * ROYALTY_BONUS_RATE);
-                    }
+        if (!policyIsLapsed && monthInYear === 12) {
+            const paid6Y = paidPeriodsCount >= ROYALTY_BONUS_ELIGIBILITY_YEARS;
+            const eligible6Y = paid6Y && !wasWithdrawalInFirst6Years;
+            const pausedThisY = sortedPausePeriods.some(p => {
+                if (p.type === 'year') {
+                    return policyYear >= p.startAge && policyYear <= p.endAge;
+                } else {
+                    return currentAge >= p.startAge && currentAge <= p.endAge;
                 }
-                calculatedEomValueThisMonth += royaltyBonus_month;
+            });
+            const withdrewThisY = withdrawal_month > 0;
+            if (eligible6Y && isPayingPeriod && !pausedThisY && !withdrewThisY) {
+                if (eomValuesLast12Months.length === 12) {
+                    royaltyBonus_month = Math.max(0, (eomValuesLast12Months.reduce((a, b) => a + b, 0) / 12) * ROYALTY_BONUS_RATE);
+                }
             }
+            calculatedEomValueThisMonth += royaltyBonus_month;
+        }
 
         // 8. Final EOM and status for the month
         const eomValueRawForMonth = calculatedEomValueThisMonth;
         currentMonthStatusForOutput = policyIsLapsed ? lapseReason : 'Active';
 
-        if (!policyIsLapsed && eomValueRawForMonth < -0.01) { // Final check if any operation made it negative
+        if (!policyIsLapsed && eomValueRawForMonth < -0.01) {
             policyIsLapsed = true;
-            lapseReason = 'Lapsed_Final'; // General lapse if it becomes negative at the very end of month's calcs
+            lapseReason = 'Lapsed_Final';
             finalLastSolventAge = currentAge;
             currentMonthStatusForOutput = lapseReason;
         }
 
         const finalEomValueForDisplay = policyIsLapsed ? 0 : Math.max(0, eomValueRawForMonth);
-        currentAccountValue_BOM = finalEomValueForDisplay; // BOM for next month
+        currentAccountValue_BOM = finalEomValueForDisplay;
 
         let srRate = 0; if (policyYear <= SURRENDER_CHARGE_RATES.length) srRate = SURRENDER_CHARGE_RATES[policyYear - 1];
         const eomCSV = finalEomValueForDisplay * (1 - srRate);
         const eomDB = policyIsLapsed ? currentSumAssured : Math.max(currentSumAssured * 1.2, finalEomValueForDisplay * 1.2, currentSumAssured);
-
-        {/*if (!policyIsLapsed) { // แสดง Log เฉพาะเดือนที่กรมธรรม์ยังไม่ Lapsed
-            console.group(`[Debug DB] Year: ${policyYear}, Month: ${monthInYear} (Age: ${currentAge})`);
-            console.log(`ทุนประกัน (Sum Assured):`, currentSumAssured.toLocaleString());
-            console.log(`มูลค่าบัญชี (Account Value):`, finalEomValueForDisplay.toLocaleString());
-            console.log(`--- เปรียบเทียบ 3 ค่า ---`);
-            console.log(`1. 120% ของทุนประกัน:`, (currentSumAssured * 1.2).toLocaleString());
-            console.log(`2. 120% ของมูลค่าบัญชี:`, (finalEomValueForDisplay * 1.2).toLocaleString());
-            console.log(`3. 100% ของทุนประกัน:`, currentSumAssured.toLocaleString());
-            console.log(`ผลประโยชน์กรณีเสียชีวิต (ค่าสูงสุด):`, eomDB.toLocaleString());
-            console.groupEnd();
-        */}
 
         monthlyResults.push({
             policyYear, monthInYear, monthTotal: m, age: currentAge, rppPaid: rpp_month, rtuPaid: rtu_month,
@@ -583,30 +563,25 @@ export function calculateBenefitIllustrationMonthly(
         });
 
         if (!policyIsLapsed) {
-            finalLastSolventAge = currentAge; // Update last age policy was active
-            eomValuesLast12Months.push(finalEomValueForDisplay); // Use value that might be zeroed for bonus calc consistency
+            finalLastSolventAge = currentAge;
+            eomValuesLast12Months.push(finalEomValueForDisplay);
             if (eomValuesLast12Months.length > 12) eomValuesLast12Months.shift();
         }
 
-        if (currentAge >= POLICY_TERM_TARGET_AGE && m >= policyDurationMonths) break; // End early if target age reached
-        if (policyIsLapsed && m < policyDurationMonths) {
-            // If lapsed, fill remaining months with lapsed state if needed by isScenarioSolvent
-            // Or, allow loop to continue to push lapsed rows (current behavior)
-            // For Solver, it's important that `finalLastSolventAge` is accurate.
-        }
+        if (currentAge >= POLICY_TERM_TARGET_AGE && m >= policyDurationMonths) break;
+
     } // End of monthly loop
 
     let finalOverallStatus: MonthlyCalculationInternalResult['finalPolicyStatus'] = 'Completed';
     if (policyIsLapsed) {
         finalOverallStatus = lapseReason;
-    } else if (actualLastProcessedMonth < policyDurationMonths) { // Should not happen if loop completes
-        finalOverallStatus = 'Active'; // Or some other indicator of early termination without lapse
+    } else if (actualLastProcessedMonth < policyDurationMonths) {
+        finalOverallStatus = 'Active';
     }
-    // Ensure finalLastSolventAge is accurate if policy completed without lapsing
+    
     if (!policyIsLapsed && monthlyResults.length > 0) {
-         finalLastSolventAge = monthlyResults[monthlyResults.length -1].age;
+        finalLastSolventAge = monthlyResults[monthlyResults.length - 1].age;
     }
-
 
     return {
         monthlyRows: monthlyResults,
@@ -621,7 +596,7 @@ export function calculateBenefitIllustrationMonthly(
 // เช่น MonthlyCalculationOutputRow มี policyStatusThisMonth
 // และ AnnualCalculationOutputRow (ถ้าต้องการ) อาจจะมี eoySumInsured และ annualPolicyStatus
 
-const ANNUAL_INFLATION_RATE: number = 0.0034; // อัตราเงินเฟ้อ 4% ต่อปี
+//const ANNUAL_INFLATION_RATE: number = 0.0034; // อัตราเงินเฟ้อ 4% ต่อปี พักไว้ก่อนยังไม่ใช้
 
 export function aggregateToAnnual(
     monthlyData: MonthlyCalculationOutputRow[],
@@ -693,16 +668,17 @@ export function aggregateToAnnual(
             // --- LOGIC ใหม่ทั้งหมด ---
             const nominalEoyAccountValue = lastMonthOfYearData.eomValue; // ถ้าต้องการ factor 1.00107 ให้คูณตรงนี้
             
-            const realEoyAccountValue = (ANNUAL_INFLATION_RATE === 0)
-                ? nominalEoyAccountValue
-                : nominalEoyAccountValue / Math.pow(1 + (ANNUAL_INFLATION_RATE / 12), (yearDataPartial.policyYear ?? 1) * 12);
-            
-            yearDataPartial.eoyAccountValue = realEoyAccountValue;
+            // ปรับ แก้ให้ใกล้เคียง mywealth plus ของบริษัทมากขึ้น ----- 
+            //const realEoyAccountValue = (ANNUAL_INFLATION_RATE === 0)
+            //    ? nominalEoyAccountValue
+            //    : nominalEoyAccountValue / Math.pow(1 + (ANNUAL_INFLATION_RATE / 12), (yearDataPartial.policyYear ?? 1) * 12);
+            //---------ยังไม่ใช้พักไปก่อน
+            yearDataPartial.eoyAccountValue = nominalEoyAccountValue;
 
             const nominalSumAssured = yearDataPartial.eoySumInsured ?? 0;
             const hybridDeathBenefit = Math.max(
                 nominalSumAssured * 1.2,
-                realEoyAccountValue * 1.2,
+                nominalEoyAccountValue * 1.2,
                 nominalSumAssured
             );
             yearDataPartial.eoyDeathBenefit = hybridDeathBenefit;
