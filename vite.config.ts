@@ -18,7 +18,8 @@ export default defineConfig({
 
   // --- [เพิ่ม] define object ที่จำเป็น ---
   define: {
-    'process.env': {}
+    'process.env': {},
+    global: {},
   },
 
   // --- ส่วนของ Proxy ที่มีอยู่แล้ว ---

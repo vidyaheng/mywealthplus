@@ -80,12 +80,9 @@ export default function DisplayTable({
 
   return (
     <div className={`overflow-x-auto overflow-y-auto relative ${className || ''} max-h-[600px]`}>
-      <table className="min-w-full border-collapse text-xs"> {/* เพิ่ม text-xs ให้ table เพื่อให้ default */}
-        {/*caption && <caption className="mt-4 text-sm text-muted-foreground">{caption}</caption>*/}
-        <thead className={`sticky top-0 z-10 ${headerCellStickyBg}`}> {/* ทำให้ thead ทั้งก้อน sticky */}
-          {/* <TableRow> เดิมของคุณมีสีพื้นหลังอยู่แล้ว ซึ่งดีครับ */}
+      <table className="min-w-full border-collapse text-xs"> 
+        <thead className={`sticky top-0 z-10 ${headerCellStickyBg}`}> 
           <tr className={`${headerCellStickyBg}`}>
-            {/* --- ปรับ className ของ th --- */}
             <th className={`${thBaseClass} text-center sticky top-0 z-10 ${headerCellStickyBg}`}>ปีที่</th>
             <th className={`${thBaseClass} text-center sticky top-0 z-10 ${headerCellStickyBg}`}>อายุ</th>
             <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>เบี้ยหลัก RPP (บาท)</th>
@@ -116,9 +113,6 @@ export default function DisplayTable({
             )}
             <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>Bonus (บาท)</th>
             <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>มูลค่ากรมธรรม์สิ้นปี (บาท)</th>
-            {/*viewMode === 'full' && (
-                <th className={`${thBaseClass} text-right text-teal-700 sticky top-0 z-10 ${headerCellStickyBg}`}>มูลค่ากรมธรรม์ (ปรับเงินเฟ้อ)</th>
-            )*/}
             {showCsv && (
               <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>มูลค่าเวนคืนสิ้นปี (บาท)</th>
             )}
@@ -126,10 +120,9 @@ export default function DisplayTable({
             <th className={`${thBaseClass} text-right sticky top-0 z-10 ${headerCellStickyBg}`}>เงินถอนปีนี้ (บาท)</th>
           </tr>
         </thead>
-        <tbody className="[&_tr:last-child]:border-0"> {/* เพิ่ม class นี้เพื่อให้เส้นขอบแถวสุดท้ายใน body หายไป (ถ้า footer ไม่มี border-top) */}
+        <tbody className="[&_tr:last-child]:border-0">
           {data.map((row) => (
             <tr key={row.policyYear} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-              {/* --- ปรับ className ของ td --- */}
               <td className={`${tdBaseClass} text-center font-medium`}>{row.policyYear}</td>
               <td className={`${tdBaseClass} text-center`}>{row.age}</td>
               <td className={`${tdBaseClass} text-right`}>{formatNumber(row.premiumRPPYear)}</td>
@@ -160,9 +153,6 @@ export default function DisplayTable({
               )}
               <td className={`${tdBaseClass} text-right text-green-600`}>{formatNumber(row.royaltyBonusYear)}</td>
               <td className={`${tdBaseClass} text-right font-semibold`}>{formatNumber(row.eoyAccountValue)}</td>
-              {/*viewMode === 'full' && (
-                    <td className={`${tdBaseClass} text-right text-teal-700`}>{formatNumber(row.eoyInflationAdjustedValue)}</td>
-                )*/}
               {showCsv && (
                 <td className={`${tdBaseClass} text-right`}>{formatNumber(row.eoyCashSurrenderValue)}</td>
               )}
@@ -171,7 +161,7 @@ export default function DisplayTable({
             </tr>
           ))}
         </tbody>
-        <tfoot className="border-t"> {/* เพิ่ม border-t ให้ tfoot */}
+        <tfoot className="border-t">
           <tr className={`${footerCellStickyBg} font-semibold`}>
             
             <td className={`${tdBaseClass} text-center font-semibold`}>รวม</td>
@@ -204,9 +194,6 @@ export default function DisplayTable({
             )}
             <td className={`${tdBaseClass} text-right text-green-600`}>{formatNumber(totals.royaltyBonusYear)}</td>
             <td className={`${tdBaseClass} text-right font-semibold`}>-</td>
-            {/*viewMode === 'full' && (
-                    <td className={`${tdBaseClass} text-right`}>-</td>
-                )*/}
             {showCsv && (
               <td className={`${tdBaseClass} text-right`}>-</td>
             )}
