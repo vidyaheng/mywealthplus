@@ -84,9 +84,38 @@ const styles = StyleSheet.create({
     width: '33.33%', 
     padding: '4px 0' 
   },
+  dataGridItemHalf: {
+      width: '50%',
+      padding: '4px 0'
+  },
+  dataSubHeader: {
+      fontSize: 11,
+      fontWeight: 'bold',
+      color: '#1e3a8a',
+      marginBottom: 6,
+  },
+  hr: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0', // สีเทาอ่อนๆ
+    borderBottomStyle: 'solid',
+    marginVertical: 10, // เพิ่มระยะห่างบน-ล่าง
+},
   dataLabel: { 
     color: '#475569' 
   },
+
+  legendContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'center', // จัดให้อยู่กลาง
+    gap: 20, // ระยะห่างระหว่างแต่ละรายการ
+    marginTop: 8,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 4,
+    backgroundColor: '#f8fafc'
+},
   
   // KPI Cards
   kpiContainer: { 
@@ -123,12 +152,14 @@ const styles = StyleSheet.create({
   // Table
   table: { 
     width: '100%', 
-    borderWidth: 1, 
-    borderColor: '#e2e8f0', 
+    //borderWidth: 1, 
+    //borderColor: '#e2e8f0', 
     borderStyle: 'solid' 
   },
   tableRow: { 
-    flexDirection: 'row' 
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
   },
   tableColHeader: { 
     backgroundColor: '#f1f5f9', 
@@ -147,7 +178,12 @@ const styles = StyleSheet.create({
     borderRightColor: '#e2e8f0' 
   },
   // Column Widths
-  colYear: { width: '12%', textAlign: 'center' },
+  colYear: { 
+    width: '12%', 
+    textAlign: 'center',
+    borderLeftWidth: 1,
+    borderLeftColor: '#e2e8f0'
+  },
   colAge: { width: '12%', textAlign: 'center' },
   colPremium: { width: '26%' },
   colCashValue: { width: '25%' },
@@ -203,10 +239,17 @@ const PageHeader = () => (
     </View>
 );
 
-const PageFooter = ({ pageNumber }: { pageNumber: number }) => (
-    <Text style={styles.footer} render={({ totalPages }) => (
-        `เอกสารฉบับนี้เป็นเพียงภาพประกอบเท่านั้น | จัดทำ ณ วันที่ ${formatDate(new Date())} | หน้า ${pageNumber} / ${totalPages}`
+const PageFooter = () => (
+    <Text style={styles.footer} render={({ pageNumber, totalPages }) => (
+        `เอกสารฉบับนี้เพื่อประกอบการเสนอขายเท่านั้น | จัดทำ ณ วันที่ ${formatDate(new Date())} | หน้า ${pageNumber} / ${totalPages} `
     )} fixed />
+);
+
+const LegendItem = ({ color, text }: { color: string, text: string }) => (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ width: 10, height: 10, backgroundColor: color, marginRight: 8 }} />
+        <Text style={{ fontSize: 9 }}>{text}</Text>
+    </View>
 );
 
 const KPICard = ({ title, value, unit = '', description = '' }: { title: string, value: string | number, unit?: string, description?: string }) => (
@@ -226,12 +269,12 @@ const ReportTable = ({ data }: { data: AnnualCalculationOutputRow[] }) => (
     <View style={styles.table}>
         {/* Table Header */}
         <View style={styles.tableRow} fixed>
-            <View style={[styles.tableColHeader, styles.colYear]}><Text>สิ้นปีกรมธรรม์</Text></View>
-            <View style={[styles.tableColHeader, styles.colAge]}><Text>อายุ</Text></View>
+            <View style={[styles.tableColHeader, styles.colYear, { borderTopWidth: 1, borderTopColor: '#e2e8f0' }]}><Text>ปีที่</Text></View>
+            <View style={[styles.tableColHeader, styles.colAge, { borderTopWidth: 1, borderTopColor: '#e2e8f0' }]}><Text>อายุ</Text></View>
             {/* 1. เปลี่ยนหัวตาราง */}
-            <View style={[styles.tableColHeader, styles.colPremium]}><Text>เบี้ยประกันรายปี</Text></View>
-            <View style={[styles.tableColHeader, styles.colCashValue]}><Text>มูลค่าเวนคืน</Text></View>
-            <View style={[styles.tableColHeader, styles.colDeathBenefit, styles.lastCol]}><Text>ความคุ้มครองชีวิต</Text></View>
+            <View style={[styles.tableColHeader, styles.colPremium, { borderTopWidth: 1, borderTopColor: '#e2e8f0' }]}><Text>เบี้ยประกันรายปี</Text></View>
+            <View style={[styles.tableColHeader, styles.colCashValue, { borderTopWidth: 1, borderTopColor: '#e2e8f0' }]}><Text>มูลค่าเวนคืน</Text></View>
+            <View style={[styles.tableColHeader, styles.colDeathBenefit, { borderTopWidth: 1, borderTopColor: '#e2e8f0' }]}><Text>ความคุ้มครองชีวิต</Text></View>
         </View>
 
         {/* Table Body */}
@@ -242,7 +285,7 @@ const ReportTable = ({ data }: { data: AnnualCalculationOutputRow[] }) => (
                  {/* 2. แสดงเบี้ยประกันของปีนั้นๆ (ต้องมี totalPremiumYear ใน object ของ data) */}
                  <View style={[styles.tableCol, styles.colPremium]}><Text>{formatNum(row.totalPremiumYear)}</Text></View>
                  <View style={[styles.tableCol, styles.colCashValue]}><Text>{formatNum(row.eoyCashSurrenderValue)}</Text></View>
-                 <View style={[styles.tableCol, styles.colDeathBenefit, styles.lastCol]}><Text>{formatNum(row.eoyDeathBenefit)}</Text></View>
+                 <View style={[styles.tableCol, styles.colDeathBenefit]}><Text>{formatNum(row.eoyDeathBenefit)}</Text></View>
             </View>
         ))}
     </View>
@@ -268,7 +311,7 @@ export const ReportDocument: React.FC<ReportDocumentProps> = (props) => {
     let pageCount = 2; // เริ่มที่ 2 หน้า (สรุป, ตาราง)
     if (chartImage) pageCount++;
     
-    let currentPage = 1;
+    //let currentPage = 1;
 
     console.log('CHECKING DATA FOR PDF TABLE:', result.annual);
 
@@ -279,7 +322,7 @@ export const ReportDocument: React.FC<ReportDocumentProps> = (props) => {
                 <PageHeader />
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>บทสรุปสำหรับผู้เอาประกัน</Text>
+                    <Text style={styles.sectionTitle}>บทสรุปสำหรับผู้เอาประกัน </Text>
                     <Text style={styles.summaryText}>
                         แผนประกันควบการลงทุน iWealthy นี้ถูกคาดการณ์ว่าจะสามารถสร้าง
                         <Text style={styles.bold}> อัตราผลตอบแทนทบต้นที่แท้จริง (MIRR) ที่ {(investmentOnlyMIRR !== null ? (investmentOnlyMIRR * 100).toFixed(2) : '-')} % ต่อปี </Text>
@@ -289,22 +332,45 @@ export const ReportDocument: React.FC<ReportDocumentProps> = (props) => {
                         <Text style={styles.bold}> {formatNum(metrics.finalFundValue)} บาท</Text>. 
                         พร้อมความคุ้มครองชีวิตสูงสุด
                         <Text style={styles.bold}> {formatNum(maxDB?.amount)} บาท </Text>
-                        (ณ อายุ {maxDB?.age} ปี) แผนนี้จึงเป็นทางเลือกที่น่าสนใจสำหรับการสร้างความมั่งคั่งระยะยาวควบคู่กับความคุ้มครองชีวิตที่มั่นคง
+                        (ณ อายุ {maxDB?.age} ปี) แผนนี้จึงเป็นทางเลือกที่น่าสนใจสำหรับการสร้างความมั่งคั่งระยะยาวควบคู่กับความคุ้มครองชีวิตที่มั่นคง 
                     </Text>
                 </View>
 
                 <View style={styles.section}>
-                     <Text style={styles.sectionTitle}>ข้อมูลแผนประกัน</Text>
-                     <View style={styles.dataBox}>
+                    <Text style={styles.sectionTitle}>ข้อมูลเบื้องต้นสำหรับแผน iWealthy </Text>
+                    <View style={styles.dataBox}>
+
+                        {/* --- กลุ่มย่อย: ข้อมูลผู้เอาประกัน --- */}
+                        <Text style={styles.dataSubHeader}>ข้อมูลผู้เอาประกัน </Text>
                         <View style={styles.dataGrid}>
-                            <View style={styles.dataGridItem}><Text><Text style={styles.dataLabel}>อายุ:</Text> {iWealthyAge} ปี</Text></View>
-                            <View style={styles.dataGridItem}><Text><Text style={styles.dataLabel}>เพศ:</Text> {iWealthyGender === 'male' ? 'ชาย' : 'หญิง'}</Text></View>
-                            <View style={styles.dataGridItem}><Text><Text style={styles.dataLabel}>ผลตอบแทนคาดหวัง:</Text> {iWealthyInvestmentReturn}%</Text></View>
-                            <View style={styles.dataGridItem}><Text><Text style={styles.dataLabel}>เบี้ยประกันรวม/ปี:</Text> {formatNum(totalAnnualPremium)} บาท</Text></View>
-                            <View style={styles.dataGridItem}><Text><Text style={styles.dataLabel}>คุ้มครองเริ่มต้น:</Text> {formatNum(initialDB)} บาท</Text></View>
-                            <View style={styles.dataGridItem}><Text><Text style={styles.dataLabel}>คุ้มครองสูงสุด:</Text> {formatNum(maxDB?.amount)} บาท</Text></View>
+                            <View style={styles.dataGridItemHalf}>
+                                <Text><Text style={styles.dataLabel}>อายุ:</Text> {iWealthyAge} ปี</Text>
+                            </View>
+                            <View style={styles.dataGridItemHalf}>
+                                <Text><Text style={styles.dataLabel}>เพศ:</Text> {iWealthyGender === 'male' ? 'ชาย' : 'หญิง'}</Text>
+                            </View>
                         </View>
-                     </View>
+
+                        <View style={styles.hr} />
+
+                        {/* --- กลุ่มย่อย: ข้อมูลแผนประกัน (ใส่ style เพื่อเพิ่มระยะห่าง) --- */}
+                        <Text style={[styles.dataSubHeader, { marginTop: 2 }]}>ข้อมูลแผนประกัน </Text>
+                        <View style={styles.dataGrid}>
+                            <View style={styles.dataGridItemHalf}>
+                                <Text><Text style={styles.dataLabel}>ผลตอบแทนคาดหวัง:</Text> {iWealthyInvestmentReturn}%</Text>
+                            </View>
+                            <View style={styles.dataGridItemHalf}>
+                                <Text><Text style={styles.dataLabel}>เบี้ยประกันรวม/ปี:</Text> {formatNum(totalAnnualPremium)} บาท</Text>
+                            </View>
+                            <View style={styles.dataGridItemHalf}>
+                                <Text><Text style={styles.dataLabel}>ความคุ้มครองเริ่มต้น:</Text> {formatNum(initialDB)} บาท</Text>
+                            </View>
+                            <View style={styles.dataGridItemHalf}>
+                                <Text><Text style={styles.dataLabel}>ความคุ้มครองสูงสุด:</Text> {formatNum(maxDB?.amount)} บาท</Text>
+                            </View>
+                        </View>
+
+                    </View>
                 </View>
 
                 <View style={styles.section}>
@@ -349,7 +415,7 @@ export const ReportDocument: React.FC<ReportDocumentProps> = (props) => {
                     </View>
                 </View>
                 
-                <PageFooter pageNumber={currentPage++} />
+                <PageFooter />
             </Page>
 
             {/* Page 2: Chart */}
@@ -360,8 +426,17 @@ export const ReportDocument: React.FC<ReportDocumentProps> = (props) => {
                         <Text style={styles.sectionTitle}>การวิเคราะห์แนวโน้มผลประโยชน์</Text>
                         <Text style={{marginBottom: 10, lineHeight: 1.5}}>กราฟแสดงความสัมพันธ์ระหว่างเบี้ยประกันภัยสะสม, มูลค่าบัญชีกรมธรรม์, และความคุ้มครองชีวิตตลอดระยะเวลาของกรมธรรม์ เพื่อให้เห็นภาพรวมการเติบโตของมูลค่าการลงทุนและความคุ้มครอง</Text>
                         <Image src={chartImage} style={styles.chartImage} />
+
+                        {/* --- เพิ่มโค้ดส่วนนี้เข้าไปใต้กราฟ --- */}
+                        <View style={styles.legendContainer}>
+                            <LegendItem color="#F5A623" text="มูลค่ากรมธรรม์" />
+                            <LegendItem color="#3b87eb" text="ความคุ้มครองชีวิต" />
+                            <LegendItem color="#22c55e" text="เบี้ยประกันสะสม" />
+                        </View>
+                        {/* ----------------------------------- */}
+
                     </View>
-                    <PageFooter pageNumber={currentPage++} />
+                    <PageFooter />
                 </Page>
             )}
 
@@ -372,7 +447,7 @@ export const ReportDocument: React.FC<ReportDocumentProps> = (props) => {
                     <Text style={styles.sectionTitle}>ตารางแสดงผลประโยชน์รายปี</Text>
                     <ReportTable data={result.annual} />
                 </View>
-                <PageFooter pageNumber={currentPage++} />
+                <PageFooter />
             </Page>
 
         </Document>

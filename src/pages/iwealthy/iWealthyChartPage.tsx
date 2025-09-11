@@ -18,9 +18,11 @@ interface IWealthyChartPageProps {
   chartRefForCapture?: React.Ref<HTMLDivElement>;
   isCaptureMode?: boolean;
   captureHeight?: string | number; // <--- มีอยู่แล้ว ถูกต้อง
+  captureAge?: number;
+  hoveredMirr?: string;
 }
 
-export default function IWealthyChartPage({ chartRefForCapture, isCaptureMode = false, captureHeight }: IWealthyChartPageProps) {
+export default function IWealthyChartPage({ chartRefForCapture, isCaptureMode = false, captureHeight, captureAge, hoveredMirr }: IWealthyChartPageProps) {
     // --- ดึง State และ Actions จาก Store (เหมือนเดิม) ---
     const {
         iWealthyResult, iWealthyIsLoading, iWealthyRpp, iWealthyRtu,
@@ -151,8 +153,10 @@ export default function IWealthyChartPage({ chartRefForCapture, isCaptureMode = 
                         showPremiumCumulative={showPremiumCumulative}
                         onAgeChange={handleGraphAgeChange}
                         hoveredAge={currentAgeForInfoBox}
-                        hoveredMirr={hoveredMirrValue}
+                        //hoveredMirr={hoveredMirrValue}
                         mirrData={annualMIRRData}
+                        captureAge={captureAge}  
+                        hoveredMirr={hoveredMirr}                      
                     />
                 </div>
             ) : (

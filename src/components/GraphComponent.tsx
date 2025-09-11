@@ -110,6 +110,7 @@ interface GraphProps {
     hoveredMirr?: string;
     mirrData?: Map<number, number | null> | null;
     CustomTooltipComponent?: React.ElementType;
+    captureAge?: number;
 }
 
 const Graph = forwardRef<HTMLDivElement, GraphProps>(({
@@ -122,6 +123,7 @@ const Graph = forwardRef<HTMLDivElement, GraphProps>(({
     onAgeChange, 
     hoveredAge,
     hoveredMirr,
+    captureAge,
     //mirrData,
     //CustomTooltipComponent,
 }, ref) => { 
@@ -200,6 +202,8 @@ const Graph = forwardRef<HTMLDivElement, GraphProps>(({
     onAgeChange(undefined); // เปลี่ยนจาก NaN
 }, [setHoveredData, onAgeChange]);
 
+    const activeAge = captureAge !== undefined ? captureAge : hoveredAge;
+
     return (
         <ResponsiveContainer width="100%" height="100%" ref={ref}>
             <LineChart
@@ -216,9 +220,9 @@ const Graph = forwardRef<HTMLDivElement, GraphProps>(({
                          cursor={{ stroke: 'rgba(100, 100, 100, 0.4)', strokeWidth: 1, strokeDasharray: '3 3' }} />
 
                 {/* ReferenceLine สำหรับ Hovered Age และ MIRR */}
-                {hoveredAge !== undefined && !isNaN(hoveredAge) && ( // <--- เพิ่มเงื่อนไข !isNaN(hoveredAge)
-                    <ReferenceLine x={hoveredAge} stroke="#64748b" strokeDasharray="3 3"
-                        label={<CustomHoverLabel age={hoveredAge} mirr={hoveredMirr} />}
+                {activeAge !== undefined && !isNaN(activeAge) && ( // <--- เพิ่มเงื่อนไข !isNaN(hoveredAge)
+                    <ReferenceLine x={activeAge} stroke="#64748b" strokeDasharray="3 3"
+                        label={<CustomHoverLabel age={activeAge} mirr={hoveredMirr} />}
                     />
                 )}
 

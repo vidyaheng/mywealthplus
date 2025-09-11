@@ -89,6 +89,8 @@ export const IWealthyReportPage = () => {
                     chartRefForCapture={chartContainerRef} // <--- ส่ง ref ให้ IWealthyChartPage
                     isCaptureMode={true} // <--- บอก IWealthyChartPage ว่านี่คือโหมด capture ให้ซ่อน Control Box
                     captureHeight="300px"
+                    captureAge={70}
+                    hoveredMirr={investmentOnlyMIRR !== null ? `${(investmentOnlyMIRR * 100).toFixed(2)}%` : 'N/A'}
                 />
             </div>
 
@@ -155,29 +157,64 @@ export const IWealthyReportPage = () => {
                 {/* --- 3. ข้อมูลเบื้องต้นสำหรับแผน iWealthy (Layout ใหม่) --- */}
                 <section className="mt-6">
                     <h2 className="text-xl font-semibold text-sky-800 border-l-4 border-sky-800 pl-3 mb-3">ข้อมูลเบื้องต้นสำหรับแผน iWealthy</h2>
-                    <div className="flex flex-col gap-2 text-sm p-4 bg-slate-50 rounded-md">
-                        
-                        {/* --- แถวที่ 1 --- */}
-                        <div className="grid grid-cols-3 gap-4">
-                            <div><strong className="text-slate-600">อายุผู้เอาประกัน:</strong> {iWealthyAge} ปี</div>
-                            <div><strong className="text-slate-600">เพศ:</strong> {iWealthyGender === 'male' ? 'ชาย' : 'หญิง'}</div>
-                            <div><strong className="text-slate-600">ผลตอบแทนคาดหวัง:</strong> {iWealthyInvestmentReturn}% ต่อปี</div>
+                    
+                    {/* === กล่องข้อมูลหลัก === */}
+                    <div className="flex flex-col gap-3 text-sm p-4 bg-slate-50 rounded-md">
+
+                        {/* --- กลุ่มที่ 1: ข้อมูลผู้เอาประกัน --- */}
+                        <div>
+                            <p className="font-semibold text-sky-800 mb-2">ข้อมูลผู้เอาประกัน</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+                                <div>
+                                    <div>
+                                    <strong className="text-slate-600 font-medium">อายุผู้เอาประกัน:</strong>
+                                    {' '}
+                                    <span className="text-blue-800 font-semibold">{iWealthyAge}</span>
+                                    {' '}
+                                    ปี
+                                    </div>
+                                </div>
+                                <div>
+                                    <strong className="text-slate-600 font-medium">เพศ:</strong> 
+                                    {' '}
+                                    <span className="text-blue-800 font-semibold">{iWealthyGender === 'male' ? 'ชาย' : 'หญิง'}</span>
+                                    {' '}
+                                </div>
+                            </div>
                         </div>
 
-                        {/* --- แถวที่ 2 --- */}
-                        <div className="grid grid-cols-3 gap-4 pt-2 border-t border-slate-200">
-                            <div>
-                                <strong className="text-slate-600">เบี้ยประกันรวม (ต่อปี):</strong> 
-                                {(iWealthyRpp + iWealthyRtu).toLocaleString()} บาท
-                            </div>
-                            <div>
-                                <strong className="text-slate-600">ความคุ้มครองเริ่มต้น:</strong> 
-                                {initialDB?.toLocaleString() ?? '0'} บาท
-                            </div>
-                            <div>
-                                <strong className="text-slate-600">ความคุ้มครองสูงสุด:</strong> 
-                                {maxDB?.amount.toLocaleString('en-US', { maximumFractionDigits: 0 }) ?? '0'} บาท
-                                <div className="text-slate-500 text-xs">(ณ อายุ {maxDB?.age} ปี)</div>
+                        {/* --- เส้นคั่น --- */}
+                        <div className="border-t border-slate-200"></div>
+
+                        {/* --- กลุ่มที่ 2: ข้อมูลแผนประกัน --- */}
+                        <div>
+                            <p className="font-semibold text-sky-800 mb-2">ข้อมูลแผนประกัน</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+                                <div>
+                                    <strong className="text-slate-600 font-medium">ผลตอบแทนคาดหวัง:</strong>
+                                    {' '}
+                                    <span className="text-blue-800 font-semibold">{iWealthyInvestmentReturn}% </span> ต่อปี 
+                                    {' '}
+                                </div>
+                                <div>
+                                    <strong className="text-slate-600 font-medium">เบี้ยประกันรวม (ต่อปี):</strong> 
+                                    {' '}
+                                    <span className="text-blue-800 font-semibold">{(iWealthyRpp + iWealthyRtu).toLocaleString()} </span> บาท 
+                                    {' '}
+                                </div>
+                                <div>
+                                    <strong className="text-slate-600 font-medium">ความคุ้มครองเริ่มต้น:</strong> 
+                                    {' '}
+                                    <span className="text-blue-800 font-semibold">{initialDB?.toLocaleString() ?? '0'} </span> บาท 
+                                    {' '}
+                                </div>
+                                <div>
+                                    <strong className="text-slate-600 font-medium">ความคุ้มครองสูงสุด:</strong> 
+                                    {' '}
+                                    <span className="text-blue-800 font-semibold">{maxDB?.amount.toLocaleString('en-US', { maximumFractionDigits: 0 }) ?? '0'} </span> บาท 
+                                    {' '}
+                                    <div className="text-slate-500 text-xs">(ณ อายุ {maxDB?.age} ปี)</div>
+                                </div>
                             </div>
                         </div>
 
