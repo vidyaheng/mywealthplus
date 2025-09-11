@@ -377,40 +377,40 @@ export const ReportDocument: React.FC<ReportDocumentProps> = (props) => {
                     <Text style={styles.sectionTitle}>ตัวชี้วัดทางการเงิน (Financial KPIs)</Text>
                     <View style={styles.kpiContainer}>
                         <KPICard 
-                            title="MIRR (ผลตอบแทนทบต้นที่แท้จริง)" 
+                            title="MIRR (ผลตอบแทนทบต้นที่แท้จริง) " 
                             value={investmentOnlyMIRR !== null ? (investmentOnlyMIRR * 100).toFixed(2) : 'N/A'} 
                             unit="%" 
-                            description="ผลตอบแทนส่วนลงทุน (BTID) ต่อปี"
+                            description="ผลตอบแทนส่วนลงทุน (BTID) ต่อปี "
                         />
                          <KPICard 
-                            title="จุดคุ้มทุน (Breakeven Point)" 
+                            title="จุดคุ้มทุน (Breakeven Point) " 
                             value={metrics.breakEvenYear ?? 'ไม่พบ'} 
                             unit={metrics.breakEvenYear ? `ปีที่ (อายุ ${metrics.breakEvenAge})` : ''}
-                            description="มูลค่าเวนคืน ≥ เบี้ยสะสม"
+                            description="มูลค่าเวนคืน ≥ เบี้ยสะสม "
                         />
                          <KPICard 
-                            title="เบี้ยประกันที่ชำระทั้งหมด" 
+                            title="เบี้ยประกันที่ชำระทั้งหมด " 
                             value={formatNum(metrics.totalPremiumsPaid)}
                             unit="บาท"
-                            description="ตลอดอายุสัญญา"
+                            description="ตลอดอายุสัญญา "
                         />
                          <KPICard 
-                            title="ผลประโยชน์รวมตลอดสัญญา" 
+                            title="ผลประโยชน์รวมตลอดสัญญา " 
                             value={formatNum(totalBenefit)}
                             unit="บาท"
-                            description="มูลค่าสิ้นสุด + เงินถอนรวม"
+                            description="มูลค่าสิ้นสุด + เงินถอนรวม "
                         />
                          <KPICard 
-                            title="ROI (ผลตอบแทนจากการลงทุน)" 
+                            title="ROI (ผลตอบแทนจากการลงทุน) " 
                             value={investmentOnlyROI !== null ? investmentOnlyROI.toFixed(2) : 'N/A'}
                             unit="%"
-                            description="กำไรส่วนลงทุน (BTID) / เงินลงทุน"
+                            description="กำไรส่วนลงทุน (BTID) / เงินลงทุน "
                         />
                          <KPICard 
-                            title="PI (ดัชนีกำไร)" 
+                            title="PI (ดัชนีกำไร) " 
                             value={investmentOnlyPI !== null ? investmentOnlyPI.toFixed(2) : 'N/A'}
                             unit="เท่า"
-                            description="PV เงินเข้า / PV เงินออก"
+                            description="PV เงินเข้า / PV เงินออก "
                         />
                     </View>
                 </View>
