@@ -109,6 +109,8 @@ export const IWealthyReportPage = () => {
                                 investmentOnlyPI={investmentOnlyPI}
                                 chartImage={chartImage}
                                 totalWithdrawals={totalWithdrawals ?? null} 
+                                iWealthyRpp={iWealthyRpp}
+                                iWealthyRtu={iWealthyRtu}
                             />
                         }
                         fileName={`iWealthy-Report-${new Date().toISOString().slice(0,10)}.pdf`}
