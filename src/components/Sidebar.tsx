@@ -1,6 +1,8 @@
 // components/Sidebar.tsx
 import React from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useAppStore } from '../stores/appStore';
+import { FaSignOutAlt } from "react-icons/fa";
 
 interface TabItem {
   name: string;
@@ -66,6 +68,7 @@ const SmartNavLink: React.FC<{
   };
 
   const isActive = checkActive();
+  
 
   return (
     <NavLink
@@ -90,6 +93,13 @@ const SmartNavLink: React.FC<{
 };
 
 const Sidebar: React.FC = () => {
+  const setPin = useAppStore((state) => state.setPin);
+
+  const handleLogout = () => {
+      if (window.confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
+          setPin(null);
+      }
+  };
   return (
     <div className="relative w-16 hover:w-28 transition-all bg-white h-full overflow-hidden group">
       <div className="absolute right-0 top-0 bottom-0 w-px bg-gray-300"></div>
@@ -119,6 +129,21 @@ const Sidebar: React.FC = () => {
             </div>
           </SmartNavLink>
         ))}
+        <div className="mt-auto pb-2">
+            <button
+                onClick={handleLogout}
+                className="relative flex items-center w-full h-12 px-3 py-2 rounded-tl-md rounded-bl-md text-sm font-medium transition-colors overflow-hidden text-gray-400 hover:bg-red-50 hover:text-red-700"
+            >
+                <div className="flex items-center justify-center w-full">
+                    <div className="group-hover:hidden flex items-center justify-center w-full h-full">
+                        <FaSignOutAlt className="h-6 w-6" />
+                    </div>
+                    <div className="hidden group-hover:block text-xs truncate whitespace-nowrap">
+                        ออกจากระบบ
+                    </div>
+                </div>
+            </button>
+        </div>
       </div>
     </div>
   );

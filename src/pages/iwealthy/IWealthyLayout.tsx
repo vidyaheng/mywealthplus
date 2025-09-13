@@ -14,12 +14,16 @@ import ReduceSumInsuredModal from '../../components/ReduceSumInsuredModal';
 import WithdrawalPlanModal from '../../components/WithdrawalPlanModal';
 import ChangeFrequencyModal from '../../components/ChangeFrequencyModal';
 import AddInvestmentModal from '../../components/AddInvestmentModal';
+import SaveRecordModal from '../../components/SaveRecordModal';
+import LoadRecordModal from '../../components/LoadRecordModal';
+import { calculateLifeCoverage } from '../../lib/calculations';
 
 
 // Import Components อื่นๆ
 import TopButtons from "../../components/TopButtons"; 
 import InvestmentReturnInput from "../../components/InvestmentReturnInput";
 import { Button } from '@/components/ui/button';
+import { FaSave, FaFolderOpen } from 'react-icons/fa';
 
 const iWealthyTabs = [
     { label: "กรอกข้อมูล", path: "/iwealthy/form" },
@@ -34,12 +38,15 @@ export default function IWealthyLayout() {
 
   // ดึงทุกอย่างที่ต้องใช้มาจาก Zustand Store
   const {
+    pin, openSaveModal, openLoadModal,
     runIWealthyCalculation, iWealthyIsLoading,
     iWealthyInvestmentReturn, setIWealthyInvestmentReturn,
     iWealthyPausePeriods, iWealthySumInsuredReductions, iWealthyWithdrawalPlan,
     iWealthyFrequencyChanges, iWealthyAdditionalInvestments,
     openPauseModal, openReduceModal, openWithdrawalModal, 
     openChangeFreqModal, openAddInvestmentModal,iWealthyReductionsNeedReview,
+    iWealthyAge, iWealthyGender, iWealthyPaymentFrequency,
+    iWealthyRpp, iWealthyRtu, iWealthySumInsured,
   } = useAppStore();
 
   const activeActions = useMemo(() => ({
@@ -73,6 +80,45 @@ export default function IWealthyLayout() {
     // ถ้าไม่ได้มาจากหน้าฟอร์ม (เช่น กดคำนวณซ้ำจากหน้าตาราง/กราฟ) ก็ไม่ต้องทำอะไร
   }, [location.pathname, runIWealthyCalculation, navigate]);
 
+  const executeSave = async (recordName: string) => {
+    if (!pin) {
+        alert('เกิดข้อผิดพลาด: ไม่พบข้อมูลผู้ใช้งาน (PIN)');
+        return;
+    }
+    const lifeCoverage = calculateLifeCoverage(iWealthySumInsured);
+    const totalAnnualPremium = (iWealthyRpp || 0) + (iWealthyRtu || 0);
+    const dataToSave = {
+        age: iWealthyAge,
+        gender: iWealthyGender,
+        paymentFrequency: iWealthyPaymentFrequency,
+        rpp: iWealthyRpp,
+        rtu: iWealthyRtu,
+        sumInsured: iWealthySumInsured,
+        sumInsuredReductions: iWealthySumInsuredReductions,
+        lifeCoverage: lifeCoverage,
+        totalAnnualPremium: totalAnnualPremium,
+    };
+    try {
+        const response = await fetch('/api/save-project', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pin,
+                projectName: 'iWealthy',
+                recordName, // <-- จุดสำคัญที่สุด! ตรวจสอบว่ามีบรรทัดนี้
+                data: dataToSave,
+            }),
+        });
+        const result = await response.json();
+        if (response.ok) {
+            alert('🎉 บันทึกข้อมูลสำเร็จ!');
+        } else {
+            alert(`❌ เกิดข้อผิดพลาดในการบันทึก: ${result.error}`);
+        }
+    } catch (error) {
+        alert('❌ ไม่สามารถเชื่อมต่อกับ Server ได้');
+    }
+  };
 
   return (
     <div className="flex flex-col h-auto -mt-2">
@@ -118,20 +164,31 @@ export default function IWealthyLayout() {
             </Routes>
         </div>
 
-        {/* ส่วนปุ่มคำนวณ */}
-        <div className="flex justify-end mr-6 px-4 py-2 bg-blue-50">
-            {/* +++ จุดที่แก้ไข: เปลี่ยน onClick ให้เรียก Handler ตัวใหม่ +++ */}
-            <Button size="lg" onClick={handleCalculateClick} disabled={iWealthyIsLoading} className="bg-blue-800 hover:bg-blue-600 text-lg font-semibold py-2 px-4 mr-4">
-                {iWealthyIsLoading ? 'กำลังคำนวณ...' : 'คำนวณ'}
-            </Button>
-        </div>
+        <div className="flex justify-between items-center px-6 py-2 bg-blue-50 border-t border-gray-200">
+            <div className="flex gap-2">
+                <Button variant="outline" size="lg" onClick={openSaveModal} className="text-green-700 border-green-700 hover:bg-green-50 hover:text-green-800 font-semibold py-2 px-4">
+                    <FaSave className="mr-2" />
+                    บันทึกข้อมูล
+                </Button>
+                <Button variant="outline" size="lg" onClick={openLoadModal} className="text-blue-700 border-blue-700 ...">
+                    <FaFolderOpen className="mr-2" />
+                    โหลดข้อมูล
+                </Button>
+            </div>
 
-        {/* Render Modals ทั้งหมดไว้ที่นี่ */}
-        <PausePremiumModal />
-        <ReduceSumInsuredModal />
-        <WithdrawalPlanModal />
-        <ChangeFrequencyModal />
-        <AddInvestmentModal />
-    </div>
-  );
+                {/* ปุ่มคำนวณ (ชิดขวา) */}
+                <Button size="lg" onClick={handleCalculateClick} disabled={iWealthyIsLoading} className="bg-blue-800 hover:bg-blue-600 text-lg font-semibold py-2 px-4">
+                    {iWealthyIsLoading ? 'กำลังคำนวณ...' : 'คำนวณ'}
+                </Button>
+                
+        </div>
+            <PausePremiumModal />
+            <ReduceSumInsuredModal />
+            <WithdrawalPlanModal />
+            <ChangeFrequencyModal />
+            <AddInvestmentModal />
+            <SaveRecordModal onConfirmSave={executeSave} />
+            <LoadRecordModal />
+        </div>
+    );
 }

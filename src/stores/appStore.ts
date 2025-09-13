@@ -44,6 +44,15 @@ import type { CiPlanSelections, AnnualCiOutputRow, PolicyOriginMode as CiPolicyO
 
 // --- INTERFACE DEFINITIONS ---
 
+export type SavedRecord = {
+  _id: string;
+  recordName: string;
+  projectName: string;
+  pin: string;
+  createdAt: string;
+};
+
+
 // 1. Interface สำหรับ LTHC
 interface LthcState {
   policyholderEntryAge: number;
@@ -145,6 +154,9 @@ export interface IWealthyState {
   annualMIRRData: Map<number, number | null> | null;
   initialDB: number | null;
   maxDB: { amount: number; age: number } | null;
+  savedRecords: SavedRecord[];
+  setSavedRecords: (records: SavedRecord[]) => void;
+  loadIWealthyState: (data: any) => void;
   setIWealthyAge: (age: number) => void;
   setIWealthyGender: (gender: Gender) => void;
   setIWealthyPaymentFrequency: (freq: PaymentFrequency) => void;
@@ -169,6 +181,8 @@ interface IWealthyUIState {
   isWithdrawalModalOpen: boolean;
   isChangeFreqModalOpen: boolean;
   isAddInvestmentModalOpen: boolean;
+  isSaveModalOpen: boolean;
+  isLoadModalOpen: boolean;
   openPauseModal: () => void;
   closePauseModal: () => void;
   openReduceModal: () => void;
@@ -179,6 +193,10 @@ interface IWealthyUIState {
   closeChangeFreqModal: () => void;
   openAddInvestmentModal: () => void;
   closeAddInvestmentModal: () => void;
+  openSaveModal: () => void;
+  closeSaveModal: () => void;
+  openLoadModal: () => void;
+  closeLoadModal: () => void;
 }
 
 // 4. Interface สำหรับ CI Planner
@@ -226,6 +244,13 @@ interface CIPlannerState {
     runCiCalculation: () => Promise<void>;
 }
 
+interface AuthState {
+  pin: string | null;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  setPin: (pin: string | null) => void;
+}
+
 // --- Helper Function (สำหรับใช้ภายใน Store) ---
 
 const ageToPolicyYear = (age: number, entryAge: number) => Math.max(1, age - entryAge + 1);
@@ -255,7 +280,7 @@ const adjustReductions = (rpp: number, reductions: SumInsuredReductionRecord[]):
 
 
 // --- ZUSTAND STORE CREATION ---
-export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & CIPlannerState>((set, get) => ({
+export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & CIPlannerState & AuthState>((set, get) => ({
     // ===================================================================
     // SECTION 1: LTHC State & Actions (UPDATED)
     // ===================================================================
@@ -655,6 +680,19 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
             set({ iWealthyError: errorMessage, iWealthyIsLoading: false });
         }
     },
+    savedRecords: [],
+    setSavedRecords: (records) => set({ savedRecords: records }),
+    loadIWealthyState: (data) => {
+        set({
+            iWealthyAge: data.age,
+            iWealthyGender: data.gender,
+            iWealthyPaymentFrequency: data.paymentFrequency,
+            iWealthyRpp: data.rpp,
+            iWealthyRtu: data.rtu,
+            iWealthySumInsured: data.sumInsured,
+            iWealthySumInsuredReductions: data.sumInsuredReductions || [],
+        });
+    },
     // ===================================================================
     // SECTION 3: iWealthy UI State & Actions
     // ===================================================================
@@ -663,6 +701,7 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     isWithdrawalModalOpen: false,
     isChangeFreqModalOpen: false,
     isAddInvestmentModalOpen: false,
+    isSaveModalOpen: false,
     openPauseModal: () => set({ isPauseModalOpen: true }),
     closePauseModal: () => set({ isPauseModalOpen: false }),
     openReduceModal: () => set({ isReduceModalOpen: true }),
@@ -673,6 +712,11 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     closeChangeFreqModal: () => set({ isChangeFreqModalOpen: false }),
     openAddInvestmentModal: () => set({ isAddInvestmentModalOpen: true }),
     closeAddInvestmentModal: () => set({ isAddInvestmentModalOpen: false }),
+    openSaveModal: () => set({ isSaveModalOpen: true }),
+    closeSaveModal: () => set({ isSaveModalOpen: false }),
+    isLoadModalOpen: false,
+    openLoadModal: () => set({ isLoadModalOpen: true }),
+    closeLoadModal: () => set({ isLoadModalOpen: false }),
 
 
     // ===================================================================
@@ -809,5 +853,21 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
             // จัดการ Error ที่ไม่คาดคิด
             set({ ciError: err instanceof Error ? err.message : 'An unexpected CI error occurred', ciIsLoading: false });
         }
+    },
+    pin: null,
+    isAuthenticated: false,
+    isAdmin: false,
+    setPin: (pin) => {
+    // ดึงค่า ADMIN_PIN จาก .env ของฝั่ง Frontend
+    const adminPin = import.meta.env.VITE_ADMIN_PIN; 
+    if (pin) {
+        set({ 
+        pin: pin, 
+        isAuthenticated: true,
+        isAdmin: pin === adminPin // <-- เช็คว่าเป็น Admin หรือไม่ตรงนี้
+        });
+    } else {
+        set({ pin: null, isAuthenticated: false, isAdmin: false });
+    }
     },
 }));

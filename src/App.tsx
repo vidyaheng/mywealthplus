@@ -1,9 +1,9 @@
 // src/App.tsx
 
-import { useState } from 'react';
 import { BrowserRouter as RouterContainer, Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import PinForm from './PinForm';
+import { useAppStore } from "./stores/appStore";
 
 // Import Layouts และ Pages หลัก
 // เราจะ import แค่ Layout ใหญ่ของแต่ละแผน ไม่ต้อง import หน้าย่อยๆ (form, table, chart) ที่นี่
@@ -29,11 +29,17 @@ export default function AppWrapper() {
 // Main App Component (ฉบับใหม่ที่สะอาดและเบาลงมาก)
 function App() {
     // --- State ที่เหลืออยู่คือ State ที่ไม่เกี่ยวกับ iWealthy หรือ LTHC โดยตรง ---
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    //ใช้ Zustand Store แทน
+  const isAuthenticated = useAppStore((state) => state.isAuthenticated);
+  const setPin = useAppStore((state) => state.setPin);
+
+  const handleLoginSuccess = (pinFromForm: string) => {
+    setPin(pinFromForm);
+  };;
 
     // แสดงหน้าใส่ PIN ก่อน ถ้ายังไม่ยืนยันตัวตน
     if (!isAuthenticated) {
-        return <PinForm onSuccess={() => setIsAuthenticated(true)} />;
+        return <PinForm onSuccess={handleLoginSuccess} />;
     }
 
     // เมื่อยืนยันตัวตนแล้ว ให้แสดง Layout หลักของแอป

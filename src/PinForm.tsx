@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 
 // กำหนด type ของ props
 type PinFormProps = {
-  onSuccess: () => void;
+  onSuccess: (pin: string) => void;
 };
 
 const PinForm: React.FC<PinFormProps> = ({ onSuccess }) => {
@@ -47,7 +47,7 @@ const PinForm: React.FC<PinFormProps> = ({ onSuccess }) => {
       
       if (data.success) {
         setResult(null);
-        onSuccess();
+        onSuccess(pin);
       } else {
         setResult('PIN ไม่ถูกต้อง');
       }
