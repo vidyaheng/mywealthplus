@@ -8,6 +8,11 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import LthcFormPage from './LthcFormPage';
 import LthcTablePage from './LthcTablePage';
 import LthcChartPage from './LthcChartPage';
+import { useAppStore } from '../../stores/appStore';
+import { Button } from '@/components/ui/button';
+import { FaSave, FaFolderOpen } from 'react-icons/fa';
+import SaveRecordModal from '../../components/SaveRecordModal';
+import LoadRecordModal from '../../components/LoadRecordModal';
 
 // (ถ้า LTHC มี TopButtons หรือ InvestmentReturnInput ของตัวเอง ก็ import มาที่นี่)
 // import TopButtons from "../../components/TopButtons"; 
@@ -24,11 +29,50 @@ export default function LTHCLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // --- REMOVED: ไม่ต้องดึง State จาก Store ใน Layout นี้แล้ว ---
-  // const {
-  //   runCalculation,
-  //   isLoading,
-  // } = useAppStore();
+  const {
+        pin,
+        isLoading,
+        runCalculation,
+        openSaveModal,
+        openLoadModal,
+        // ดึง state ทั้งหมดของ LTHC มาเพื่อใช้ในการ Save
+        policyholderEntryAge, policyholderGender, selectedHealthPlans, 
+        policyOriginMode, existingPolicyEntryAge, fundingSource, 
+        iWealthyMode, pensionMode, pensionFundingOptions, manualPensionPremium, 
+        manualRpp, manualRtu, manualInvestmentReturn, manualIWealthyPPT, 
+        manualWithdrawalStartAge, autoInvestmentReturn, autoIWealthyPPT, 
+        autoRppRtuRatio, saReductionStrategy
+    } = useAppStore();
+
+    // --- ฟังก์ชันสำหรับบันทึกข้อมูล LTHC ---
+    const executeLthcSave = async (recordName: string) => {
+        if (!pin) { return alert('Error: Not logged in.'); }
+
+        const dataToSave = {
+            policyholderEntryAge, policyholderGender, selectedHealthPlans, 
+            policyOriginMode, existingPolicyEntryAge, fundingSource, 
+            iWealthyMode, pensionMode, pensionFundingOptions, manualPensionPremium, 
+            manualRpp, manualRtu, manualInvestmentReturn, manualIWealthyPPT, 
+            manualWithdrawalStartAge, autoInvestmentReturn, autoIWealthyPPT, 
+            autoRppRtuRatio, saReductionStrategy
+        };
+
+        try {
+            const response = await fetch('/api/save-project', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pin,
+                    projectName: 'LTHC', // <--- ระบุว่าเป็นโปรเจกต์ LTHC
+                    recordName,
+                    data: dataToSave,
+                }),
+            });
+            const result = await response.json();
+            if (response.ok) { alert('🎉 บันทึกข้อมูล LTHC สำเร็จ!'); }
+            else { alert(`❌ เกิดข้อผิดพลาด: ${result.error}`); }
+        } catch (error) { alert('❌ ไม่สามารถเชื่อมต่อกับ Server ได้'); }
+    };
 
   return (
     // Container หลักของ Layout
@@ -79,9 +123,26 @@ export default function LTHCLayout() {
             </Routes>
         </div>
 
-        {/* --- REMOVED: ลบส่วนปุ่มคำนวณออกไปแล้ว --- */}
-        
-        {/* LTHC ไม่มี Modal เหมือน iWealthy จึงไม่ต้อง Render ที่นี่ */}
+        {/* --- เพิ่มแถบปุ่มควบคุมด้านล่าง --- */}
+        <div className="flex justify-between items-center px-6 py-2 bg-blue-50 border-t border-gray-200">
+            <div className="flex gap-2">
+                <Button variant="outline" size="lg" onClick={openSaveModal} className="text-green-700 border-green-700 ...">
+                    <FaSave className="mr-2" />
+                    บันทึก
+                </Button>
+                <Button variant="outline" size="lg" onClick={openLoadModal} className="text-blue-700 border-blue-700 ...">
+                    <FaFolderOpen className="mr-2" />
+                    โหลด
+                </Button>
+            </div>
+            <Button size="lg" onClick={runCalculation} disabled={isLoading} className="bg-green-600 hover:bg-green-700 text-lg ...">
+                    {isLoading ? 'กำลังคำนวณ...' : 'คำนวณ LTHC'}
+            </Button>
+        </div>
+            
+        {/* --- Render Modals สำหรับ Save/Load --- */}
+        <SaveRecordModal onConfirmSave={executeLthcSave} />
+        <LoadRecordModal />
     </div>
   );
 }

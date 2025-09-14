@@ -40,7 +40,7 @@ const ModeButton = ({ label, isActive, onClick, className = 'bg-blue-600 hover:b
 // --- Main Component ---
 export default function LthcFormPage() {
     // --- All store logic, state, effects, and handlers remain the same ---
-    const { policyholderEntryAge, setPolicyholderEntryAge, policyholderGender, setPolicyholderGender, policyOriginMode, setPolicyOriginMode, existingPolicyEntryAge, setExistingPolicyEntryAge, selectedHealthPlans, setSelectedHealthPlans, fundingSource, setFundingSource, iWealthyMode, setIWealthyMode, autoInvestmentReturn, setAutoInvestmentReturn, autoIWealthyPPT, setAutoIWealthyPPT, autoRppRtuRatio, setAutoRppRtuRatio, manualRpp, setManualRpp, manualRtu, setManualRtu, manualInvestmentReturn, setManualInvestmentReturn, manualIWealthyPPT, setManualIWealthyPPT, manualWithdrawalStartAge, setManualWithdrawalStartAge, pensionMode, setPensionMode, pensionFundingOptions, setPensionFundingOptions, manualPensionPremium, setManualPensionPremium, isLoading, error, runCalculation, solvedPensionSA, solvedPensionPremium, calculatedMinPremium, calculatedRpp, calculatedRtu, saReductionStrategy, setSaReductionStrategy } = useAppStore();
+    const { policyholderEntryAge, setPolicyholderEntryAge, policyholderGender, setPolicyholderGender, policyOriginMode, setPolicyOriginMode, existingPolicyEntryAge, setExistingPolicyEntryAge, selectedHealthPlans, setSelectedHealthPlans, fundingSource, setFundingSource, iWealthyMode, setIWealthyMode, autoInvestmentReturn, setAutoInvestmentReturn, autoIWealthyPPT, setAutoIWealthyPPT, autoRppRtuRatio, setAutoRppRtuRatio, manualRpp, setManualRpp, manualRtu, setManualRtu, manualInvestmentReturn, setManualInvestmentReturn, manualIWealthyPPT, setManualIWealthyPPT, manualWithdrawalStartAge, setManualWithdrawalStartAge, pensionMode, setPensionMode, pensionFundingOptions, setPensionFundingOptions, manualPensionPremium, setManualPensionPremium, isLoading, error, solvedPensionSA, solvedPensionPremium, calculatedMinPremium, calculatedRpp, calculatedRtu, saReductionStrategy, setSaReductionStrategy } = useAppStore();
     const [isReduceSaModalOpen, setIsReduceSaModalOpen] = useState(false);
     const [lifeReadyMode, setLifeReadyMode] = useState<'normal' | 'package'>(() => (selectedHealthPlans.lifeReadySA === PACKAGE_LR_SA && selectedHealthPlans.lifeReadyPPT === DEFAULT_LR_PPT_PACKAGE) ? 'package' : 'normal');
     const [isIHUSelected, setIsIHUSelected] = useState<boolean>(() => selectedHealthPlans.iHealthyUltraPlan !== null);
@@ -245,15 +245,13 @@ export default function LthcFormPage() {
             </div>
 
             <div className="mt-4 p-4 border rounded-lg shadow-xl bg-gradient-to-r from-sky-500 to-indigo-600">
-                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                 <div className="flex flex-col md:flex-row justify-between items-center gap-4 px-10">
                     <div className="text-white text-left">
                         <h3 className="text-sm font-semibold">เบี้ยสุขภาพรวมปีแรก:</h3>
                         <p className="text-2xl font-bold">{totalFirstYearHealthPremium.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-base font-medium">บาท/ปี</span></p>
                     </div>
                     {renderResultsSummary()}
-                    <button onClick={runCalculation} disabled={isLoading || showIHUWarning} className={`w-full md:w-auto px-8 py-2.5 bg-green-500 text-white font-bold text-sm rounded-lg shadow-lg hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-300 ${(isLoading || showIHUWarning) ? 'opacity-50 cursor-not-allowed bg-gray-400 hover:bg-gray-400' : 'transform hover:scale-105'} transition-all duration-150 ease-in-out`}>
-                        {isLoading ? 'กำลังคำนวณ...' : 'คำนวณ LTHC Plan'}
-                    </button>
+
                  </div>
                  {showIHUWarning && (<div className="mt-2 text-xs text-yellow-300 flex items-center justify-center md:justify-start gap-2"><FaExclamationTriangle />กรุณาเลือกแผน iHealthy Ultra เพื่อความคุ้มครองค่ารักษาพยาบาล</div>)}
             </div>
