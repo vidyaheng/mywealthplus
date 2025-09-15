@@ -109,6 +109,7 @@ interface LthcState {
   setAutoRppRtuRatio: Dispatch<SetStateAction<string>>;
   setSaReductionStrategy: Dispatch<SetStateAction<SAReductionStrategy>>;
   runCalculation: () => Promise<void>;
+  loadLthcState: (data: any) => void;
   // --- 🎨 ส่วนที่เพิ่มใหม่สำหรับฟีเจอร์ลดหย่อนภาษี ---
   isTaxDeductionEnabled: boolean;
   isTaxModalOpen: boolean;
@@ -242,6 +243,7 @@ interface CIPlannerState {
     setCiAutoWithdrawalStartAge: Dispatch<SetStateAction<number>>;
     setCiUseCustomWithdrawalAge: Dispatch<SetStateAction<boolean>>;
     runCiCalculation: () => Promise<void>;
+    loadCiState: (data: any) => void;
 }
 
 interface AuthState {
@@ -440,6 +442,29 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
             // จัดการ Error ที่ไม่คาดคิด (เช่น Network Error หรือ Bug ร้ายแรง)
             set({ error: err instanceof Error ? err.message : 'An unexpected error occurred', isLoading: false });
         }
+    },
+    loadLthcState: (data) => {
+        set({
+            policyholderEntryAge: data.policyholderEntryAge,
+            policyholderGender: data.policyholderGender,
+            selectedHealthPlans: data.selectedHealthPlans,
+            policyOriginMode: data.policyOriginMode,
+            existingPolicyEntryAge: data.existingPolicyEntryAge,
+            fundingSource: data.fundingSource,
+            iWealthyMode: data.iWealthyMode,
+            pensionMode: data.pensionMode,
+            pensionFundingOptions: data.pensionFundingOptions,
+            manualPensionPremium: data.manualPensionPremium,
+            manualRpp: data.manualRpp,
+            manualRtu: data.manualRtu,
+            manualInvestmentReturn: data.manualInvestmentReturn,
+            manualIWealthyPPT: data.manualIWealthyPPT,
+            manualWithdrawalStartAge: data.manualWithdrawalStartAge,
+            autoInvestmentReturn: data.autoInvestmentReturn,
+            autoIWealthyPPT: data.autoIWealthyPPT,
+            autoRppRtuRatio: data.autoRppRtuRatio,
+            saReductionStrategy: data.saReductionStrategy,
+        });
     },
 
     // ===================================================================
@@ -869,5 +894,26 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     } else {
         set({ pin: null, isAuthenticated: false, isAdmin: false });
     }
+    },
+    loadCiState: (data) => {
+        set({
+            ciPlanningAge: data.ciPlanningAge,
+            ciGender: data.ciGender,
+            ciPolicyOriginMode: data.ciPolicyOriginMode,
+            ciExistingEntryAge: data.ciExistingEntryAge,
+            ciPlanSelections: data.ciPlanSelections,
+            ciUseIWealthy: data.ciUseIWealthy,
+            ciIWealthyMode: data.ciIWealthyMode,
+            ciManualRpp: data.ciManualRpp,
+            ciManualRtu: data.ciManualRtu,
+            ciManualInvReturn: data.ciManualInvReturn,
+            ciManualPpt: data.ciManualPpt,
+            ciManualWithdrawalStartAge: data.ciManualWithdrawalStartAge,
+            ciAutoInvReturn: data.ciAutoInvReturn,
+            ciAutoPpt: data.ciAutoPpt,
+            ciAutoRppRtuRatio: data.ciAutoRppRtuRatio,
+            ciAutoWithdrawalStartAge: data.ciAutoWithdrawalStartAge,
+            ciUseCustomWithdrawalAge: data.ciUseCustomWithdrawalAge
+        });
     },
 }));

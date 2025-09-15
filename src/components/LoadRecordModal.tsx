@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAppStore, SavedRecord } from '../stores/appStore';
 import { FaTrash, FaShieldAlt, FaHeartbeat, FaBrain, FaFileAlt } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 // ตัวช่วยสำหรับจัดการ Style ของแต่ละโปรเจกต์
 const projectStyles = {
@@ -25,11 +26,16 @@ const projectStyles = {
 };
 
 export default function LoadRecordModal() {
+
+  const navigate = useNavigate();
+
   const { 
     isLoadModalOpen, closeLoadModal, 
     pin, isAdmin,
     savedRecords, setSavedRecords,
-    loadIWealthyState // หมายเหตุ: ฟังก์ชันนี้จะโหลดได้แค่ state ของ iWealthy
+    loadIWealthyState, // หมายเหตุ: ฟังก์ชันนี้จะโหลดได้แค่ state ของ iWealthy
+    loadLthcState,
+    loadCiState 
   } = useAppStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,13 +65,7 @@ export default function LoadRecordModal() {
 
   const handleSelectRecord = async (record: SavedRecord) => {
     if (!pin) return;
-    
-    // ตรวจสอบก่อนว่า record ที่จะโหลดเป็นของโปรเจกต์ไหน
-    // ตอนนี้เรารองรับแค่การโหลดข้อมูล iWealthy
-    if (record.projectName !== 'iWealthy') {
-        alert(`ยังไม่รองรับการโหลดข้อมูลสำหรับโปรเจกต์ "${record.projectName}"`);
-        return;
-    }
+  
 
     setIsLoading(true);
     setError(null);
@@ -75,7 +75,25 @@ export default function LoadRecordModal() {
       });
       const data = await res.json();
       if (data.success) {
-        loadIWealthyState(data.record.data);
+        // --- ✅ Logic ใหม่ที่ฉลาดขึ้น ---
+        const recordData = data.record.data;
+        const projectName = data.record.projectName;
+
+        if (projectName === 'iWealthy') {
+          loadIWealthyState(recordData);
+
+          navigate('/iwealthy/form');
+        } else if (projectName === 'LTHC') {
+          loadLthcState(recordData);
+          navigate('/lthc/form');
+        } else if (projectName === 'CI') {
+          loadCiState(recordData);
+          navigate('/ci');
+        } else {
+          // สำหรับโปรเจกต์อื่นๆ ในอนาคต
+          alert(`ยังไม่รองรับการโหลดข้อมูลสำหรับโปรเจกต์ "${projectName}"`);
+        }
+        
         closeLoadModal();
       } else {
         setError(data.error || 'Failed to load selected record.');

@@ -14,6 +14,10 @@ import CIFormPage from './CIFormPage';
 import CITablePage from './CITablePage';
 import CiChartPage from './CiChartPage';
 import CoverageSummaryPage from './CoverageSummaryPage';
+import SaveRecordModal from '@/components/SaveRecordModal'; // ⭐ 1. เพิ่ม Imports
+import LoadRecordModal from '@/components/LoadRecordModal';
+import { Button } from '@/components/ui/button';
+import { FaSave, FaFolderOpen } from 'react-icons/fa';
 
 
 export default function CiPlannerPage() {
@@ -145,58 +149,128 @@ export default function CiPlannerPage() {
         ...wrappedSetters,
         runCalculation: store.runCiCalculation,
     };
+
+    // ⭐ 2. ดึง State และ Actions ที่ต้องใช้สำหรับ Save/Load
+    const { pin, openSaveModal, openLoadModal } = useAppStore();
+    // ดึง state ทั้งหมดของ CI มาเพื่อใช้ในการ Save
+    const allCiState = useAppStore(state => state); 
+
+    // ⭐ 3. สร้างฟังก์ชันสำหรับบันทึกข้อมูล CI
+    const executeCiSave = async (recordName: string) => {
+        if (!pin) { return alert('Error: Not logged in.'); }
+
+        // รวบรวมข้อมูล CI ทั้งหมดที่จะบันทึก
+        const dataToSave = {
+            ciPlanningAge: allCiState.ciPlanningAge,
+            ciGender: allCiState.ciGender,
+            ciPolicyOriginMode: allCiState.ciPolicyOriginMode,
+            ciExistingEntryAge: allCiState.ciExistingEntryAge,
+            ciPlanSelections: allCiState.ciPlanSelections,
+            ciUseIWealthy: allCiState.ciUseIWealthy,
+            ciIWealthyMode: allCiState.ciIWealthyMode,
+            ciManualRpp: allCiState.ciManualRpp,
+            ciManualRtu: allCiState.ciManualRtu,
+            ciManualInvReturn: allCiState.ciManualInvReturn,
+            ciManualPpt: allCiState.ciManualPpt,
+            ciManualWithdrawalStartAge: allCiState.ciManualWithdrawalStartAge,
+            ciAutoInvReturn: allCiState.ciAutoInvReturn,
+            ciAutoPpt: allCiState.ciAutoPpt,
+            ciAutoRppRtuRatio: allCiState.ciAutoRppRtuRatio,
+            ciAutoWithdrawalStartAge: allCiState.ciAutoWithdrawalStartAge,
+            ciUseCustomWithdrawalAge: allCiState.ciUseCustomWithdrawalAge
+        };
+
+        try {
+            const response = await fetch('http://localhost:3001/api/save-project', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pin,
+                    projectName: 'CI', // <--- ระบุว่าเป็นโปรเจกต์ CI
+                    recordName,
+                    data: dataToSave,
+                }),
+            });
+            const result = await response.json();
+            if (response.ok) { alert('🎉 บันทึกข้อมูล CI สำเร็จ!'); }
+            else { alert(`❌ เกิดข้อผิดพลาด: ${result.error}`); }
+        } catch (error) { alert('❌ ไม่สามารถเชื่อมต่อกับ Server ได้'); }
+    };
     
     return (
-        <main className="container mx-auto space-y-4 bg-blue-50 text-foreground min-h-screen">
-            <header className="text-center">
-                <h1 className="pb-2 text-2xl font-extrabold tracking-tight lg:text-2xl bg-gradient-to-r from-blue-800 to-green-500 bg-clip-text text-transparent">
-                    วางแผนประกันโรคร้ายแรงแบบยั่งยืน (LTCI)
-                </h1>
-                <p className="pb-2 text-lg font-bold tracking-tight lg:text-xl bg-gradient-to-r from-green-700 to-yellow-500 bg-clip-text text-transparent">LONG-TERM CRITICAL ILLNESS</p>
-            </header>
+        <>
+            <main className="container mx-auto space-y-4 bg-blue-50 text-foreground min-h-screen">
+                <header className="text-center">
+                    <h1 className="pb-2 text-2xl font-extrabold tracking-tight lg:text-2xl bg-gradient-to-r from-blue-800 to-green-500 bg-clip-text text-transparent">
+                        วางแผนประกันโรคร้ายแรงแบบยั่งยืน (LTCI)
+                    </h1>
+                    <p className="pb-2 text-lg font-bold tracking-tight lg:text-xl bg-gradient-to-r from-green-700 to-yellow-500 bg-clip-text text-transparent">LONG-TERM CRITICAL ILLNESS</p>
+                </header>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="w-full justify-start rounded-none border-b -mb-1 bg-blue-50">
-                    <TabsTrigger value="form" className="pb-2 mt-1 rounded-none rounded-t-md border-transparent border-x border-t data-[state=active]:bg-background data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:text-blue-700 data-[state=active]:shadow-none data-[state=active]:font-semibold">
-                        กรอกข้อมูล
-                    </TabsTrigger>
-                    <TabsTrigger value="table" className="pb-2 mt-1 rounded-none rounded-t-md border-transparent border-x border-t data-[state=active]:bg-background data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:text-blue-700 data-[state=active]:shadow-none data-[state=active]:font-semibold">
-                        ตารางผลลัพธ์
-                    </TabsTrigger>
-                    <TabsTrigger value="graph" className="pb-2 mt-1 rounded-none rounded-t-md border-transparent border-x border-t data-[state=active]:bg-background data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:text-blue-700 data-[state=active]:shadow-none data-[state=active]:font-semibold">
-                        กราฟผลประโยชน์
-                    </TabsTrigger>
-                    <TabsTrigger value="summary" className="pb-2 mt-1 rounded-none rounded-t-md border-transparent border-x border-t data-[state=active]:bg-background data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:text-blue-700 data-[state=active]:shadow-none data-[state=active]:font-semibold">
-                        สรุปความคุ้มครอง
-                    </TabsTrigger>
-                </TabsList>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="w-full justify-start rounded-none border-b -mb-1 bg-blue-50">
+                        <TabsTrigger value="form" className="pb-2 mt-1 rounded-none rounded-t-md border-transparent border-x border-t data-[state=active]:bg-background data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:text-blue-700 data-[state=active]:shadow-none data-[state=active]:font-semibold">
+                            กรอกข้อมูล
+                        </TabsTrigger>
+                        <TabsTrigger value="table" className="pb-2 mt-1 rounded-none rounded-t-md border-transparent border-x border-t data-[state=active]:bg-background data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:text-blue-700 data-[state=active]:shadow-none data-[state=active]:font-semibold">
+                            ตารางผลลัพธ์
+                        </TabsTrigger>
+                        <TabsTrigger value="graph" className="pb-2 mt-1 rounded-none rounded-t-md border-transparent border-x border-t data-[state=active]:bg-background data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:text-blue-700 data-[state=active]:shadow-none data-[state=active]:font-semibold">
+                            กราฟผลประโยชน์
+                        </TabsTrigger>
+                        <TabsTrigger value="summary" className="pb-2 mt-1 rounded-none rounded-t-md border-transparent border-x border-t data-[state=active]:bg-background data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:text-blue-700 data-[state=active]:shadow-none data-[state=active]:font-semibold">
+                            สรุปความคุ้มครอง
+                        </TabsTrigger>
+                    </TabsList>
 
-                <TabsContent value="form" className="mt-0 rounded-b-md rounded-tr-md border bg-card p-6 shadow-sm">
-                    <CIFormPage {...planner} />
-                </TabsContent>
-                <TabsContent value="table" className="mt-0 rounded-b-md rounded-tr-md border bg-card p-6 shadow-sm">
-                    <CITablePage
-                        isLoading={planner.isLoading}
-                        error={planner.error}
-                        result={planner.result}
-                        ciPremiumsSchedule={planner.ciPremiumsSchedule}
-                        useIWealthy={planner.useIWealthy}
-                        // ไม่ต้องส่ง iWealthyWithdrawalStartAge ไปแล้ว
-                    />
-                </TabsContent>
-                <TabsContent value="graph" className="mt-0 rounded-b-md rounded-tr-md border bg-card p-6 shadow-sm">
-                    <CiChartPage {...planner} />
-                </TabsContent>
-                <TabsContent value="summary" className="mt-0 rounded-b-md rounded-tr-md border bg-card p-6 shadow-sm">
-                    <CoverageSummaryPage
-                        isLoading={planner.isLoading}
-                        error={planner.error}
-                        result={planner.result}
-                        selectedCiPlans={planner.selectedCiPlans} 
-                        policyholderEntryAge={planner.policyholderEntryAge}
-                    />
-                </TabsContent>
-            </Tabs>
-        </main>
+                    <TabsContent value="form" className="mt-0 rounded-b-md rounded-tr-md border bg-card p-6 shadow-sm">
+                        <CIFormPage {...planner} />
+                    </TabsContent>
+                    <TabsContent value="table" className="mt-0 rounded-b-md rounded-tr-md border bg-card p-6 shadow-sm">
+                        <CITablePage
+                            isLoading={planner.isLoading}
+                            error={planner.error}
+                            result={planner.result}
+                            ciPremiumsSchedule={planner.ciPremiumsSchedule}
+                            useIWealthy={planner.useIWealthy}
+                            // ไม่ต้องส่ง iWealthyWithdrawalStartAge ไปแล้ว
+                        />
+                    </TabsContent>
+                    <TabsContent value="graph" className="mt-0 rounded-b-md rounded-tr-md border bg-card p-6 shadow-sm">
+                        <CiChartPage {...planner} />
+                    </TabsContent>
+                    <TabsContent value="summary" className="mt-0 rounded-b-md rounded-tr-md border bg-card p-6 shadow-sm">
+                        <CoverageSummaryPage
+                            isLoading={planner.isLoading}
+                            error={planner.error}
+                            result={planner.result}
+                            selectedCiPlans={planner.selectedCiPlans} 
+                            policyholderEntryAge={planner.policyholderEntryAge}
+                        />
+                    </TabsContent>
+                </Tabs>
+            </main>
+            {/* ⭐ 4. เพิ่มแถบปุ่มควบคุมด้านล่าง */}
+            <div className="sticky bottom-0 z-10 flex justify-between items-center px-6 py-3 bg-blue-50/80 backdrop-blur-sm border-t border-gray-200">
+                <div className="flex gap-2">
+                    <Button variant="outline" size="lg" onClick={openSaveModal} className="text-green-700 border-green-700 hover:bg-green-50 hover:text-green-800 font-semibold py-2 px-4">
+                        <FaSave className="mr-2" />
+                        บันทึก
+                    </Button>
+                    <Button variant="outline" size="lg" onClick={openLoadModal} className="text-blue-700 border-blue-700 hover:bg-blue-50 hover:text-blue-800 font-semibold py-2 px-4">
+                        <FaFolderOpen className="mr-2" />
+                        โหลด
+                    </Button>
+                </div>
+                {/* หมายเหตุ: ปุ่มคำนวณเดิมของคุณอยู่ใน CIFormPage 
+                  ซึ่งยังใช้งานได้ แต่ถ้าต้องการย้ายออกมาไว้ตรงนี้เพื่อความสม่ำเสมอ
+                  ก็สามารถทำได้โดยการย้าย JSX และ Logic ของปุ่มคำนวณมาไว้ที่นี่แทน
+                */}
+            </div>
+
+            {/* ⭐ 5. Render Modals */}
+            <SaveRecordModal onConfirmSave={executeCiSave} />
+            <LoadRecordModal />
+        </>
     );
 }

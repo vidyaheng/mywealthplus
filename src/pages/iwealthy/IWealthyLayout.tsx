@@ -168,11 +168,11 @@ export default function IWealthyLayout() {
             <div className="flex gap-2">
                 <Button variant="outline" size="lg" onClick={openSaveModal} className="text-green-700 border-green-700 hover:bg-green-50 hover:text-green-800 font-semibold py-2 px-4">
                     <FaSave className="mr-2" />
-                    บันทึกข้อมูล
+                    บันทึก
                 </Button>
-                <Button variant="outline" size="lg" onClick={openLoadModal} className="text-blue-700 border-blue-700 ...">
+                <Button variant="outline" size="lg" onClick={openLoadModal} className="text-blue-700 border-blue-700 hover:bg-blue-50 hover:text-blue-800 font-semibold py-2 px-4">
                     <FaFolderOpen className="mr-2" />
-                    โหลดข้อมูล
+                    โหลด
                 </Button>
             </div>
 
