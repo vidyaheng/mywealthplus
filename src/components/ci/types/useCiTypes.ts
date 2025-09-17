@@ -172,6 +172,10 @@ export interface UseCiPlannerReturn {
 
     // Actions
     runCalculation: () => Promise<void>;
+
+    ciControls: any;
+    setCiControls: (controls: any) => void;
+    isReportMode?: boolean; 
 }
 
 // ====================================================================================

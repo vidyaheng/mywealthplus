@@ -231,6 +231,7 @@ interface CIPlannerState {
     ciSolvedRpp?: number;
     ciSolvedRtu?: number;
     ciUseCustomWithdrawalAge: boolean;
+    ciControls: any;
     setCiPlanningAge: Dispatch<SetStateAction<number>>;
     setCiGender: Dispatch<SetStateAction<Gender>>;
     setCiPolicyOriginMode: Dispatch<SetStateAction<CiPolicyOriginMode>>;
@@ -250,6 +251,7 @@ interface CIPlannerState {
     setCiUseCustomWithdrawalAge: Dispatch<SetStateAction<boolean>>;
     runCiCalculation: () => Promise<void>;
     loadCiState: (data: any) => void;
+    setCiControls: (controls: any) => void;
 }
 
 interface AuthState {
@@ -790,6 +792,13 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     ciSolvedMinPremium: undefined,
     ciSolvedRpp: undefined,
     ciSolvedRtu: undefined,
+    ciControls: {
+        showCiPremium: true,
+        showIWealthyPremium: true,
+        showWithdrawal: true,
+        showIWealthyAV: true,
+        showTotalDB: false,
+    },
     setCiPlanningAge: (arg) => set(state => ({ ciPlanningAge: typeof arg === 'function' ? arg(state.ciPlanningAge) : arg })),
     setCiGender: (arg) => set(state => ({ ciGender: typeof arg === 'function' ? arg(state.ciGender) : arg })),
     setCiPolicyOriginMode: (arg) => set(state => ({ ciPolicyOriginMode: typeof arg === 'function' ? arg(state.ciPolicyOriginMode) : arg })),
@@ -807,6 +816,9 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     setCiAutoRppRtuRatio: (arg) => set(state => ({ ciAutoRppRtuRatio: typeof arg === 'function' ? arg(state.ciAutoRppRtuRatio) : arg })),
     setCiAutoWithdrawalStartAge: (arg) => set(state => ({ ciAutoWithdrawalStartAge: typeof arg === 'function' ? arg(state.ciAutoWithdrawalStartAge) : arg })),
     setCiUseCustomWithdrawalAge: (arg) => set(state => ({ ciUseCustomWithdrawalAge: typeof arg === 'function' ? arg(state.ciUseCustomWithdrawalAge) : arg })),
+    setCiControls: (controls) => set(state => ({
+        ciControls: typeof controls === 'function' ? controls(state.ciControls) : controls
+    })),
     runCiCalculation: async () => {
         // 1. เริ่มต้น: รีเซ็ตสถานะและผลลัพธ์เก่าทั้งหมด
         set({ 
@@ -880,7 +892,14 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
                     ciSolvedRpp: autoResult.rppResult,
                     ciSolvedRtu: autoResult.rtuResult,
                     ciError: autoResult.errorMsg ?? null,
-                    ciIsLoading: false
+                    ciIsLoading: false,
+                    ciControls: { 
+                        showCiPremium: true, 
+                        showIWealthyPremium: true, 
+                        showWithdrawal: true, 
+                        showIWealthyAV: true, 
+                        showTotalDB: false 
+                    }
                 });
             }
         } catch (err) {

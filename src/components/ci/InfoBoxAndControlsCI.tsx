@@ -1,48 +1,56 @@
-// src/components/ci/InfoBoxAndControlsCI.tsx
-
 import React from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import type { CiChartDataType } from './GraphComponentCI';
 
-// 1. แก้ไข: เพิ่ม useIWealthy เข้าไปใน Props Interface
+// 1. ✅ แก้ไข Props Interface ทั้งหมด
 interface InfoBoxAndControlsCIProps {
     hoveredData: CiChartDataType | null;
     initialData: CiChartDataType | null;
     currentAge?: number;
     formatNumber: (num: number | undefined | null) => string;
-    useIWealthy: boolean; // 👈 เพิ่ม prop นี้
-    showCiPremium: boolean;
-    setShowCiPremium: React.Dispatch<React.SetStateAction<boolean>>;
-    showIWealthyPremium: boolean;
-    setShowIWealthyPremium: React.Dispatch<React.SetStateAction<boolean>>;
-    showWithdrawal: boolean;
-    setShowWithdrawal: React.Dispatch<React.SetStateAction<boolean>>;
-    showIWealthyAV: boolean;
-    setShowIWealthyAV: React.Dispatch<React.SetStateAction<boolean>>;
-    showTotalDB: boolean;
-    setShowTotalDB: React.Dispatch<React.SetStateAction<boolean>>;
+    useIWealthy: boolean;
+    controls: { // รับมาเป็น object ก้อนเดียว
+        showCiPremium: boolean;
+        showIWealthyPremium: boolean;
+        showWithdrawal: boolean;
+        showIWealthyAV: boolean;
+        showTotalDB: boolean;
+    };
+    setControls: (updateFn: (prev: any) => any) => void; // รับ setter มา
 }
 
 const InfoBoxAndControlsCI: React.FC<InfoBoxAndControlsCIProps> = ({
     hoveredData, initialData, currentAge, formatNumber,
-    useIWealthy, // 👈 2. รับ prop เข้ามาใช้งาน
-    showCiPremium, setShowCiPremium,
-    showIWealthyPremium, setShowIWealthyPremium,
-    showWithdrawal, setShowWithdrawal,
-    showIWealthyAV, setShowIWealthyAV,
-    showTotalDB, setShowTotalDB
+    useIWealthy,
+    controls,     // 👈 2. รับ props แบบใหม่
+    setControls
 }) => {
     const displayData = hoveredData || initialData;
     const displayAge = currentAge || displayData?.age;
 
-    // 3. แก้ไข: กรองรายการที่จะแสดงผลตามค่าของ useIWealthy
+    // 3. ✅ สร้าง handler กลางสำหรับอัปเดต State ใน appStore
+    const handleCheckChange = (key: keyof typeof controls, value: boolean) => {
+        setControls(prev => ({ ...prev, [key]: value }));
+    };
+
+    // 4. ✅ แก้ไข allInfoItems ให้ใช้ controls และ handler ใหม่
     const allInfoItems = [
-        { id: "ciPremium", label: "เบี้ยรวม CI (สะสม)", value: displayData?.ciPremium, color: "text-blue-400", show: showCiPremium, setShow: setShowCiPremium, iWealthyOnly: false, borderColorClass: "border-blue-400", checkColorClass: "data-[state=checked]:bg-blue-400" },
-        { id: "iWealthyPremium", label: "เบี้ยรวม iWealthy (สะสม)", value: displayData?.iWealthyPremium, color: "text-purple-400", show: showIWealthyPremium, setShow: setShowIWealthyPremium, iWealthyOnly: true, borderColorClass: "border-purple-400", checkColorClass: "data-[state=checked]:bg-purple-400" },
-        { id: "withdrawal", label: "เงินถอนจาก iW (สะสม)", value: displayData?.withdrawal, color: "text-yellow-400", show: showWithdrawal, setShow: setShowWithdrawal, iWealthyOnly: true, borderColorClass: "border-yellow-400", checkColorClass: "data-[state=checked]:bg-yellow-400" },
-        { id: "iWealthyAV", label: "มูลค่าบัญชี iWealthy", value: displayData?.iWealthyAV, color: "text-green-400", show: showIWealthyAV, setShow: setShowIWealthyAV, iWealthyOnly: true, borderColorClass: "border-green-400", checkColorClass: "data-[state=checked]:bg-green-400" },
-        { id: "totalDB", label: "คุ้มครองชีวิตรวม", value: displayData?.totalDB, color: "text-orange-400", show: showTotalDB, setShow: setShowTotalDB, iWealthyOnly: false, borderColorClass: "border-orange-400", checkColorClass: "data-[state=checked]:bg-orange-400" },
+        { id: "ciPremium", label: "เบี้ยรวม CI (สะสม)", value: displayData?.ciPremium, color: "text-blue-400", 
+          show: controls.showCiPremium, onCheckedChange: (c: boolean) => handleCheckChange('showCiPremium', c),
+          iWealthyOnly: false, borderColorClass: "border-blue-400", checkColorClass: "data-[state=checked]:bg-blue-400" },
+        { id: "iWealthyPremium", label: "เบี้ยรวม iWealthy (สะสม)", value: displayData?.iWealthyPremium, color: "text-purple-400", 
+          show: controls.showIWealthyPremium, onCheckedChange: (c: boolean) => handleCheckChange('showIWealthyPremium', c),
+          iWealthyOnly: true, borderColorClass: "border-purple-400", checkColorClass: "data-[state=checked]:bg-purple-400" },
+        { id: "withdrawal", label: "เงินถอนจาก iW (สะสม)", value: displayData?.withdrawal, color: "text-yellow-400", 
+          show: controls.showWithdrawal, onCheckedChange: (c: boolean) => handleCheckChange('showWithdrawal', c),
+          iWealthyOnly: true, borderColorClass: "border-yellow-400", checkColorClass: "data-[state=checked]:bg-yellow-400" },
+        { id: "iWealthyAV", label: "มูลค่าบัญชี iWealthy", value: displayData?.iWealthyAV, color: "text-green-400", 
+          show: controls.showIWealthyAV, onCheckedChange: (c: boolean) => handleCheckChange('showIWealthyAV', c),
+          iWealthyOnly: true, borderColorClass: "border-green-400", checkColorClass: "data-[state=checked]:bg-green-400" },
+        { id: "totalDB", label: "คุ้มครองชีวิตรวม", value: displayData?.totalDB, color: "text-orange-400", 
+          show: controls.showTotalDB, onCheckedChange: (c: boolean) => handleCheckChange('showTotalDB', c),
+          iWealthyOnly: false, borderColorClass: "border-orange-400", checkColorClass: "data-[state=checked]:bg-orange-400" },
     ];
 
     const visibleInfoItems = allInfoItems.filter(item => !item.iWealthyOnly || useIWealthy);
@@ -61,11 +69,11 @@ const InfoBoxAndControlsCI: React.FC<InfoBoxAndControlsCIProps> = ({
                 {displayData && visibleInfoItems.map(item => (
                     <div key={item.id} className="py-1">
                         <div className="flex items-center">
-                            {/* 🔥 2. แก้ไข: นำ Class สีมาใส่ใน className ของ Checkbox */}
+                            {/* 5. ✅ แก้ไข onCheckedChange ให้เรียกใช้ฟังก์ชันใหม่ */}
                             <Checkbox
                                 id={`infoBox-${item.id}`}
                                 checked={item.show}
-                                onCheckedChange={(checked) => typeof checked === 'boolean' && item.setShow(checked)}
+                                onCheckedChange={(checked) => typeof checked === 'boolean' && item.onCheckedChange(checked)}
                                 className={`h-4 w-4 rounded-xs border-2 transition-colors 
                                     ${item.borderColorClass} 
                                     ${item.checkColorClass}

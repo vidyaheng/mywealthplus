@@ -13,7 +13,12 @@ import InfoBoxAndControlsCI from '@/components/ci/InfoBoxAndControlsCI';
 
 // --- Component Definition ---
 // 2. แก้ไข: เปลี่ยนการประกาศฟังก์ชันให้รับ props
-export default function CiChartPage(props: UseCiPlannerReturn) {
+
+interface CiChartPageProps extends UseCiPlannerReturn {
+    isReportMode?: boolean;
+}
+
+export default function CiChartPage(props: CiChartPageProps) {
 
     // 3. แก้ไข: ลบ useOutletContext และดึงค่าจาก props ที่รับเข้ามาแทน
     const {
@@ -21,16 +26,19 @@ export default function CiChartPage(props: UseCiPlannerReturn) {
         isLoading,
         error,
         policyholderEntryAge,
-        useIWealthy // 👈 ดึง 'useIWealthy' ออกมาจาก props ตรงนี้
+        useIWealthy, // 👈 ดึง 'useIWealthy' ออกมาจาก props ตรงนี้
+        ciControls,
+        setCiControls,
+        isReportMode = false 
     } = props;
 
     // --- States for CI Graph ---
     const [hoveredCiData, setHoveredCiData] = useState<CiChartDataType | null>(null);
-    const [showCiPremium, setShowCiPremium] = useState(true);
-    const [showIWealthyPremium, setShowIWealthyPremium] = useState(true);
-    const [showWithdrawal, setShowWithdrawal] = useState(true);
-    const [showIWealthyAV, setShowIWealthyAV] = useState(true);
-    const [showTotalDB, setShowTotalDB] = useState(false);
+    //const [showCiPremium, setShowCiPremium] = useState(true);
+    //const [showIWealthyPremium, setShowIWealthyPremium] = useState(true);
+    //const [showWithdrawal, setShowWithdrawal] = useState(true);
+    //const [showIWealthyAV, setShowIWealthyAV] = useState(true);
+    //const [showTotalDB, setShowTotalDB] = useState(false);
     const [currentAgeForInfoBox, setCurrentAgeInfoBox] = useState<number | undefined>(policyholderEntryAge);
 
     // --- Data Processing ---
@@ -91,38 +99,35 @@ export default function CiChartPage(props: UseCiPlannerReturn) {
     return (
         <div className="p-1 md:p-2 space-y-4">
             <div className="flex flex-col md:flex-row w-full h-[calc(100vh-250px)] min-h-[500px] gap-4">
-                <div className="flex-grow md:w-3/4 border rounded-lg shadow-sm p-2">
+                
+                {/* ถ้าเป็น Report Mode ให้กราฟแสดงเต็มความกว้าง */}
+                <div className={isReportMode ? "w-full h-full" : "flex-grow md:w-3/4 border rounded-lg shadow-sm p-2"}>
                     <GraphComponentCI
                         data={chartDataFormatted}
                         setHoveredData={setHoveredCiData}
                         onAgeChange={handleGraphAgeChange}
-                        showCiPremium={showCiPremium}
-                        showIWealthyPremium={useIWealthy && showIWealthyPremium}
-                        showWithdrawal={useIWealthy && showWithdrawal}
-                        showIWealthyAV={useIWealthy && showIWealthyAV}
-                        showTotalDB={showTotalDB}
+                        showCiPremium={ciControls.showCiPremium}
+                        showIWealthyPremium={useIWealthy && ciControls.showIWealthyPremium}
+                        showWithdrawal={useIWealthy && ciControls.showWithdrawal}
+                        showIWealthyAV={useIWealthy && ciControls.showIWealthyAV}
+                        showTotalDB={ciControls.showTotalDB}
                     />
                 </div>
-                <div className="w-full md:w-1/4">
-                    {/* 4. แก้ไข: ส่ง useIWealthy ที่ดึงมาจาก props ลงไป */}
-                    <InfoBoxAndControlsCI
-                        hoveredData={hoveredCiData}
-                        initialData={initialDataForInfoBox}
-                        currentAge={currentAgeForInfoBox}
-                        formatNumber={formatNumberForInfoBox}
-                        useIWealthy={useIWealthy}
-                        showCiPremium={showCiPremium}
-                        setShowCiPremium={setShowCiPremium}
-                        showIWealthyPremium={showIWealthyPremium}
-                        setShowIWealthyPremium={setShowIWealthyPremium}
-                        showWithdrawal={showWithdrawal}
-                        setShowWithdrawal={setShowWithdrawal}
-                        showIWealthyAV={showIWealthyAV}
-                        setShowIWealthyAV={setShowIWealthyAV}
-                        showTotalDB={showTotalDB}
-                        setShowTotalDB={setShowTotalDB}
-                    />
-                </div>
+                
+                {/* ถ้าไม่ใช่ Report Mode (เป็นหน้าเว็บปกติ) ให้แสดงกล่องควบคุม */}
+                {!isReportMode && (
+                    <div className="w-full md:w-1/4">
+                        <InfoBoxAndControlsCI
+                            hoveredData={hoveredCiData}
+                            initialData={initialDataForInfoBox}
+                            currentAge={currentAgeForInfoBox}
+                            formatNumber={formatNumberForInfoBox}
+                            useIWealthy={useIWealthy}
+                            controls={ciControls}
+                            setControls={setCiControls}
+                        />
+                    </div>
+                )}
             </div>
         </div>
     );

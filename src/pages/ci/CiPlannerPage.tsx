@@ -14,7 +14,8 @@ import CIFormPage from './CIFormPage';
 import CITablePage from './CITablePage';
 import CiChartPage from './CiChartPage';
 import CoverageSummaryPage from './CoverageSummaryPage';
-import SaveRecordModal from '@/components/SaveRecordModal'; // ⭐ 1. เพิ่ม Imports
+import CiReportPage from './CiReportPage';
+import SaveRecordModal from '@/components/SaveRecordModal'; 
 import LoadRecordModal from '@/components/LoadRecordModal';
 import { Button } from '@/components/ui/button';
 import { FaSave, FaFolderOpen } from 'react-icons/fa';
@@ -147,7 +148,10 @@ export default function CiPlannerPage() {
         autoRppRtuRatio: store.ciAutoRppRtuRatio,
         ciUseCustomWithdrawalAge: store.ciUseCustomWithdrawalAge,
         ...wrappedSetters,
+        ciControls: store.ciControls,
+        setCiControls: store.setCiControls,
         runCalculation: store.runCiCalculation,
+        
     };
 
     // ⭐ 2. ดึง State และ Actions ที่ต้องใช้สำหรับ Save/Load
@@ -221,6 +225,11 @@ export default function CiPlannerPage() {
                         <TabsTrigger value="summary" className="pb-2 mt-1 rounded-none rounded-t-md border-transparent border-x border-t data-[state=active]:bg-background data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:text-blue-700 data-[state=active]:shadow-none data-[state=active]:font-semibold">
                             สรุปความคุ้มครอง
                         </TabsTrigger>
+                        {store.ciResult && (
+                            <TabsTrigger value="report" className="pb-2 mt-1 rounded-none rounded-t-md border-transparent border-x border-t data-[state=active]:bg-background data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:text-green-700 data-[state=active]:shadow-none data-[state=active]:font-semibold">
+                                รายงาน
+                            </TabsTrigger>
+                        )}
                     </TabsList>
 
                     <TabsContent value="form" className="mt-0 rounded-b-md rounded-tr-md border bg-card p-6 shadow-sm">
@@ -247,6 +256,9 @@ export default function CiPlannerPage() {
                             selectedCiPlans={planner.selectedCiPlans} 
                             policyholderEntryAge={planner.policyholderEntryAge}
                         />
+                    </TabsContent>
+                    <TabsContent value="report" className="mt-0 rounded-b-md rounded-tr-md border bg-card p-6 shadow-sm">
+                        <CiReportPage />
                     </TabsContent>
                 </Tabs>
             </main>
