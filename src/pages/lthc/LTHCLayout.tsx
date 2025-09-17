@@ -8,6 +8,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import LthcFormPage from './LthcFormPage';
 import LthcTablePage from './LthcTablePage';
 import LthcChartPage from './LthcChartPage';
+import { LthcReportPage } from './LthcReportPage';
 import { useAppStore } from '../../stores/appStore';
 import { Button } from '@/components/ui/button';
 import { FaSave, FaFolderOpen } from 'react-icons/fa';
@@ -23,6 +24,7 @@ const lthcTabs = [
     { label: "กรอกข้อมูล LTHC", path: "/lthc/form" },
     { label: "ตาราง LTHC", path: "/lthc/table" },
     { label: "กราฟ LTHC", path: "/lthc/chart" },
+    { label: "สรุปรายงาน", path: "/lthc/report" },
 ];
 
 export default function LTHCLayout() {
@@ -120,6 +122,7 @@ export default function LTHCLayout() {
                 <Route path="form" element={<LthcFormPage />} />
                 <Route path="table" element={<LthcTablePage />} />
                 <Route path="chart" element={<LthcChartPage />} />
+                <Route path="report" element={<LthcReportPage />} />
             </Routes>
         </div>
 

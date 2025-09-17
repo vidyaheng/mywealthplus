@@ -41,6 +41,8 @@ import {
 } from '@/components/ci/hooks/useCiCalculations';
 import type { CiPlanSelections, AnnualCiOutputRow, PolicyOriginMode as CiPolicyOriginMode } from '@/components/ci/types/useCiTypes';
 
+import { getInitialControlsState } from '@/pages/lthc/LthcChartPage';
+
 
 // --- INTERFACE DEFINITIONS ---
 
@@ -88,6 +90,8 @@ interface LthcState {
   // Pension Results
   solvedPensionSA?: number;
   solvedPensionPremium?: number;
+  // controls
+  lthcControls: any;
   // --- Setters ---
   setPolicyholderEntryAge: Dispatch<SetStateAction<number>>;
   setPolicyholderGender: Dispatch<SetStateAction<Gender>>;
@@ -110,6 +114,8 @@ interface LthcState {
   setSaReductionStrategy: Dispatch<SetStateAction<SAReductionStrategy>>;
   runCalculation: () => Promise<void>;
   loadLthcState: (data: any) => void;
+  // controls
+  setLthcControls: (controls: any) => void;
   // --- 🎨 ส่วนที่เพิ่มใหม่สำหรับฟีเจอร์ลดหย่อนภาษี ---
   isTaxDeductionEnabled: boolean;
   isTaxModalOpen: boolean;
@@ -319,6 +325,7 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     taxRate: 0.10, // ค่าเริ่มต้น 10%
     usedFirst100k: 0,
     taxDeductionEndAge: 98,
+    lthcControls: getInitialControlsState(null),
 
     handleTaxButtonClick: () => {
         const { isTaxDeductionEnabled } = get();
@@ -361,6 +368,7 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     setAutoIWealthyPPT: (arg) => set(state => ({ autoIWealthyPPT: typeof arg === 'function' ? arg(state.autoIWealthyPPT) : arg })),
     setAutoRppRtuRatio: (arg) => set(state => ({ autoRppRtuRatio: typeof arg === 'function' ? arg(state.autoRppRtuRatio) : arg })),
     setSaReductionStrategy: (arg) => set(state => ({ saReductionStrategy: typeof arg === 'function' ? arg(state.saReductionStrategy) : arg })),
+    setLthcControls: (controls) => set({ lthcControls: controls }),
 
     runCalculation: async () => {
         // 1. เริ่มต้นกระบวนการ: ตั้งค่าสถานะกำลังโหลดและล้าง error/ผลลัพธ์เก่า
@@ -434,6 +442,7 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
                     solvedPensionPremium: result.solvedPensionPremium,
                     error: null, // ไม่มี Error
                     isLoading: false,
+                    lthcControls: getInitialControlsState(s.fundingSource)
                 });
             }
             // --- ✅ END: สิ้นสุด Logic ใหม่ ---

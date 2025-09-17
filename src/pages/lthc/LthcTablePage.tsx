@@ -14,109 +14,7 @@ const formatNum = (value: number | undefined | null, digits = 0) => {
     });
 };
 
-// 🎨 Step 2: สร้างคอมโพเนนต์ Tax Modal (วางไว้ในไฟล์เดียวกันเพื่อความง่าย)
-
-{/*type TaxModalProps = {
-    isOpen: boolean;
-    onClose: () => void;
-    onConfirm: (inputs: { taxRate: number; usedFirst100k: number; endAge: number; }) => void;
-};
-
-const TaxModal = ({ isOpen, onClose, onConfirm }: TaxModalProps) => {
-    const commonTaxRates = [5, 10, 15, 20];
-    const otherTaxRates = [25, 30, 35];
-
-    const [rate, setRate] = useState(10);
-    const [used, setUsed] = useState(0);
-    const [endAge, setEndAge] = useState(98);
-    const [showOtherRates, setShowOtherRates] = useState(false);
-
-    if (!isOpen) return null;
-
-    const handleConfirm = () => {
-        onConfirm({ taxRate: rate, usedFirst100k: used, endAge: endAge });
-        onClose();
-    };
-
-    const handleUsedChange = (value: number) => {
-        const clampedValue = Math.max(0, Math.min(100000, value));
-        setUsed(clampedValue);
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
-            <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
-                <h3 className="text-xl font-bold mb-6 text-gray-800">ตั้งค่าเพื่อคำนวณลดหย่อนภาษี</h3>
-
-                <div className="space-y-6">
-                    {/* 1. Tax Rate: แก้ไขให้ซ่อนกลับได้ (Toggle) 
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">ฐานภาษีสูงสุดของคุณ</label>
-                        <div className="flex flex-wrap gap-2">
-                            {commonTaxRates.map((taxRate) => (
-                                <button key={taxRate} onClick={() => setRate(taxRate)} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${rate === taxRate ? 'bg-sky-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
-                                    {taxRate}%
-                                </button>
-                            ))}
-                            <button onClick={() => setShowOtherRates(!showOtherRates)} className="px-4 py-2 text-sm font-medium text-sky-600 rounded-lg hover:bg-sky-100 transition-colors">
-                                {showOtherRates ? 'ซ่อน' : 'อื่นๆ...'}
-                            </button>
-                        </div>
-                        {showOtherRates && (
-                            <div className="flex flex-wrap gap-2 mt-2 animate-fade-in-down"> {/* Optional: Add a simple animation *
-                                {otherTaxRates.map((taxRate) => (
-                                    <button key={taxRate} onClick={() => setRate(taxRate)} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${rate === taxRate ? 'bg-sky-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
-                                        {taxRate}%
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* 2. Used Deduction: แก้ไขความกว้างของ Input 
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">ค่าลดหย่อนประกันชีวิตที่ใช้ไปแล้ว (สูงสุด 100,000)</label>
-                        <div className="flex items-center gap-4">
-                            <input
-                                type="range"
-                                min="0"
-                                max="100000"
-                                step="1000"
-                                value={used}
-                                onChange={(e) => handleUsedChange(Number(e.target.value))}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-sky-600"
-                            />
-                            <div className="relative flex-shrink-0"> {/* Container to prevent shrinking 
-                                <input
-                                    type="number"
-                                    value={used}
-                                    onChange={(e) => handleUsedChange(Number(e.target.value))}
-                                    className="w-36 border border-gray-300 rounded-lg py-2 pl-3 pr-8 text-right focus:outline-none focus:ring-sky-500 focus:border-sky-500"
-                                />
-                                <span className="absolute inset-y-0 right-3 flex items-center text-gray-500 pointer-events-none">฿</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {/* 3. End Age 
-                    <div>
-                         <label htmlFor="endAge" className="block text-sm font-semibold text-gray-700">คำนวณผลประโยชน์ถึงอายุ</label>
-                         <input type="number" id="endAge" value={endAge} onChange={(e) => setEndAge(Number(e.target.value))} className="mt-1 block w-full border border-gray-300 rounded-lg py-2 px-3"/>
-                    </div>
-                </div>
-
-                <div className="mt-8 flex justify-end space-x-3">
-                    <button onClick={onClose} className="px-5 py-2 text-sm font-medium bg-gray-100 rounded-lg hover:bg-gray-200">ยกเลิก</button>
-                    <button onClick={handleConfirm} className="px-5 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700">ยืนยัน</button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-*/}
-
-export default function LthcTablePage() {
+export default function LthcTablePage({ isReportMode }: { isReportMode?: boolean }) {
     // --- ส่วนของ Hooks และ Logic คำนวณ (เหมือนเดิม) ---
     const {
         result, isLoading, error,
@@ -292,7 +190,13 @@ export default function LthcTablePage() {
                         </div>
                 </div>
 
-                <div className="overflow-x-auto shadow-md sm:rounded-lg border border-gray-200" style={{ maxHeight: '70vh' }}>
+                <div 
+                    className={isReportMode 
+                        ? "shadow-none" // ถ้าเป็นโหมดรายงาน ไม่ต้องมี scroll, shadow, หรือขอบ
+                        : "overflow-x-auto shadow-md sm:rounded-lg border border-gray-200"
+                    }
+                    style={isReportMode ? {} : { maxHeight: '70vh' }}
+                >
                     <table className="min-w-full divide-y divide-gray-200 text-xs">
                         <thead className="bg-gray-100 sticky top-0 z-10">
                             <tr>

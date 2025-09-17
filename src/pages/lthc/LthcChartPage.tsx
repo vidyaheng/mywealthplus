@@ -1,6 +1,6 @@
 // src/components/lthc/LthcChartPage.tsx
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../stores/appStore';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
@@ -16,6 +16,7 @@ const formatNum = (value: number | undefined | null) => {
 
 export type LthcChartDataType = {
     age: number;
+    policyYear: number; // เพิ่ม policyYear ที่ขาดไป
     healthPlan_cumulativePremium: number;
     healthPlan_deathBenefit: number;
     lthcPlan_cumulativePremium: number;
@@ -32,6 +33,7 @@ export type LthcChartDataType = {
     lthc_pensionAnnuity: number;
     lthc_hybridTotalWithdrawal: number;
 };
+
 
 // --- Helper Components สำหรับ Info Cards (ปรับ Padding และ Font กลับมาให้สวยงาม) ---
 const InfoCard = ({ title, children, className, style }: { title: string, children: React.ReactNode, className?: string, style?: React.CSSProperties }) => (
@@ -87,35 +89,55 @@ const GraphComponent = ({ data, controls, setHoveredData, lineColors, hoveredAge
     );
 };
 
-const getInitialControlsState = (fundingSource: string | null) => {
+export const getInitialControlsState = (fundingSource: string | null) => {
     const showIWealthy = fundingSource === 'iWealthy' || fundingSource === 'hybrid';
     const showPension = fundingSource === 'pension' || fundingSource === 'hybrid';
-    return { showPremiums: true, showHealthPremiumAlone: true, showLthcCombinedPremium: true, showLthcHealthPaidByUser: false, showIWealthyPremium: false, showPensionPremium: showPension, showDeathBenefits: true, showHealthDeathBenefit: false, showLthcDeathBenefit: true, showAccountValue: false, showIWealthyAV: showIWealthy, showPensionCSV: showPension, showIWealthyWithdrawal: showIWealthy, showPensionAnnuity: showPension, showHybridWithdrawal: fundingSource === 'hybrid' };
+    return { 
+        showPremiums: true, showHealthPremiumAlone: true, showLthcCombinedPremium: true, 
+        showLthcHealthPaidByUser: false, showIWealthyPremium: false, showPensionPremium: showPension, 
+        showDeathBenefits: true, showHealthDeathBenefit: false, showLthcDeathBenefit: true, 
+        showAccountValue: false, showIWealthyAV: showIWealthy, showPensionCSV: showPension, 
+        showIWealthyWithdrawal: showIWealthy, showPensionAnnuity: showPension, showHybridWithdrawal: fundingSource === 'hybrid' 
+    };
 };
 
-export default function LthcChartPage() {
-    const { result, isLoading, error, fundingSource } = useAppStore();
+export default function LthcChartPage({ isReportMode }: { isReportMode?: boolean }) {
+    const { result, isLoading, error, fundingSource, lthcControls, setLthcControls } = useAppStore();
     const navigate = useNavigate();
-    const [controls, setControls] = useState(() => getInitialControlsState(fundingSource));
+    //const [controls, setControls] = useState(() => getInitialControlsState(fundingSource));
     const [hoveredData, setHoveredData] = useState<LthcChartDataType | null>(null);
 
     const lineColors = {
-        healthPremiumAlone: "#ff7300", lthcCombinedPremium: "#387908", lthcHealthPaidByUser: "#eab308",
-        iWealthyPremium: "#22c55e", pensionPremium: "#14b8a6", healthDeathBenefit: "#f97316",
-        lthcDeathBenefit: "#8b5cf6", iWealthyAV: "#16a34a", pensionCSV: "#10b981",
-        iWealthyWithdrawal: '#3b82f6', pensionAnnuity: '#d946ef', hybridTotalWithdrawal: '#84cc16'
+        healthPremiumAlone: "#ff7300",
+        lthcCombinedPremium: "#387908",
+        lthcHealthPaidByUser: "#eab308",
+        iWealthyPremium: "#22c55e",
+        pensionPremium: "#14b8a6",
+        healthDeathBenefit: "#f97316",
+        lthcDeathBenefit: "#8b5cf6",
+        iWealthyAV: "#16a34a",
+        pensionCSV: "#10b981",
+        iWealthyWithdrawal: '#3b82f6',
+        pensionAnnuity: '#d946ef',
+        hybridTotalWithdrawal: '#84cc16'
     };
-    
-    useEffect(() => { setControls(getInitialControlsState(fundingSource)); }, [fundingSource]);
+    //useEffect(() => { setLthcControls(getInitialControlsState(fundingSource)); }, [fundingSource]);
 
-    const handleControlChange = (key: keyof typeof controls, value: boolean) => {
-        setControls(prev => {
-            const newState = { ...prev, [key]: value };
-            if (key === 'showPremiums' && !value) { Object.keys(newState).filter(k => k.includes('Premium')).forEach(k => newState[k as keyof typeof newState] = false); }
-            if (key === 'showDeathBenefits' && !value) { Object.keys(newState).filter(k => k.includes('DeathBenefit')).forEach(k => newState[k as keyof typeof newState] = false); }
-            if (key === 'showAccountValue' && !value) { Object.keys(newState).filter(k => k.includes('AV') || k.includes('CSV') || k.includes('Withdrawal') || k.includes('Annuity')).forEach(k => newState[k as keyof typeof newState] = false); }
-            return newState;
-        });
+    const handleControlChange = (key: keyof typeof lthcControls, value: boolean) => {
+        // ⭐ 1. สร้าง object state ใหม่ขึ้นมา
+        // โดยคัดลอกค่าล่าสุดจาก lthcControls (Global State) 
+        // แล้วอัปเดต key ที่ถูกเปลี่ยนแปลงด้วยค่าใหม่ (value)
+        let newState = { ...lthcControls, [key]: value };
+
+        // ⭐ 2. ใช้ Logic เดิมเพื่อเปิด/ปิดกลุ่มของเส้นกราฟที่เกี่ยวข้อง
+        // (ส่วนนี้ไม่มีการเปลี่ยนแปลง)
+        if (key === 'showPremiums' && !value) { Object.keys(newState).filter(k => k.includes('Premium')).forEach(k => newState[k as keyof typeof newState] = false); }
+        if (key === 'showDeathBenefits' && !value) { Object.keys(newState).filter(k => k.includes('DeathBenefit')).forEach(k => newState[k as keyof typeof newState] = false); }
+        if (key === 'showAccountValue' && !value) { Object.keys(newState).filter(k => k.includes('AV') || k.includes('CSV') || k.includes('Withdrawal') || k.includes('Annuity')).forEach(k => newState[k as keyof typeof newState] = false); }
+
+        // ⭐ 3. (จุดที่แก้ไขหลัก) เรียกใช้ setLthcControls เพื่ออัปเดต Global State
+        // แทนที่จะเรียก setControls (Local State) แบบเดิม
+        setLthcControls(newState);
     };
     
     const chartDataFormatted: LthcChartDataType[] = useMemo(() => {
@@ -139,6 +161,7 @@ export default function LthcChartPage() {
             cumHybridWithdrawal += fundingWithdrawal;
             return {
                 age: row.age,
+                policyYear: row.policyYear, // เพิ่ม policyYear ที่ขาดไป
                 healthPlan_cumulativePremium: cumHealthAlone,
                 healthPlan_deathBenefit: row.lifeReadyDeathBenefit || 0,
                 lthcPlan_cumulativePremium: cumLthcHealthPaidByUser + cumIWPremium + cumPensionPremium,
@@ -161,6 +184,19 @@ export default function LthcChartPage() {
     const initialDataForInfoBox = useMemo(() => chartDataFormatted.length > 0 ? chartDataFormatted[0] : null, [chartDataFormatted]);
     const displayData = hoveredData || initialDataForInfoBox;
 
+    if (isReportMode) {
+        if (!result || result.length === 0) return null; // ในโหมดรายงาน ถ้าไม่มีข้อมูลก็ไม่ต้องแสดงอะไร
+        return (
+            <GraphComponent
+                data={chartDataFormatted}
+                controls={lthcControls} // ใช้ค่าเริ่มต้นเสมอ
+                setHoveredData={() => {}} // ไม่ต้องมี hover effect
+                lineColors={lineColors}
+                hoveredAge={null}
+            />
+        );
+    }
+
     if (isLoading) return <div className="p-4 text-center">กำลังโหลดข้อมูล...</div>;
     if (error) return <div className="p-4 text-red-600">เกิดข้อผิดพลาด: {error}</div>;
     if (!result || !displayData) {
@@ -176,9 +212,9 @@ export default function LthcChartPage() {
     const showPension = fundingSource === 'pension' || fundingSource === 'hybrid';
 
     return (
-        <div className="space-y-4 p-4 md:p-6 bg-slate-100 min-h-screen">
+        <div className="space-y-4 p-4 md:p-6 bg-slate-100 min-h-screen" style={isReportMode ? {} : { minHeight: 'auto' }}>
             <style>{`.lthc-checkbox[data-state="checked"] { background-color: var(--checkbox-color); border-color: var(--checkbox-color); }`}</style>
-            
+            {!isReportMode && (
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-xl font-bold text-slate-800">กราฟเปรียบเทียบผลประโยชน์</h2>
@@ -186,6 +222,7 @@ export default function LthcChartPage() {
                 </div>
                 <Button variant="outline" size="sm" onClick={() => navigate('/lthc/table')}>ไปที่ตาราง</Button>
             </div>
+            )}
 
             {/* +++ ADDED BACK: นำ Style Gradient กลับมาใส่ให้ InfoCard +++ */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -220,24 +257,26 @@ export default function LthcChartPage() {
                 </InfoCard>
             </div>
             
-            <div className="flex flex-col md:flex-row w-full gap-4" style={{ height: '60vh' }}>
+            <div className="flex flex-col md:flex-row w-full gap-4" style={isReportMode ? { height: '100%' } : { height: '60vh' }}>
                 <div className="flex-grow md:w-3/4 border border-gray-200 rounded-lg shadow-sm bg-white p-2">
                     <GraphComponent
                         data={chartDataFormatted}
-                        controls={controls}
+                        controls={lthcControls}
                         setHoveredData={setHoveredData}
                         lineColors={lineColors}
                         hoveredAge={displayData?.age}
                     />
                 </div>
+                {!isReportMode && (
                 <div className="w-full md:w-1/4">
                      <GraphControls
-                        controls={controls}
+                        controls={lthcControls}
                         handleControlChange={handleControlChange}
                         fundingSource={fundingSource}
                         lineColors={lineColors}
                      />
                 </div>
+                )}
             </div>
         </div>
     );
