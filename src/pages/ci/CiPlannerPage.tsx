@@ -19,6 +19,7 @@ import SaveRecordModal from '@/components/SaveRecordModal';
 import LoadRecordModal from '@/components/LoadRecordModal';
 import { Button } from '@/components/ui/button';
 import { FaSave, FaFolderOpen } from 'react-icons/fa';
+import { CalculatorIcon } from '@/components/ci/utils/helpers';
 
 
 export default function CiPlannerPage() {
@@ -274,10 +275,9 @@ export default function CiPlannerPage() {
                         โหลด
                     </Button>
                 </div>
-                {/* หมายเหตุ: ปุ่มคำนวณเดิมของคุณอยู่ใน CIFormPage 
-                  ซึ่งยังใช้งานได้ แต่ถ้าต้องการย้ายออกมาไว้ตรงนี้เพื่อความสม่ำเสมอ
-                  ก็สามารถทำได้โดยการย้าย JSX และ Logic ของปุ่มคำนวณมาไว้ที่นี่แทน
-                */}
+                <Button onClick={planner.runCalculation} disabled={planner.isLoading} size="lg" className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm h-11">
+                    {planner.isLoading ? 'กำลังคำนวณ...' : <><CalculatorIcon /> แสดงภาพประกอบการขาย</>}
+                </Button>
             </div>
 
             {/* ⭐ 5. Render Modals */}

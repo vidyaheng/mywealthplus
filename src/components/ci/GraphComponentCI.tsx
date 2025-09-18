@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import {
     ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
-    Label, Tooltip
+    Label, Tooltip, Dot
 } from 'recharts';
 
 // Type สำหรับข้อมูลแต่ละจุดในกราฟ CI
@@ -91,6 +91,40 @@ const GraphComponentCI: React.FC<GraphComponentCIProps> = ({
     // --- ฟังก์ชันช่วยอื่นๆ ---
     const formatYAxisTick = (tick: number) => `${(tick / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
     
+    const renderActiveDot = (props: any) => {
+        const { cx, cy, dataKey } = props;
+
+        let shouldShowDot = false;
+        let dotStrokeColor = '#8884d8'; // สีสำรอง (Default)
+
+        // กำหนดสีสำหรับแต่ละเส้นกราฟด้วยตนเอง เหมือนกับ LTHC
+        if (dataKey === 'ciPremium' && showCiPremium) {
+            shouldShowDot = true;
+            dotStrokeColor = "#4299E1"; // สีของเส้น ciPremium
+        }
+        else if (dataKey === 'iWealthyPremium' && showIWealthyPremium) {
+            shouldShowDot = true;
+            dotStrokeColor = "#9F7AEA"; // สีของเส้น iWealthyPremium
+        }
+        else if (dataKey === 'withdrawal' && showWithdrawal) {
+            shouldShowDot = true;
+            dotStrokeColor = "#F6E05E"; // สีของเส้น withdrawal
+        }
+        else if (dataKey === 'iWealthyAV' && showIWealthyAV) {
+            shouldShowDot = true;
+            dotStrokeColor = "#48BB78"; // สีของเส้น iWealthyAV
+        }
+        else if (dataKey === 'totalDB' && showTotalDB) {
+            shouldShowDot = true;
+            dotStrokeColor = "#ED8936"; // สีของเส้น totalDB
+        }
+
+        if (shouldShowDot && typeof cx === 'number' && typeof cy === 'number') {
+            return <Dot cx={cx} cy={cy} r={6} stroke={dotStrokeColor} strokeWidth={2} fill="white" />;
+        }
+        return <></>;
+    };
+
     return (
         <ResponsiveContainer width="100%" height="100%" minHeight={400}>
             <LineChart
@@ -123,11 +157,11 @@ const GraphComponentCI: React.FC<GraphComponentCIProps> = ({
                 />
 
                 {/* --- ส่วนของเส้นกราฟ --- */}
-                {showCiPremium && <Line isAnimationActive={false} type="monotone" dataKey="ciPremium" name="เบี้ยรวม CI (สะสม)" stroke="#4299E1" strokeWidth={2} dot={false} />}
-                {showIWealthyPremium && <Line isAnimationActive={false} type="monotone" dataKey="iWealthyPremium" name="เบี้ยรวม iWealthy (สะสม)" stroke="#9F7AEA" strokeWidth={2} dot={false} />}
-                {showWithdrawal && <Line isAnimationActive={false} type="monotone" dataKey="withdrawal" name="เงินถอนจาก iW (สะสม)" stroke="#F6E05E" strokeWidth={2} dot={false} />}
-                {showIWealthyAV && <Line isAnimationActive={false} type="monotone" dataKey="iWealthyAV" name="มูลค่าบัญชี iWealthy (สิ้นปี)" stroke="#48BB78" strokeWidth={3} dot={false} />}
-                {showTotalDB && <Line isAnimationActive={false} type="monotone" dataKey="totalDB" name="ความคุ้มครองชีวิตรวม (รายปี)" stroke="#ED8936" strokeWidth={2} dot={false} />}
+                {showCiPremium && <Line isAnimationActive={false} type="monotone" dataKey="ciPremium" name="เบี้ยรวม CI (สะสม)" stroke="#4299E1" strokeWidth={2} dot={false} activeDot={renderActiveDot} />}
+                {showIWealthyPremium && <Line isAnimationActive={false} type="monotone" dataKey="iWealthyPremium" name="เบี้ยรวม iWealthy (สะสม)" stroke="#9F7AEA" strokeWidth={2} dot={false} activeDot={renderActiveDot} />}
+                {showWithdrawal && <Line isAnimationActive={false} type="monotone" dataKey="withdrawal" name="เงินถอนจาก iW (สะสม)" stroke="#F6E05E" strokeWidth={2} dot={false} activeDot={renderActiveDot} />}
+                {showIWealthyAV && <Line isAnimationActive={false} type="monotone" dataKey="iWealthyAV" name="มูลค่าบัญชี iWealthy (สิ้นปี)" stroke="#48BB78" strokeWidth={3} dot={false} activeDot={renderActiveDot} />}
+                {showTotalDB && <Line isAnimationActive={false} type="monotone" dataKey="totalDB" name="ความคุ้มครองชีวิตรวม (รายปี)" stroke="#ED8936" strokeWidth={2} dot={false} activeDot={renderActiveDot} />}
             </LineChart>
         </ResponsiveContainer>
     );

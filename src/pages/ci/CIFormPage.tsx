@@ -5,7 +5,7 @@
 import type { UseCiPlannerReturn, CiPlanSelections, IShieldPlan, LifeReadyPlan, RokRaiSoShieldPlan, IWealthyMode, StopPaymentConfig } from '@/components/ci/types/useCiTypes';
 import { FaVenusMars, FaBirthdayCake, FaFileAlt } from "react-icons/fa";
 import { FaWandMagicSparkles } from "react-icons/fa6";
-import { Button } from "@/components/ui/button";
+//import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { formatNumber, CalculatorIcon } from '@/components/ci/utils/helpers';
+import { formatNumber } from '@/components/ci/utils/helpers';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // --- Data Constants ---
@@ -37,9 +37,9 @@ const SectionTitle = ({ children, icon, className }: { children: React.ReactNode
 
 // --- Component Definition ---
 export default function CIFormPage(props: UseCiPlannerReturn) {
-    const { policyholderEntryAge, setPolicyholderEntryAge, policyholderGender, setPolicyholderGender, policyOriginMode, setPolicyOriginMode, existingPolicyEntryAge, setExistingPolicyEntryAge, selectedCiPlans, setSelectedCiPlans, useIWealthy, setUseIWealthy, iWealthyMode, setIWealthyMode, iWealthyInvestmentReturn, setIWealthyInvestmentReturn, iWealthyOwnPPT, setIWealthyOwnPPT, iWealthyWithdrawalStartAge, setIWealthyWithdrawalStartAge, manualRpp, setManualRpp, manualRtu, setManualRtu, autoRppRtuRatio, setAutoRppRtuRatio, isLoading, error, ciPremiumsSchedule, calculatedMinPremium, calculatedRpp, calculatedRtu, runCalculation, ciUseCustomWithdrawalAge, setCiUseCustomWithdrawalAge } = props;
+    const { policyholderEntryAge, setPolicyholderEntryAge, policyholderGender, setPolicyholderGender, policyOriginMode, setPolicyOriginMode, existingPolicyEntryAge, setExistingPolicyEntryAge, selectedCiPlans, setSelectedCiPlans, useIWealthy, setUseIWealthy, iWealthyMode, setIWealthyMode, iWealthyInvestmentReturn, setIWealthyInvestmentReturn, iWealthyOwnPPT, setIWealthyOwnPPT, iWealthyWithdrawalStartAge, setIWealthyWithdrawalStartAge, manualRpp, setManualRpp, manualRtu, setManualRtu, autoRppRtuRatio, setAutoRppRtuRatio, error, ciPremiumsSchedule, calculatedMinPremium, calculatedRpp, calculatedRtu, ciUseCustomWithdrawalAge, setCiUseCustomWithdrawalAge } = props;
     const handleCiSelectionChange=<K extends keyof CiPlanSelections>(key:K,value:CiPlanSelections[K])=>{setSelectedCiPlans(e=>{const t={...e,[key]:value};return"mainRiderChecked"===key&&!value&&(t.rokraiChecked=!1,t.dciChecked=!1),"icareChecked"===key&&(t.icareSA=value?1e6:0),"ishieldChecked"===key&&(value?(t.ishieldPlan="20",t.ishieldSA=5e5):(t.ishieldPlan=null,t.ishieldSA=0)),"rokraiChecked"===key&&(t.rokraiPlan=value?"XL":null),"dciChecked"===key&&(t.dciSA=value?3e5:0),"mainRiderChecked"===key&&(value?(t.lifeReadyPlan=18,t.lifeReadySA=15e4):(t.lifeReadyPlan=null,t.lifeReadySA=0,t.rokraiChecked=!1,t.rokraiPlan=null,t.dciChecked=!1,t.dciSA=0)),t})};
-    const firstYearCiPremium = ciPremiumsSchedule?.[0]?.totalCiPremium;
+    //const firstYearCiPremium = ciPremiumsSchedule?.[0]?.totalCiPremium;
     let iWealthySummaryText: string | null = null; if (useIWealthy) { if (iWealthyMode === 'manual' && (manualRpp > 0 || manualRtu > 0)) { iWealthySummaryText = `Manual: RPP ${formatNumber(manualRpp)}, RTU ${formatNumber(manualRtu)}`; } else if (iWealthyMode === 'automatic' && calculatedMinPremium !== undefined) { iWealthySummaryText = `Auto: RPP ${formatNumber(calculatedRpp)}, RTU ${formatNumber(calculatedRtu)} (รวม ${formatNumber(calculatedMinPremium)})`; } }
     const isCol2Visible = selectedCiPlans.mainRiderChecked; const isCol3Visible = useIWealthy; const visibleSectionsCount = [true, isCol2Visible, isCol3Visible].filter(Boolean).length; let gridColsClass = "lg:grid-cols-1"; if (visibleSectionsCount === 2) { gridColsClass = "lg:grid-cols-2"; } else if (visibleSectionsCount === 3) { gridColsClass = "lg:grid-cols-3"; } let titleOrderNumber = 0; const showNumbersOnTitles = visibleSectionsCount > 1; const getSectionTitle = (defaultTitle: string) => { if (showNumbersOnTitles) { titleOrderNumber++; return `${titleOrderNumber}. ${defaultTitle}`; } return defaultTitle; };
 
@@ -52,9 +52,9 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
     if (selectedCiPlans.rokraiChecked) includedPlans.push('RokeRaiSoShield');
     if (selectedCiPlans.dciChecked) includedPlans.push('DCI');
 
-    const includedPlansText = includedPlans.length > 0 
-        ? `(ประกอบไปด้วยแผน: ${includedPlans.join(' + ')})` 
-        : '';
+    //const includedPlansText = includedPlans.length > 0 
+    //    ? `(ประกอบไปด้วยแผน: ${includedPlans.join(' + ')})` 
+    //    : '';
 
     const withdrawalAgeOptions = Array.from(
         { length: (99 - policyholderEntryAge) + 1 },
@@ -485,7 +485,7 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
 
             {error && (<Alert variant="destructive" className="mt-4"><AlertTitle className="text-sm">พบข้อผิดพลาด</AlertTitle><AlertDescription className="text-xs">{error}</AlertDescription></Alert>)}
             
-            <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50">
+            {/*<div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="text-center md:text-left">
                         <p className="text-lg font-bold text-primary">เบี้ยประกัน CI รวมปีแรก: {formatNumber(firstYearCiPremium)} บาท</p>
@@ -498,7 +498,7 @@ export default function CIFormPage(props: UseCiPlannerReturn) {
                         {isLoading ? 'กำลังคำนวณ...' : <><CalculatorIcon /> แสดงภาพประกอบการขาย</>}
                     </Button>
                 </div>
-            </div>
+            </div>*/}
         </div>
     );
 }
