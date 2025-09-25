@@ -10,9 +10,10 @@ import type {
     HealthPlanSelections, SAReductionStrategy, PolicyOriginMode, 
     IWealthyMode, AnnualLTHCOutputRow,
     FundingSource, PensionFundingOptions, 
-    PensionMode 
+    PensionMode, PensionPlanType 
 } from '../hooks/useLthcTypes';
 import { calculateLthcPlan } from '../hooks/useLthcCalculations';
+
 
 // iWealthy Types & Calculations
 import type { Gender, PaymentFrequency, CalculationInput, CalculationResult, SumInsuredReductionRecord, PausePeriodRecord, AddInvestmentRecord, FrequencyChangeRecord, WithdrawalPlanRecord } from '../lib/calculations';
@@ -42,6 +43,11 @@ import {
 import type { CiPlanSelections, AnnualCiOutputRow, PolicyOriginMode as CiPolicyOriginMode } from '@/components/ci/types/useCiTypes';
 
 import { getInitialControlsState } from '@/pages/lthc/LthcChartPage';
+
+// retirement
+
+import  { calculateRetirementPlan } from '@/components/ret/hooks/useRetirementCalculations';
+import type { RetirementPlanParams, TaxInfo  } from '@/components/ret/hooks/useRetirementTypes';
 
 
 // --- INTERFACE DEFINITIONS ---
@@ -254,6 +260,83 @@ interface CIPlannerState {
     setCiControls: (controls: any) => void;
 }
 
+// 5. Interface สำหรับ Retirement Planner
+interface RetirementPlannerState {
+    // --- User Profile & Mode ---
+    retirementPlanningAge: number;
+    retirementGender: Gender;
+    retirementDesiredAge: number;
+    retirementPlanningMode: 'goalBased' | 'premiumBased';
+
+    // --- Inputs for Goal-Based Mode ---
+    retirementDesiredAnnualPension: number;
+    retirementAssumedInflationRate: number;
+
+    // --- Inputs for Premium-Based Mode ---
+    retirementManualIWealthyPremium: number;
+    retirementManualPensionPremium: number;
+
+    // --- Shared Configuration ---
+    retirementFundingMix: 'iWealthyOnly' | 'pensionOnly' | 'hybrid';
+    retirementHybridPensionRatio: number;
+    retirementInvestmentReturn: number;
+    retirementIWealthyPPT: number;
+    retirementPensionOptions: { planType: PensionPlanType }; // หรือ Type ที่เฉพาะเจาะจงกว่านี้
+    retirementHybridMode: 'automatic' | 'manual';
+
+    // --- Results ---
+    retirementResult: any[] | null; // หรือ Type ของ Output Row ที่คุณจะสร้าง
+    retirementIsLoading: boolean;
+    retirementError: string | null;
+
+    // --- Calculated Outputs ---
+    retirementSolvedIWealthyPremium?: number;
+    retirementSolvedPensionPremium?: number;
+    retirementAchievedMonthlyPension?: number;
+
+    // ----Withdrawal ----
+    retirementIWealthyWithdrawalPlan: WithdrawalPlanRecord[];
+    retirementIWealthyWithdrawalMode: 'automatic' | 'manual';
+
+    // --- ✨ [ใหม่] State สำหรับควบคุมการแสดงผลกราฟ ---
+    retirementShowFundValue: boolean;
+    retirementShowPayoutCumulative: boolean;
+    retirementShowPremium: boolean;
+    retirementShowDeathBenefit: boolean;
+
+    // --- ✨ [ใหม่] State สำหรับจัดการข้อมูลภาษี ---
+    retirementTaxInfo: TaxInfo | null;
+
+    // --- Actions ---
+    setRetirementPlanningAge: Dispatch<SetStateAction<number>>;
+    setRetirementGender: Dispatch<SetStateAction<Gender>>;
+    setRetirementDesiredAge: Dispatch<SetStateAction<number>>;
+    setRetirementPlanningMode: Dispatch<SetStateAction<'goalBased' | 'premiumBased'>>;
+    setRetirementDesiredAnnualPension: Dispatch<SetStateAction<number>>;
+    setRetirementAssumedInflationRate: Dispatch<SetStateAction<number>>;
+    setRetirementManualIWealthyPremium: Dispatch<SetStateAction<number>>;
+    setRetirementManualPensionPremium: Dispatch<SetStateAction<number>>;
+    setRetirementFundingMix: Dispatch<SetStateAction<'iWealthyOnly' | 'pensionOnly' | 'hybrid'>>;
+    setRetirementHybridPensionRatio: Dispatch<SetStateAction<number>>;
+    setRetirementInvestmentReturn: Dispatch<SetStateAction<number>>;
+    setRetirementIWealthyPPT: Dispatch<SetStateAction<number>>;
+    setRetirementPensionOptions: Dispatch<SetStateAction<{ planType: PensionPlanType }>>;
+    setRetirementHybridMode: Dispatch<SetStateAction<'automatic' | 'manual'>>; 
+    setRetirementIWealthyWithdrawalPlan: Dispatch<SetStateAction<WithdrawalPlanRecord[]>>;
+    setRetirementIWealthyWithdrawalMode: Dispatch<SetStateAction<'automatic' | 'manual'>>;
+    runRetirementCalculation: () => Promise<void>;
+    // --- ✨ [ใหม่] Setters สำหรับควบคุมกราฟ ---
+    setRetirementShowFundValue: Dispatch<SetStateAction<boolean>>;
+    setRetirementShowPayoutCumulative: Dispatch<SetStateAction<boolean>>;
+    setRetirementShowPremium: Dispatch<SetStateAction<boolean>>;
+    setRetirementShowDeathBenefit: Dispatch<SetStateAction<boolean>>;
+
+    setRetirementTaxInfo: Dispatch<SetStateAction<TaxInfo | null>>; // ✨ [ใหม่] Setter
+}
+
+// และในตอน create store ก็จะเพิ่มเข้าไป
+// export const useAppStore = create<LthcState & IWealthyState & ... & RetirementPlannerState>((set, get) => ({ ... }))
+
 interface AuthState {
   pin: string | null;
   isAuthenticated: boolean;
@@ -290,7 +373,7 @@ const adjustReductions = (rpp: number, reductions: SumInsuredReductionRecord[]):
 
 
 // --- ZUSTAND STORE CREATION ---
-export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & CIPlannerState & AuthState>((set, get) => ({
+export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & CIPlannerState & RetirementPlannerState & AuthState>((set, get)  => ({
     // ===================================================================
     // SECTION 1: LTHC State & Actions (UPDATED)
     // ===================================================================
@@ -907,22 +990,7 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
             set({ ciError: err instanceof Error ? err.message : 'An unexpected CI error occurred', ciIsLoading: false });
         }
     },
-    pin: null,
-    isAuthenticated: false,
-    isAdmin: false,
-    setPin: (pin) => {
-    // ดึงค่า ADMIN_PIN จาก .env ของฝั่ง Frontend
-    const adminPin = import.meta.env.VITE_ADMIN_PIN; 
-    if (pin) {
-        set({ 
-        pin: pin, 
-        isAuthenticated: true,
-        isAdmin: pin === adminPin // <-- เช็คว่าเป็น Admin หรือไม่ตรงนี้
-        });
-    } else {
-        set({ pin: null, isAuthenticated: false, isAdmin: false });
-    }
-    },
+
     loadCiState: (data) => {
         set({
             ciPlanningAge: data.ciPlanningAge,
@@ -944,4 +1012,136 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
             ciUseCustomWithdrawalAge: data.ciUseCustomWithdrawalAge
         });
     },
+
+// ==========================================================
+// SECTION 5: Retirement Planner State & Actions
+// ==========================================================
+
+// --- ส่วนของ State (ข้อมูล) ---
+retirementPlanningAge: 35,
+retirementGender: 'male',
+retirementDesiredAge: 60,
+retirementPlanningMode: 'goalBased',
+
+// Inputs for Goal-Based Mode
+retirementDesiredAnnualPension: 100000, 
+retirementAssumedInflationRate: 0,
+
+// Inputs for Premium-Based Mode
+retirementManualIWealthyPremium: 120000,
+retirementManualPensionPremium: 0,
+
+// Shared Configuration
+retirementFundingMix: 'hybrid',
+retirementHybridPensionRatio: 40,
+retirementInvestmentReturn: 5,
+retirementIWealthyPPT: 20,
+retirementPensionOptions: { planType: 'pension8' as PensionPlanType }, // ✨ [แก้ไข] เพิ่ม Type Assertion
+retirementHybridMode: 'automatic',
+
+// Results
+retirementResult: null,
+retirementIsLoading: false,
+retirementError: null,
+
+// Calculated Outputs
+retirementSolvedIWealthyPremium: undefined,
+retirementSolvedPensionPremium: undefined,
+retirementAchievedMonthlyPension: undefined,
+
+//--Withdrawal----
+retirementIWealthyWithdrawalPlan: [],
+retirementIWealthyWithdrawalMode: 'automatic',
+
+retirementShowFundValue: true,
+    retirementShowPayoutCumulative: true,
+    retirementShowPremium: true,
+    retirementShowDeathBenefit: true,
+    // --- ✨ [ใหม่] ค่าเริ่มต้นสำหรับ State ภาษี ---
+    retirementTaxInfo: null,
+
+// --- ส่วนของ Action (ฟังก์ชัน) ---
+setRetirementPlanningAge: (arg) => set(state => ({ retirementPlanningAge: typeof arg === 'function' ? arg(state.retirementPlanningAge) : arg })),
+setRetirementGender: (arg) => set(state => ({ retirementGender: typeof arg === 'function' ? arg(state.retirementGender) : arg })),
+setRetirementDesiredAge: (arg) => set(state => ({ retirementDesiredAge: typeof arg === 'function' ? arg(state.retirementDesiredAge) : arg })),
+setRetirementPlanningMode: (arg) => set(state => ({ retirementPlanningMode: typeof arg === 'function' ? arg(state.retirementPlanningMode) : arg })),
+setRetirementDesiredAnnualPension: (arg) => set(state => ({ retirementDesiredAnnualPension: typeof arg === 'function' ? arg(state.retirementDesiredAnnualPension) : arg })), // ✨ [แก้ไข] เปลี่ยนชื่อฟังก์ชัน
+setRetirementAssumedInflationRate: (arg) => set(state => ({ retirementAssumedInflationRate: typeof arg === 'function' ? arg(state.retirementAssumedInflationRate) : arg })),
+setRetirementManualIWealthyPremium: (arg) => set(state => ({ retirementManualIWealthyPremium: typeof arg === 'function' ? arg(state.retirementManualIWealthyPremium) : arg })),
+setRetirementManualPensionPremium: (arg) => set(state => ({ retirementManualPensionPremium: typeof arg === 'function' ? arg(state.retirementManualPensionPremium) : arg })),
+setRetirementFundingMix: (arg) => set(state => ({ retirementFundingMix: typeof arg === 'function' ? arg(state.retirementFundingMix) : arg })),
+setRetirementHybridPensionRatio: (arg) => set(state => ({ retirementHybridPensionRatio: typeof arg === 'function' ? arg(state.retirementHybridPensionRatio) : arg })),
+setRetirementInvestmentReturn: (arg) => set(state => ({ retirementInvestmentReturn: typeof arg === 'function' ? arg(state.retirementInvestmentReturn) : arg })),
+setRetirementIWealthyPPT: (arg) => set(state => ({ retirementIWealthyPPT: typeof arg === 'function' ? arg(state.retirementIWealthyPPT) : arg })),
+setRetirementPensionOptions: (arg) => set(state => ({ retirementPensionOptions: typeof arg === 'function' ? arg(state.retirementPensionOptions) : arg })),
+setRetirementHybridMode: (arg) => set(state => ({ retirementHybridMode: typeof arg === 'function' ? arg(state.retirementHybridMode) : arg })), // ✨ [แก้ไข] เพิ่ม Setter ที่ขาดไป
+setRetirementIWealthyWithdrawalPlan: (arg) => set(state => ({ retirementIWealthyWithdrawalPlan: typeof arg === 'function' ? arg(state.retirementIWealthyWithdrawalPlan) : arg })),
+setRetirementIWealthyWithdrawalMode: (arg) => set(state => ({ retirementIWealthyWithdrawalMode: typeof arg === 'function' ? arg(state.retirementIWealthyWithdrawalMode) : arg })),
+setRetirementShowFundValue: (arg) => set(state => ({ retirementShowFundValue: typeof arg === 'function' ? arg(state.retirementShowFundValue) : arg })),
+setRetirementShowPayoutCumulative: (arg) => set(state => ({ retirementShowPayoutCumulative: typeof arg === 'function' ? arg(state.retirementShowPayoutCumulative) : arg })),
+setRetirementShowPremium: (arg) => set(state => ({ retirementShowPremium: typeof arg === 'function' ? arg(state.retirementShowPremium) : arg })),
+setRetirementShowDeathBenefit: (arg) => set(state => ({ retirementShowDeathBenefit: typeof arg === 'function' ? arg(state.retirementShowDeathBenefit) : arg })),
+setRetirementTaxInfo: (arg) => set(state => ({ retirementTaxInfo: typeof arg === 'function' ? arg(state.retirementTaxInfo) : arg })),
+
+// Main Calculation Action
+runRetirementCalculation: async () => {
+    set({
+        retirementIsLoading: true,
+        retirementError: null,
+        retirementResult: null,
+        retirementSolvedIWealthyPremium: undefined,
+        retirementSolvedPensionPremium: undefined,
+        retirementAchievedMonthlyPension: undefined
+    });
+
+    const s = get();
+    const params: RetirementPlanParams = {
+        planningAge: s.retirementPlanningAge,
+        gender: s.retirementGender,
+        desiredRetirementAge: s.retirementDesiredAge,
+        planningMode: s.retirementPlanningMode,
+        desiredAnnualPension: s.retirementDesiredAnnualPension,
+        assumedInflationRate: s.retirementAssumedInflationRate,
+        manualIWealthyPremium: s.retirementManualIWealthyPremium,
+        manualPensionPremium: s.retirementManualPensionPremium,
+        fundingMix: s.retirementFundingMix,
+        hybridPensionRatio: s.retirementHybridPensionRatio,
+        investmentReturn: s.retirementInvestmentReturn,
+        iWealthyPPT: s.retirementIWealthyPPT,
+        pensionOptions: s.retirementPensionOptions,
+        hybridMode: s.retirementHybridMode,
+        iWealthyWithdrawalPlan: s.retirementIWealthyWithdrawalPlan,
+        iWealthyWithdrawalMode: s.retirementIWealthyWithdrawalMode,
+    };
+
+    try {
+        const result = await calculateRetirementPlan(params);
+        set({
+            ...result,
+            retirementIsLoading: false,
+        });
+    } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการคำนวณแผนเกษียณ';
+        set({ retirementError: errorMessage, retirementIsLoading: false });
+    }
+},
+
+
+    pin: null,
+    isAuthenticated: false,
+    isAdmin: false,
+    setPin: (pin) => {
+    // ดึงค่า ADMIN_PIN จาก .env ของฝั่ง Frontend
+    const adminPin = import.meta.env.VITE_ADMIN_PIN; 
+    if (pin) {
+        set({ 
+        pin: pin, 
+        isAuthenticated: true,
+        isAdmin: pin === adminPin // <-- เช็คว่าเป็น Admin หรือไม่ตรงนี้
+        });
+    } else {
+        set({ pin: null, isAuthenticated: false, isAdmin: false });
+    }
+    },
+    
 }));

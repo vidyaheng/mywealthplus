@@ -38,7 +38,7 @@ const calculateTotalPensionPayoutFactor = (planType: PensionPlanType): number =>
     return factor60to70 + factor71to80 + factor81to88;
 };
 
-const generatePensionIllustration = (entryAge: number, gender: Gender, planType: PensionPlanType, solvedSumAssured: number): any[] => {
+export const generatePensionIllustration = (entryAge: number, gender: Gender, planType: PensionPlanType, solvedSumAssured: number): any[] => {
     const illustration = [];
     const annualPensionPremiumRate = getPensionPremiumRate(entryAge, gender, planType);
     if (annualPensionPremiumRate === null) throw new Error(`ไม่พบอัตราค่าเบี้ยบำนาญสำหรับอายุ ${entryAge}`);

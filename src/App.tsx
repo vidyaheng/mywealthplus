@@ -10,6 +10,7 @@ import { useAppStore } from "./stores/appStore";
 import IWealthyLayout from "./pages/iwealthy/IWealthyLayout";
 import LTHCLayout from './pages/lthc/LTHCLayout';
 import CiPlannerPage from "./pages/ci/CiPlannerPage";
+import RetirementPlannerPage from "@/pages/retire/RetirementPlannerPage";
 // import RetirePage from "./pages/retire/RetirePage";
 // import LifePlanPage from "./pages/lifeplan/LifePlanPage";
 
@@ -67,6 +68,7 @@ function App() {
                         {/* Route อื่นๆ (ถ้ามี) */}
                         <Route path="/ci" element={<CiPlannerPage />} /> 
                         {/* <Route path="/retire" element={<RetirePage />} /> */}
+                        <Route path="/retire/*" element={<RetirementPlannerPage />} />
                         {/* <Route path="/lifeplan" element={<LifePlanPage />} /> */}
                         
                         <Route path="*" element={<div>404 - Page Not Found</div>} />

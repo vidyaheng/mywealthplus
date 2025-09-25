@@ -36,9 +36,9 @@ const tabs: TabItem[] = [
   },
   { 
     name: "บำนาญ", 
-    to: "/retire", 
+    to: "/retire/form",
     short: "Ret",
-    activePaths: ["/retire", "/retire/*"] 
+    activePaths: ["/retire", "/retire/*"],
   },
   { 
     name: "คุ้มครองชีวิต", 
