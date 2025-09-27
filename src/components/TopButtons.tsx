@@ -12,7 +12,8 @@ import PauseIcon from '@/assets/icons/PauseIcon';       // ไม่มี .svg?
 import AddReduceIcon from '@/assets/icons/AddReduceIcon';
 import WithdrawalIcon from '@/assets/icons/WithdrawalIcon';
 import LumpSumIcon from '@/assets/icons/LumpSumIcon';
-import CalendarSwapIcon from '@/assets/icons/CalendarSwapIcon'; // ใช้ไอคอนนี้แทน FaCalendarAlt
+//import CalendarSwapIcon from '@/assets/icons/CalendarSwapIcon'; // ใช้ไอคอนนี้แทน FaCalendarAlt
+import PeriodIcon from '@/assets/icons/period';
 
 // Interface สำหรับแต่ละ Action
 interface ActionItem {
@@ -26,7 +27,7 @@ const topActions: ActionItem[] = [
     { id: "pause", label: "หยุดพักชำระ", icon: PauseIcon },
     { id: "reduceSI", label: "เพิ่ม/ลดทุน", icon: AddReduceIcon },
     { id: "withdrawPlan", label: "แผนถอนเงิน", icon: WithdrawalIcon },
-    { id: "changeFreq", label: "งวดชำระ", icon: CalendarSwapIcon },
+    { id: "changeFreq", label: "งวดชำระ", icon: PeriodIcon },
     { id: "addInvest", label: "ลงทุนเพิ่ม", icon: LumpSumIcon },
 ];
 
