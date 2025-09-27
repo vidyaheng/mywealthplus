@@ -39,12 +39,14 @@ const tabs: TabItem[] = [
     to: "/retire/form",
     short: "Ret",
     activePaths: ["/retire", "/retire/*"],
+    logoSrc: "/images/บำนาญ-cutout.svg" 
   },
   { 
     name: "คุ้มครองชีวิต", 
     to: "/lifeplan", 
     short: "LP",
     activePaths: ["/lifeplan", "/lifeplan/*"] 
+    
   },
 ];
 

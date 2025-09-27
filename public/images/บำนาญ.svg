@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 84 84">
+  <defs>
+    <style>
+      .cls-1, .cls-2, .cls-3 {
+        fill: #fff;
+      }
+
+      .cls-1, .cls-2, .cls-3, .cls-4, .cls-5 {
+        stroke: #0057a8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .cls-1, .cls-4, .cls-5 {
+        stroke-width: 2px;
+      }
+
+      .cls-2 {
+        stroke-width: .89px;
+      }
+
+      .cls-6 {
+        font-size: 8.95px;
+      }
+
+      .cls-6, .cls-7, .cls-8 {
+        fill: #0057a8;
+        font-family: NotoSans-Bold, 'Noto Sans';
+        font-weight: 700;
+      }
+
+      .cls-9, .cls-5 {
+        fill: #00c6f4;
+      }
+
+      .cls-3 {
+        stroke-width: 1.23px;
+      }
+
+      .cls-7 {
+        font-size: 20.19px;
+      }
+
+      .cls-4 {
+        fill: #d6f1ff;
+      }
+
+      .cls-8 {
+        font-size: 12.37px;
+      }
+    </style>
+  </defs>
+  <polygon class="cls-4" points="35.81 42.34 25.63 42.34 22.92 33.04 38.52 33.04 35.81 42.34"/>
+  <path class="cls-4" d="M47.72,66.54v-12.88c0-6.62-5.37-11.99-11.99-11.99h-10.02c-6.62,0-11.99,5.37-11.99,11.99v12.88l-2.66,4.34c-.98,1.6.17,3.66,2.05,3.66h35.21c1.88,0,3.03-2.06,2.05-3.66l-2.66-4.34Z"/>
+  <g>
+    <text class="cls-7" transform="translate(23.9 63.73)"><tspan x="0" y="0">B</tspan></text>
+    <line class="cls-1" x1="30.69" y1="47.91" x2="30.69" y2="49.89"/>
+    <line class="cls-1" x1="30.69" y1="63.19" x2="30.69" y2="65.17"/>
+  </g>
+  <g>
+    <rect class="cls-9" x="49.38" y="34.14" width="2.22" height="7.48"/>
+    <rect class="cls-9" x="49.38" y="34.14" width="2.22" height="7.48" transform="translate(12.61 88.36) rotate(-90)"/>
+  </g>
+  <g>
+    <rect class="cls-9" x="66.77" y="41.23" width="2.22" height="7.48"/>
+    <rect class="cls-9" x="66.77" y="41.23" width="2.22" height="7.48" transform="translate(22.91 112.84) rotate(-90)"/>
+  </g>
+  <rect class="cls-1" x="38.66" y="69.88" width="18.48" height="4.62"/>
+  <rect class="cls-1" x="42.76" y="65.27" width="18.48" height="4.62"/>
+  <rect class="cls-1" x="38.66" y="60.66" width="18.48" height="4.62"/>
+  <rect class="cls-1" x="42.76" y="56.05" width="18.48" height="4.62"/>
+  <rect class="cls-1" x="38.44" y="51.22" width="18.48" height="4.62"/>
+  <rect class="cls-1" x="42.76" y="46.55" width="18.48" height="4.62"/>
+  <g>
+    <circle class="cls-5" cx="63.5" cy="65.71" r="9.45"/>
+    <g>
+      <text class="cls-8" transform="translate(59.93 69.97)"><tspan x="0" y="0">B</tspan></text>
+      <line class="cls-3" x1="64.09" y1="60.27" x2="64.09" y2="61.49"/>
+      <line class="cls-3" x1="64.09" y1="69.64" x2="64.09" y2="70.85"/>
+    </g>
+  </g>
+  <g>
+    <circle class="cls-5" cx="63.5" cy="24.73" r="6.94"/>
+    <g>
+      <text class="cls-6" transform="translate(60.49 27.82)"><tspan x="0" y="0">B</tspan></text>
+      <line class="cls-2" x1="63.5" y1="20.81" x2="63.5" y2="21.69"/>
+      <line class="cls-2" x1="63.5" y1="27.58" x2="63.5" y2="28.46"/>
+    </g>
+  </g>
+</svg>
