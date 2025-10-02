@@ -18,9 +18,9 @@ interface GraphInfoBoxProps {
     setShowAccountValue: React.Dispatch<React.SetStateAction<boolean>>;
     setShowPremiumCumulative: React.Dispatch<React.SetStateAction<boolean>>;
     setShowPremiumAnnual: React.Dispatch<React.SetStateAction<boolean>>;
-    rppPercent: number;
+    rppPremium: number;
     totalPremium: number;
-    onPercentChange: (percent: number) => void; // Handler เมื่อมีการเปลี่ยน % RPP/RTU
+    onRppPremiumChange: (percent: number) => void; // Handler เมื่อมีการเปลี่ยน % RPP/RTU
 }
 
 const GraphInfoBox: React.FC<GraphInfoBoxProps> = ({
@@ -35,9 +35,9 @@ const GraphInfoBox: React.FC<GraphInfoBoxProps> = ({
     showAccountValue,
     showPremiumAnnual,
     showPremiumCumulative,
-    rppPercent,
+    rppPremium,
     totalPremium,
-    onPercentChange
+    onRppPremiumChange
 }) => {
     // ถ้ามี data (จาก hover) ให้ใช้ data นั้น, ถ้าไม่มี (เช่น ตอนเริ่ม) ให้ใช้ initialData
     const displayData = data || initialData;
@@ -113,9 +113,9 @@ const GraphInfoBox: React.FC<GraphInfoBoxProps> = ({
             <div className="mt-auto pt-3 border-t border-blue-700"> {/* mt-auto ดันลงล่าง, pt-3 เพิ่มระยะห่าง */}
                 <h3 className="font-semibold text-xs mb-1.5 text-center text-gray-300">ปรับสัดส่วนเบี้ย</h3>
                 <RppRtuRatioSlider
-                    rppPercent={rppPercent}
+                    rppPremium={rppPremium}
                     totalPremium={totalPremium}
-                    onPercentChange={onPercentChange} // Handler จาก IWealthyChartPage -> App.tsx
+                    onRppPremiumChange={onRppPremiumChange} // Handler จาก IWealthyChartPage -> App.tsx
                     compact={true}
                     className="ratio-slider-info-box" // ให้ className เฉพาะสำหรับ InfoBox ถ้าต้องการ style แยก
                     // อาจจะต้องปรับ style ของ Slider ให้เข้ากับพื้นหลังสีเข้ม

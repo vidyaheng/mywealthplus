@@ -31,7 +31,8 @@ export default function IWealthyTablePage() {
         iWealthyRtu,
         iWealthyInvestmentReturn,
         runIWealthyCalculation,
-        handleIWealthyRppRtuSlider,
+        //handleIWealthyRppRtuSlider,
+        setIWealthyRpp,
         setIWealthyInvestmentReturn,
     } = useAppStore();
 
@@ -129,7 +130,7 @@ const dataWithTaxBenefit = useMemo((): AnnualDataRowWithTax[] => {
 
     // --- Handlers สำหรับส่งให้ Fullscreen Modal ---
     const totalPremiumForSliderModal = useMemo(() => iWealthyRpp + iWealthyRtu, [iWealthyRpp, iWealthyRtu]);
-    const rppPercentForSliderModal = useMemo(() => (totalPremiumForSliderModal > 0 ? Math.round((iWealthyRpp / totalPremiumForSliderModal) * 100) : 100), [iWealthyRpp, totalPremiumForSliderModal]);
+    //const rppPercentForSliderModal = useMemo(() => (totalPremiumForSliderModal > 0 ? Math.round((iWealthyRpp / totalPremiumForSliderModal) * 100) : 100), [iWealthyRpp, totalPremiumForSliderModal]);
     const handleGraphAgeChangeInModal = useCallback((ageFromGraph: number | undefined) => {
         setCurrentAgeForInfoBoxModal(ageFromGraph);
         
@@ -196,9 +197,9 @@ const dataWithTaxBenefit = useMemo((): AnnualDataRowWithTax[] => {
             setShowPremiumAnnual={setShowPremiumAnnualModal}
             showPremiumCumulative={showPremiumCumulativeModal}
             setShowPremiumCumulative={setShowPremiumCumulativeModal}
-            rppPercent={rppPercentForSliderModal}
+            rppPremium={iWealthyRpp}
             totalPremium={totalPremiumForSliderModal}
-            onPercentChange={handleIWealthyRppRtuSlider}
+            onRppPremiumChange={setIWealthyRpp}
             assumedReturnRate={iWealthyInvestmentReturn}
             onReturnRateChange={setIWealthyInvestmentReturn}
             onRecalculate={runIWealthyCalculation}
