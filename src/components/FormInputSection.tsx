@@ -17,10 +17,10 @@ export default function FormInputSection() {
     iWealthyGender, setIWealthyGender,
     iWealthyPaymentFrequency, setIWealthyPaymentFrequency,
     iWealthyRpp, setIWealthyRpp,
-    iWealthyRtu, setIWealthyRtu,
+    iWealthyRtu, debouncedSetIWealthyRtu,
     iWealthySumInsured, setIWealthySumInsured,
     iWealthySumInsuredReductions,
-    handleIWealthyRppRtuSlider,
+    //handleIWealthyRppRtuSlider,
   } = useAppStore();
 
   const debouncedSetAge = useMemo(
@@ -77,7 +77,8 @@ export default function FormInputSection() {
 
   const handleRtuChange = (periodicValue: number) => {
     if (paymentsPerYear > 0) {
-      setIWealthyRtu(periodicValue * paymentsPerYear);
+      //setIWealthyRtu(periodicValue * paymentsPerYear);
+      debouncedSetIWealthyRtu(periodicValue * paymentsPerYear); // ใช้ฟังก์ชันดีเลย์
     }
   };
 
@@ -96,7 +97,7 @@ export default function FormInputSection() {
   const maxRtu = useMemo(() => (iWealthyRpp || 0) * 3, [iWealthyRpp]);
   
   // เปอร์เซ็นต์สำหรับ Slider (คำนวณจากค่ารายปี)
-  const rppPercentForSlider = useMemo(() => totalAnnualPremium > 0 ? Math.round((iWealthyRpp / totalAnnualPremium) * 100) : 100, [iWealthyRpp, totalAnnualPremium]);
+  //const rppPercentForSlider = useMemo(() => totalAnnualPremium > 0 ? Math.round((iWealthyRpp / totalAnnualPremium) * 100) : 100, [iWealthyRpp, totalAnnualPremium]);
   
   const latestReduction = useMemo(() => {
     if (!iWealthySumInsuredReductions || iWealthySumInsuredReductions.length === 0) return null;
@@ -152,8 +153,18 @@ export default function FormInputSection() {
         
         {/* คอลัมน์ 3: Slider สัดส่วน RPP/RTU */}
         <div className="w-full self-center md:justify-self-end pt-1">
-          {/* ส่ง Total "Annual" Premium เข้าไปเพื่อให้ Slider คำนวณได้ถูกต้อง */}
-          <RppRtuRatioSlider rppPercent={rppPercentForSlider} totalPremium={totalAnnualPremium} onPercentChange={handleIWealthyRppRtuSlider} compact={false} />
+          <RppRtuRatioSlider
+            // [เปลี่ยน] 1. ส่งค่าเบี้ย RPP (รายปี) จาก Store เข้าไปตรงๆ
+            rppPremium={iWealthyRpp}
+            
+            // 2. เบี้ยรวมรายปียังคงส่งเข้าไปเหมือนเดิม (ถูกต้องแล้ว)
+            totalPremium={totalAnnualPremium} 
+            
+            // [เปลี่ยน] 3. เมื่อ Slider ขยับ ให้เรียกใช้ setIWealthyRpp เพื่ออัปเดตค่าเบี้ยโดยตรง
+            onRppPremiumChange={setIWealthyRpp} 
+
+            compact={false} 
+          />
         </div>
       </div>
       

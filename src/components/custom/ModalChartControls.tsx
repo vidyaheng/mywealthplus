@@ -21,9 +21,9 @@ interface ModalChartControlsProps {
     setShowPremiumAnnual: React.Dispatch<React.SetStateAction<boolean>>;
     showPremiumCumulative: boolean;
     setShowPremiumCumulative: React.Dispatch<React.SetStateAction<boolean>>;
-    rppPercent: number;
+    rppPremium: number;
     totalPremium: number;
-    onPercentChange: (percent: number) => void;
+    onRppPremiumChange: (premium: number) => void;
     assumedReturnRate: number;
     onReturnRateChange: (newRate: number) => void;
     onRecalculate: () => void; 
@@ -36,7 +36,7 @@ const ModalChartControls: React.FC<ModalChartControlsProps> = ({
     showAccountValue, setShowAccountValue,
     showPremiumAnnual, setShowPremiumAnnual,
     showPremiumCumulative, setShowPremiumCumulative,
-    rppPercent, totalPremium, onPercentChange,
+    rppPremium, totalPremium, onRppPremiumChange,
     assumedReturnRate, onReturnRateChange,
     onRecalculate,
     isFullScreenView,
@@ -149,9 +149,9 @@ const ModalChartControls: React.FC<ModalChartControlsProps> = ({
                     {/* --- คอลัมน์ที่ 6: Sliders --- */}
                     <div className="flex flex-col space-y-4">
                         <RppRtuRatioSlider 
-                            rppPercent={rppPercent} 
+                            rppPremium={rppPremium} 
                             totalPremium={totalPremium} 
-                            onPercentChange={onPercentChange} 
+                            onRppPremiumChange={onRppPremiumChange} 
                             compact={true} 
                         />
                         <InvestmentReturnInput
@@ -201,9 +201,9 @@ const ModalChartControls: React.FC<ModalChartControlsProps> = ({
                 </h4>
                 <div className="px-2 sm:px-4">
                     <RppRtuRatioSlider
-                        rppPercent={rppPercent}
+                        rppPremium={rppPremium} 
                         totalPremium={totalPremium}
-                        onPercentChange={onPercentChange}
+                        onRppPremiumChange={onRppPremiumChange} 
                         compact={true} // <<<< ลองตั้งเป็น false เพื่อให้ slider ดูใหญ่ขึ้น เหมาะกับหน้า Page
                     />
                 </div>

@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import type { Dispatch, SetStateAction } from 'react';
+import debounce from 'lodash.debounce';
 
 // --- TYPE & FUNCTION IMPORTS ---
 
@@ -175,9 +176,10 @@ export interface IWealthyState {
   setIWealthyPaymentFrequency: (freq: PaymentFrequency) => void;
   setIWealthyRpp: (rpp: number) => void;
   setIWealthyRtu: (rtu: number) => void;
+  debouncedSetIWealthyRtu: (rtu: number) => void; 
   setIWealthySumInsured: (sa: number) => void;
   setIWealthyInvestmentReturn: (rate: number) => void;
-  handleIWealthyRppRtuSlider: (percent: number) => void;
+  //handleIWealthyRppRtuSlider: (percent: number) => void;
   setIWealthyPausePeriods: (periods: PausePeriodRecord[]) => void;
   setIWealthySumInsuredReductions: (reductions: SumInsuredReductionRecord[]) => void;
   setIWealthyAdditionalInvestments: (investments: AddInvestmentRecord[]) => void;
@@ -636,13 +638,65 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
 },
     setIWealthyGender: (gender) => set({ iWealthyGender: gender }),
     setIWealthyPaymentFrequency: (freq) => set({ iWealthyPaymentFrequency: freq }),
-    setIWealthyRpp: (rpp) => {
-        const { iWealthyAge, iWealthySumInsuredReductions } = get();
-        const newSumInsured = rpp * getSumInsuredFactor(iWealthyAge);
-        const { adjustedList, wasAdjusted } = adjustReductions(rpp, iWealthySumInsuredReductions);
-        set({ iWealthyRpp: rpp, iWealthySumInsured: newSumInsured, iWealthySumInsuredReductions: adjustedList, iWealthyReductionsNeedReview: get().iWealthyReductionsNeedReview || wasAdjusted });
-    },
-    setIWealthyRtu: (rtu) => set({ iWealthyRtu: rtu }),
+    // 1. ฟังก์ชันสำหรับช่อง RPP (เมื่อกรอก RPP ให้ RTU คงที่)
+    setIWealthyRpp: (rpp) => {
+        const { iWealthyAge, iWealthySumInsuredReductions } = get();
+        const newSumInsured = rpp * getSumInsuredFactor(iWealthyAge);
+        const { adjustedList, wasAdjusted } = adjustReductions(rpp, iWealthySumInsuredReductions);
+
+        set({ 
+            iWealthyRpp: rpp, 
+            iWealthySumInsured: newSumInsured, 
+            iWealthySumInsuredReductions: adjustedList, 
+            iWealthyReductionsNeedReview: get().iWealthyReductionsNeedReview || wasAdjusted 
+        });
+    },
+
+    // 2. ฟังก์ชันสำหรับช่อง RTU (มีเงื่อนไขตามที่คุยกัน)
+    setIWealthyRtu: (newRtu) => {
+        const { iWealthyRpp, iWealthyRtu, iWealthyAge, iWealthySumInsuredReductions } = get();
+        
+        if (iWealthyRtu > 0) {
+            // --- กรณีที่ RTU มีค่าอยู่แล้ว (มากกว่า 0) ---
+            // Logic นี้ถูกต้องแล้ว: เบี้ยรวมคงที่, ปรับลด RPP
+            const totalPremium = iWealthyRpp + iWealthyRtu;
+            const newRpp = Math.max(0, totalPremium - newRtu);
+            
+            const newSumInsured = newRpp * getSumInsuredFactor(iWealthyAge);
+            const { adjustedList, wasAdjusted } = adjustReductions(newRpp, iWealthySumInsuredReductions);
+
+            set({ 
+                iWealthyRpp: newRpp, 
+                iWealthyRtu: newRtu,
+                iWealthySumInsured: newSumInsured,
+                iWealthySumInsuredReductions: adjustedList,
+                iWealthyReductionsNeedReview: get().iWealthyReductionsNeedReview || wasAdjusted
+            });
+
+        } else {
+            // --- กรณีที่ RTU เริ่มต้นจาก 0 (แก้ไขแล้ว) ---
+            // Logic ใหม่: อัปเดต RTU โดยไม่ยุ่งกับ RPP แต่ยังคงคำนวณค่าอื่นๆ ที่เกี่ยวข้อง
+            
+            // คำนวณ SA และอื่นๆ จากค่า RPP ตัวเดิมที่ไม่เปลี่ยนแปลง
+            const newSumInsured = iWealthyRpp * getSumInsuredFactor(iWealthyAge); 
+            const { adjustedList, wasAdjusted } = adjustReductions(iWealthyRpp, iWealthySumInsuredReductions);
+
+            set({ 
+                // iWealthyRpp ไม่ถูกตั้งค่าใหม่ (ใช้ค่าเดิม)
+                iWealthyRtu: newRtu,
+                // อัปเดตค่าอื่นๆ ให้สอดคล้องกันด้วย
+                iWealthySumInsured: newSumInsured,
+                iWealthySumInsuredReductions: adjustedList,
+                iWealthyReductionsNeedReview: get().iWealthyReductionsNeedReview || wasAdjusted
+            });
+        }
+    },
+
+    debouncedSetIWealthyRtu: debounce((rtu: number) => {
+        // ให้เรียกใช้ setIWealthyRtu ตัวจริง
+        get().setIWealthyRtu(rtu);
+    }, 400), // หน่วงเวลา 400ms (ปรับค่าได้ตามความพอใจ)
+
     setIWealthySumInsured: (sa) => {
         const { iWealthyAge, iWealthySumInsuredReductions } = get();
         const factor = getSumInsuredFactor(iWealthyAge);
@@ -651,17 +705,17 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
         set({ iWealthySumInsured: sa, iWealthyRpp: newRpp, iWealthySumInsuredReductions: adjustedList, iWealthyReductionsNeedReview: get().iWealthyReductionsNeedReview || wasAdjusted });
     },
     setIWealthyInvestmentReturn: (rate) => set({ iWealthyInvestmentReturn: rate }),
-    handleIWealthyRppRtuSlider: (percent) => {
-        const { iWealthyRpp, iWealthyRtu, iWealthyAge, iWealthySumInsuredReductions } = get();
-        const total = iWealthyRpp + iWealthyRtu;
-        if (total > 0) {
-            const newRpp = Math.round(total * (percent / 100));
-            const newRtu = total - newRpp;
-            const newSumInsured = newRpp * getSumInsuredFactor(iWealthyAge);
-            const { adjustedList, wasAdjusted } = adjustReductions(newRpp, iWealthySumInsuredReductions);
-            set({ iWealthyRpp: newRpp, iWealthyRtu: newRtu, iWealthySumInsured: newSumInsured, iWealthySumInsuredReductions: adjustedList, iWealthyReductionsNeedReview: get().iWealthyReductionsNeedReview || wasAdjusted });
-        }
-    },
+    //handleIWealthyRppRtuSlider: (percent) => {
+    //    const { iWealthyRpp, iWealthyRtu, iWealthyAge, iWealthySumInsuredReductions } = get();
+    //    const total = iWealthyRpp + iWealthyRtu;
+    //    if (total > 0) {
+    //        const newRpp = Math.round(total * (percent / 100));
+    //        const newRtu = total - newRpp;
+    //        const newSumInsured = newRpp * getSumInsuredFactor(iWealthyAge);
+    //        const { adjustedList, wasAdjusted } = adjustReductions(newRpp, iWealthySumInsuredReductions);
+    //        set({ iWealthyRpp: newRpp, iWealthyRtu: newRtu, iWealthySumInsured: newSumInsured, iWealthySumInsuredReductions: adjustedList, iWealthyReductionsNeedReview: get().iWealthyReductionsNeedReview || wasAdjusted });
+    //    }
+    //},
     setIWealthyPausePeriods: (periods) => {
     const state = get();
     const currentEntryAge = state.iWealthyAge;

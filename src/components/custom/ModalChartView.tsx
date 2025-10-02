@@ -21,9 +21,9 @@ export interface ModalChartViewProps {
     setShowPremiumAnnual: React.Dispatch<React.SetStateAction<boolean>>;
     showPremiumCumulative: boolean;
     setShowPremiumCumulative: React.Dispatch<React.SetStateAction<boolean>>;
-    rppPercent: number;
+    rppPremium: number;
     totalPremium: number;
-    onPercentChange: (percent: number) => void;
+    onRppPremiumChange: (premium: number) => void;
     assumedReturnRate: number;
     onReturnRateChange: (rate: number) => void;
     onRecalculate: () => void;

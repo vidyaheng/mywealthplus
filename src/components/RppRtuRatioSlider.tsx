@@ -4,9 +4,9 @@ import { RatioSlider } from "@/components/ui/ratio-slider"; // ตรวจส�
 import { useLocation } from 'react-router-dom';
 
 interface RppRtuRatioSliderProps {
-  rppPercent: number;
+  rppPremium: number; 
   totalPremium: number;
-  onPercentChange: (percent: number) => void;
+  onRppPremiumChange: (newRppPremium: number) => void; 
   compact?: boolean;
   className?: string;
 }
@@ -40,15 +40,20 @@ const snapPercentValue = (currentPercent: number): number => {
 };
 
 export default function RppRtuRatioSlider({
-  rppPercent,
+  rppPremium,
   totalPremium,
-  onPercentChange,
+  onRppPremiumChange,
   compact = false,
   className
 }: RppRtuRatioSliderProps) {
 
+  const rppPercent = useMemo(() =>
+        totalPremium > 0 ? Math.round((rppPremium / totalPremium) * 100) : 0,
+        [rppPremium, totalPremium]
+    );
+
   const rtuPercent = useMemo(() => 100 - rppPercent, [rppPercent]);
-  const displayRpp = useMemo(() => Math.round(totalPremium * (rppPercent / 100)), [totalPremium, rppPercent]);
+  const displayRpp = rppPremium;
   const displayRtu = useMemo(() => totalPremium - displayRpp, [totalPremium, displayRpp]);
 
   const handleSliderChange = useCallback((values: number[]) => {
@@ -57,11 +62,13 @@ export default function RppRtuRatioSlider({
 
       // ใช้ logic การ snap เปอร์เซ็นต์แบบใหม่
       const snappedPercent = snapPercentValue(proposedPercent);
+
+      const newRppPremium = Math.round(totalPremium * (snappedPercent / 100));
       
       // ส่งค่า % ที่ผ่านการ snap (และ clamp ให้อยู่ใน 0-100 แล้ว) กลับไป
-      onPercentChange(snappedPercent);
+      onRppPremiumChange(newRppPremium);
     }
-  }, [onPercentChange]); // Dependency มีแค่ onPercentChange เพราะ totalPremium ไม่เกี่ยวกับ logic snap % นี้
+  }, [onRppPremiumChange, totalPremium]); // Dependency มีแค่ onPercentChange เพราะ totalPremium ไม่เกี่ยวกับ logic snap % นี้
 
   const location = useLocation();
   const isChartPage = location.pathname === '/iwealthy/chart';

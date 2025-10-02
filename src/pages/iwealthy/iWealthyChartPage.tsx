@@ -27,7 +27,7 @@ export default function IWealthyChartPage({ chartRefForCapture, isCaptureMode = 
     const {
         iWealthyResult, iWealthyIsLoading, iWealthyRpp, iWealthyRtu,
         iWealthyAge, iWealthyGender, iWealthySumInsured, iWealthyInvestmentReturn,
-        setIWealthyInvestmentReturn, handleIWealthyRppRtuSlider, runIWealthyCalculation,
+        setIWealthyInvestmentReturn, setIWealthyRpp, runIWealthyCalculation,
         annualMIRRData
     } = useAppStore();
 
@@ -80,7 +80,7 @@ export default function IWealthyChartPage({ chartRefForCapture, isCaptureMode = 
 
     const initialDataForInfoBox = useMemo(() => chartDataForGraph.length > 0 ? chartDataForGraph[0] : null, [chartDataForGraph]);
     const totalPremiumForSlider = useMemo(() => iWealthyRpp + iWealthyRtu, [iWealthyRpp, iWealthyRtu]);
-    const rppPercentForSlider = useMemo(() => (totalPremiumForSlider > 0 ? Math.round((iWealthyRpp / totalPremiumForSlider) * 100) : 100), [iWealthyRpp, totalPremiumForSlider]);
+    //const rppPercentForSlider = useMemo(() => (totalPremiumForSlider > 0 ? Math.round((iWealthyRpp / totalPremiumForSlider) * 100) : 100), [iWealthyRpp, totalPremiumForSlider]);
 
     const handleGraphAgeChange = useCallback((ageFromGraph: number | undefined) => {
         if (ageFromGraph !== undefined && !isNaN(ageFromGraph)) {
@@ -195,9 +195,9 @@ export default function IWealthyChartPage({ chartRefForCapture, isCaptureMode = 
                                 setShowPremiumAnnual={setShowPremiumAnnual}
                                 showPremiumCumulative={showPremiumCumulative}
                                 setShowPremiumCumulative={setShowPremiumCumulative}
-                                rppPercent={rppPercentForSlider}
+                                rppPremium={iWealthyRpp} 
                                 totalPremium={totalPremiumForSlider}
-                                onPercentChange={handleIWealthyRppRtuSlider}
+                                onRppPremiumChange={setIWealthyRpp} 
                                 assumedReturnRate={iWealthyInvestmentReturn}
                                 onReturnRateChange={setIWealthyInvestmentReturn}
                                 onRecalculate={runIWealthyCalculation}
@@ -239,9 +239,9 @@ export default function IWealthyChartPage({ chartRefForCapture, isCaptureMode = 
                             setShowPremiumAnnual={setShowPremiumAnnual}
                             showPremiumCumulative={showPremiumCumulative}
                             setShowPremiumCumulative={setShowPremiumCumulative}
-                            rppPercent={rppPercentForSlider}
+                            rppPremium={iWealthyRpp}  
                             totalPremium={totalPremiumForSlider}
-                            onPercentChange={handleIWealthyRppRtuSlider}
+                            onRppPremiumChange={setIWealthyRpp}
                             assumedReturnRate={iWealthyInvestmentReturn}
                             onReturnRateChange={setIWealthyInvestmentReturn}
                             onRecalculate={runIWealthyCalculation}
