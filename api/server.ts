@@ -3,9 +3,9 @@ import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
-import AccessLog from './accessLog'; // <-- ตรวจสอบ Path ให้ถูกต้อง
-import { allowedPins } from './allowedPins'; // <-- ตรวจสอบ Path ให้ถูกต้อง
-import ProjectData from './projectData'; // <-- ตรวจสอบ Path ให้ถูกต้อง
+import AccessLog from '../accessLog'; // <-- ตรวจสอบ Path ให้ถูกต้อง
+import { allowedPins } from '../allowedPins'; // <-- ตรวจสอบ Path ให้ถูกต้อง
+import ProjectData from '../projectData'; // <-- ตรวจสอบ Path ให้ถูกต้อง
 
 const app = express();
 app.use(cors());

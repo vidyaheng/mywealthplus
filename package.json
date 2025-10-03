@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:frontend\"",
     "dev:frontend": "vite",
-    "dev:server": "nodemon --exec ts-node --project tsconfig.node.json server.ts",
+    "dev:server": "nodemon --exec ts-node --project tsconfig.node.json api/server.ts",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
