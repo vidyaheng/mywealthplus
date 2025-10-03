@@ -46,7 +46,7 @@ export default function LoadRecordModal() {
         setIsLoading(true);
         setError(null);
         try {
-          const res = await fetch(`http://localhost:3001/api/records/${pin}`);
+          const res = await fetch(`/api/records/${pin}`);
           const data = await res.json();
           if (data.success) {
             setSavedRecords(data.records);
@@ -70,7 +70,7 @@ export default function LoadRecordModal() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:3001/api/record/${record._id}`, {
+      const res = await fetch(`/api/record/${record._id}`, {
         headers: { 'x-user-pin': pin }
       });
       const data = await res.json();
@@ -112,7 +112,7 @@ export default function LoadRecordModal() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:3001/api/record/${recordId}`, {
+      const res = await fetch(`/api/record/${recordId}`, {
         method: 'DELETE',
         headers: { 'x-user-pin': pin }
       });
