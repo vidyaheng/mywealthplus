@@ -176,7 +176,8 @@ export interface IWealthyState {
   setIWealthyPaymentFrequency: (freq: PaymentFrequency) => void;
   setIWealthyRpp: (rpp: number) => void;
   setIWealthyRtu: (rtu: number) => void;
-  debouncedSetIWealthyRtu: (rtu: number) => void; 
+  debouncedSetIWealthyRtu: (rtu: number) => void;
+  handleSliderChange: (newRpp: number) => void; 
   setIWealthySumInsured: (sa: number) => void;
   setIWealthyInvestmentReturn: (rate: number) => void;
   //handleIWealthyRppRtuSlider: (percent: number) => void;
@@ -187,6 +188,7 @@ export interface IWealthyState {
   setIWealthyWithdrawalPlan: (plan: WithdrawalPlanRecord[]) => void;
   runIWealthyCalculation: () => Promise<void>;
   acknowledgeIWealthyReductionChanges: () => void;
+  
 }
 
 // 3. Interface สำหรับ UI (Modal) ของ iWealthy
@@ -696,6 +698,35 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
         // ให้เรียกใช้ setIWealthyRtu ตัวจริง
         get().setIWealthyRtu(rtu);
     }, 400), // หน่วงเวลา 400ms (ปรับค่าได้ตามความพอใจ)
+
+    handleSliderChange: (newRppFromSlider) => {
+        // 1. ดึง state ที่จำเป็นทั้งหมดออกมา
+        const { 
+            iWealthyRpp, 
+            iWealthyRtu, 
+            iWealthyAge, 
+            iWealthySumInsuredReductions 
+        } = get();
+        
+        // 2. คำนวณเบี้ยรวม (Total Premium) จากค่า "ปัจจุบัน"
+        const totalPremium = iWealthyRpp + iWealthyRtu;
+        
+        // 3. คำนวณ RTU ใหม่ เพื่อให้เบี้ยรวมคงที่
+        const newRtu = Math.max(0, totalPremium - newRppFromSlider);
+        
+        // 4. คำนวณค่าอื่นๆ ที่ผูกกับ RPP (เหมือนกับในฟังก์ชัน setIWealthyRpp)
+        const newSumInsured = newRppFromSlider * getSumInsuredFactor(iWealthyAge);
+        const { adjustedList, wasAdjusted } = adjustReductions(newRppFromSlider, iWealthySumInsuredReductions);
+
+        // 5. อัปเดต state ทั้งหมดในครั้งเดียว
+        set({ 
+            iWealthyRpp: newRppFromSlider, 
+            iWealthyRtu: newRtu, 
+            iWealthySumInsured: newSumInsured, 
+            iWealthySumInsuredReductions: adjustedList, 
+            iWealthyReductionsNeedReview: get().iWealthyReductionsNeedReview || wasAdjusted 
+        });
+    },
 
     setIWealthySumInsured: (sa) => {
         const { iWealthyAge, iWealthySumInsuredReductions } = get();

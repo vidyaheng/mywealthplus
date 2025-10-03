@@ -18,6 +18,7 @@ export default function FormInputSection() {
     iWealthyPaymentFrequency, setIWealthyPaymentFrequency,
     iWealthyRpp, setIWealthyRpp,
     iWealthyRtu, debouncedSetIWealthyRtu,
+    handleSliderChange,
     iWealthySumInsured, setIWealthySumInsured,
     iWealthySumInsuredReductions,
     //handleIWealthyRppRtuSlider,
@@ -161,7 +162,7 @@ export default function FormInputSection() {
             totalPremium={totalAnnualPremium} 
             
             // [เปลี่ยน] 3. เมื่อ Slider ขยับ ให้เรียกใช้ setIWealthyRpp เพื่ออัปเดตค่าเบี้ยโดยตรง
-            onRppPremiumChange={setIWealthyRpp} 
+            onRppPremiumChange={handleSliderChange} 
 
             compact={false} 
           />

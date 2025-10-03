@@ -27,7 +27,9 @@ export default function IWealthyChartPage({ chartRefForCapture, isCaptureMode = 
     const {
         iWealthyResult, iWealthyIsLoading, iWealthyRpp, iWealthyRtu,
         iWealthyAge, iWealthyGender, iWealthySumInsured, iWealthyInvestmentReturn,
-        setIWealthyInvestmentReturn, setIWealthyRpp, runIWealthyCalculation,
+        setIWealthyInvestmentReturn, setIWealthyRpp,
+        handleSliderChange,
+        runIWealthyCalculation,
         annualMIRRData
     } = useAppStore();
 
@@ -197,7 +199,7 @@ export default function IWealthyChartPage({ chartRefForCapture, isCaptureMode = 
                                 setShowPremiumCumulative={setShowPremiumCumulative}
                                 rppPremium={iWealthyRpp} 
                                 totalPremium={totalPremiumForSlider}
-                                onRppPremiumChange={setIWealthyRpp} 
+                                onRppPremiumChange={handleSliderChange} 
                                 assumedReturnRate={iWealthyInvestmentReturn}
                                 onReturnRateChange={setIWealthyInvestmentReturn}
                                 onRecalculate={runIWealthyCalculation}

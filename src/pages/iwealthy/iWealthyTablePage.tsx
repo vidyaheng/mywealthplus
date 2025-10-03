@@ -30,9 +30,10 @@ export default function IWealthyTablePage() {
         iWealthyRpp,
         iWealthyRtu,
         iWealthyInvestmentReturn,
+        handleSliderChange,
         runIWealthyCalculation,
         //handleIWealthyRppRtuSlider,
-        setIWealthyRpp,
+        //setIWealthyRpp,
         setIWealthyInvestmentReturn,
     } = useAppStore();
 
@@ -199,7 +200,7 @@ const dataWithTaxBenefit = useMemo((): AnnualDataRowWithTax[] => {
             setShowPremiumCumulative={setShowPremiumCumulativeModal}
             rppPremium={iWealthyRpp}
             totalPremium={totalPremiumForSliderModal}
-            onRppPremiumChange={setIWealthyRpp}
+            onRppPremiumChange={handleSliderChange}
             assumedReturnRate={iWealthyInvestmentReturn}
             onReturnRateChange={setIWealthyInvestmentReturn}
             onRecalculate={runIWealthyCalculation}
