@@ -170,6 +170,8 @@ export interface IWealthyState {
   maxDB: { amount: number; age: number } | null;
   savedRecords: SavedRecord[];
   setSavedRecords: (records: SavedRecord[]) => void;
+  activeRecordId: string | null;
+  setActiveRecordId: (id: string | null) => void;
   loadIWealthyState: (data: any) => void;
   setIWealthyAge: (age: number) => void;
   setIWealthyGender: (gender: Gender) => void;
@@ -591,6 +593,8 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     maxDB: null,
     iWealthyIsLoading: false,
     iWealthyError: null,
+    activeRecordId: null,
+    setActiveRecordId: (id) => set({ activeRecordId: id }),
     setIWealthyAge: (newAge) => {
     const state = get();
     const currentAge = state.iWealthyAge;
@@ -886,16 +890,22 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     },
     savedRecords: [],
     setSavedRecords: (records) => set({ savedRecords: records }),
-    loadIWealthyState: (data) => {
-        set({
-            iWealthyAge: data.age,
-            iWealthyGender: data.gender,
-            iWealthyPaymentFrequency: data.paymentFrequency,
-            iWealthyRpp: data.rpp,
-            iWealthyRtu: data.rtu,
-            iWealthySumInsured: data.sumInsured,
-            iWealthySumInsuredReductions: data.sumInsuredReductions || [],
-        });
+    loadIWealthyState: (fullRecord) => { // เปลี่ยนชื่อ parameter ให้นสื่อความหมาย
+    const recordData = fullRecord.data; // ดึงข้อมูลโปรเจกต์จาก .data
+
+    // อัปเดต State ต่างๆ ของฟอร์ม
+    set({
+        iWealthyAge: recordData.age,
+        iWealthyGender: recordData.gender,
+        iWealthyPaymentFrequency: recordData.paymentFrequency,
+        iWealthyRpp: recordData.rpp,
+        iWealthyRtu: recordData.rtu,
+        iWealthySumInsured: recordData.sumInsured,
+        iWealthySumInsuredReductions: recordData.sumInsuredReductions || [],
+        
+        // ✨ ส่วนสำคัญ: set activeRecordId จาก _id ของ fullRecord
+        activeRecordId: fullRecord._id 
+    });
     },
     // ===================================================================
     // SECTION 3: iWealthy UI State & Actions

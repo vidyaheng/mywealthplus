@@ -183,6 +183,55 @@ app.delete('/api/record/:id', async (req: Request, res: Response) => {
   }
 });
 
+// --- Endpoint สำหรับ "อัปเดต/บันทึกทับ" ข้อมูล ---
+app.put('/api/record/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userPin = req.headers['x-user-pin'] as string;
+    const ADMIN_PIN = process.env.ADMIN_PIN;
+    
+    // ข้อมูลใหม่ที่จะอัปเดต
+    const { recordName, data } = req.body;
+
+    // --- ตรวจสอบข้อมูลเบื้องต้น ---
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, error: 'Invalid record ID' });
+    }
+    if (!recordName || !data) {
+        return res.status(400).json({ success: false, error: 'Missing required fields for update' });
+    }
+    
+    // 1. ค้นหา record เดิมก่อนเพื่อตรวจสอบสิทธิ์
+    const record = await ProjectData.findById(id);
+
+    if (!record) {
+      return res.status(404).json({ success: false, error: 'Record not found' });
+    }
+
+    // 2. Security Check: อนุญาตให้ Admin หรือเจ้าของข้อมูลเท่านั้นที่แก้ไขได้
+    if (userPin !== ADMIN_PIN && userPin !== record.pin) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+
+    // 3. ถ้ามีสิทธิ์ ให้ทำการอัปเดต
+    const updatedRecord = await ProjectData.findByIdAndUpdate(
+      id,
+      {
+        recordName, // อัปเดตชื่อ
+        data        // อัปเดตข้อมูลโปรเจกต์
+      },
+      { new: true } // Option นี้เพื่อให้ Mongoose ส่งข้อมูลที่อัปเดตแล้วกลับมา
+    );
+
+    console.log(`📝 Record updated: ${id} by PIN: ${userPin}`);
+    res.status(200).json({ success: true, updatedRecord });
+
+  } catch (error) {
+    console.error('🔥 Error updating record:', error);
+    res.status(500).json({ success: false, error: 'Internal Server Error' });
+  }
+});
+
 // --- ส่วนของการ Start Server ---
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`API listening on port ${PORT}`));

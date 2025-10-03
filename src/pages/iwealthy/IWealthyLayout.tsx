@@ -38,6 +38,7 @@ export default function IWealthyLayout() {
 
   // ดึงทุกอย่างที่ต้องใช้มาจาก Zustand Store
   const {
+    activeRecordId,
     pin, openSaveModal, openLoadModal,
     runIWealthyCalculation, iWealthyIsLoading,
     iWealthyInvestmentReturn, setIWealthyInvestmentReturn,
@@ -85,6 +86,8 @@ export default function IWealthyLayout() {
         alert('เกิดข้อผิดพลาด: ไม่พบข้อมูลผู้ใช้งาน (PIN)');
         return;
     }
+
+    // --- 1. รวบรวมข้อมูลทั้งหมดที่ต้องใช้ในการบันทึก ---
     const lifeCoverage = calculateLifeCoverage(iWealthySumInsured);
     const totalAnnualPremium = (iWealthyRpp || 0) + (iWealthyRtu || 0);
     const dataToSave = {
@@ -97,26 +100,40 @@ export default function IWealthyLayout() {
         sumInsuredReductions: iWealthySumInsuredReductions,
         lifeCoverage: lifeCoverage,
         totalAnnualPremium: totalAnnualPremium,
+        // เพิ่ม state อื่นๆ ที่เกี่ยวข้องกับโปรเจกต์ iWealthy ที่นี่...
     };
+
     try {
-        const response = await fetch('/api/save-project', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                pin,
-                projectName: 'iWealthy',
-                recordName, // <-- จุดสำคัญที่สุด! ตรวจสอบว่ามีบรรทัดนี้
-                data: dataToSave,
-            }),
+      let response;
+      
+      // --- 2. เพิ่ม Logic if/else เพื่อเลือกว่าจะ "สร้างใหม่" หรือ "อัปเดต" ---
+      if (activeRecordId) {
+        // UPDATE (บันทึกทับ)
+        response = await fetch(`/api/record/${activeRecordId}`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-user-pin': pin,
+          },
+          body: JSON.stringify({ recordName, data: dataToSave }),
         });
-        const result = await response.json();
-        if (response.ok) {
-            alert('🎉 บันทึกข้อมูลสำเร็จ!');
-        } else {
-            alert(`❌ เกิดข้อผิดพลาดในการบันทึก: ${result.error}`);
-        }
+      } else {
+        // CREATE (สร้างใหม่)
+        response = await fetch('/api/save-project', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin, projectName: 'iWealthy', recordName, data: dataToSave }),
+        });
+      }
+
+      const result = await response.json();
+      if (response.ok) {
+        alert('🎉 บันทึกข้อมูลสำเร็จ!');
+      } else {
+        alert(`❌ เกิดข้อผิดพลาดในการบันทึก: ${result.error}`);
+      }
     } catch (error) {
-        alert('❌ ไม่สามารถเชื่อมต่อกับ Server ได้');
+      alert('❌ ไม่สามารถเชื่อมต่อกับ Server ได้');
     }
   };
 

@@ -80,7 +80,7 @@ export default function LoadRecordModal() {
         const projectName = data.record.projectName;
 
         if (projectName === 'iWealthy') {
-          loadIWealthyState(recordData);
+          loadIWealthyState(data.record);
 
           navigate('/iwealthy/form');
         } else if (projectName === 'LTHC') {
