@@ -47,6 +47,27 @@ export default function ModalChartView(props: ModalChartViewProps) {
         ...restOfProps 
     } = props;
 
+    const containerRef = React.useRef<HTMLDivElement>(null);
+    const [chartHeight, setChartHeight] = React.useState<number>(500);
+
+    React.useEffect(() => {
+        const updateHeight = () => {
+            if (containerRef.current) {
+                const height = containerRef.current.clientHeight;
+                setChartHeight(Math.max(height - 20, 400));
+            }
+        };
+
+        updateHeight();
+        window.addEventListener('resize', updateHeight);
+        const timer = setTimeout(updateHeight, 100);
+
+        return () => {
+            window.removeEventListener('resize', updateHeight);
+            clearTimeout(timer);
+        };
+    }, [isFullScreenView]);
+
     return (
         // ใช้ Layout เดิมของคุณ (แนวตั้ง บน/ล่าง)
         <div className="flex flex-col h-full w-full bg-slate-50"> 
@@ -62,10 +83,19 @@ export default function ModalChartView(props: ModalChartViewProps) {
             </div>
 
             {/* ส่วน Graph ด้านล่าง (เหมือนเดิม) */}
-            <div className="flex-1 w-full h-full relative mt-1 flex justify-center items-center">
+            <div 
+                ref={containerRef}  // ✅ เพิ่ม ref
+                className="flex-1 w-full relative mt-1 flex justify-center items-center"
+                style={{   // ✅ เพิ่ม style นี้
+                    minHeight: isFullScreenView ? '70vh' : '500px',
+                    height: isFullScreenView ? 'calc(100vh - 120px)' : 'auto'
+                }}
+            >
                 <div 
-                    className="w-[85%] h-full bg-white shadow-sm rounded-md overflow-y-auto"
-                    style={{ minHeight: '500px' }} // กำหนดความสูงขั้นต่ำ
+                    className="w-[85%] bg-white shadow-sm rounded-md overflow-hidden"  // ✅ เปลี่ยน overflow-y-auto เป็น overflow-hidden
+                    style={{ 
+                        height: `${chartHeight}px`  // ✅ ใช้ height ที่คำนวณได้
+                    }}
                 >
                     <Graph 
                         data={props.chartData}
@@ -75,13 +105,11 @@ export default function ModalChartView(props: ModalChartViewProps) {
                         showPremiumAnnual={props.showPremiumAnnual}
                         showPremiumCumulative={props.showPremiumCumulative}
                         onAgeChange={props.onAgeChange}
-                        //CustomTooltipComponent={CustomTooltipComponent}
                         hoveredAge={hoveredAge}
                         hoveredMirr={hoveredMirr}
-                        //mirrData={mirrData}
                     />
                 </div>
             </div>
         </div>
     );
-};
+}
