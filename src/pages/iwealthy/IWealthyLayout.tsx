@@ -16,7 +16,7 @@ import ChangeFrequencyModal from '../../components/ChangeFrequencyModal';
 import AddInvestmentModal from '../../components/AddInvestmentModal';
 import SaveRecordModal from '../../components/SaveRecordModal';
 import LoadRecordModal from '../../components/LoadRecordModal';
-import { calculateLifeCoverage } from '../../lib/calculations';
+//import { calculateLifeCoverage } from '../../lib/calculations';
 
 
 // Import Components อื่นๆ
@@ -38,16 +38,15 @@ export default function IWealthyLayout() {
 
   // ดึงทุกอย่างที่ต้องใช้มาจาก Zustand Store
   const {
-    activeRecordId,
-    pin, openSaveModal, openLoadModal,
+    openSaveModal, openLoadModal,
     runIWealthyCalculation, iWealthyIsLoading,
     iWealthyInvestmentReturn, setIWealthyInvestmentReturn,
     iWealthyPausePeriods, iWealthySumInsuredReductions, iWealthyWithdrawalPlan,
     iWealthyFrequencyChanges, iWealthyAdditionalInvestments,
     openPauseModal, openReduceModal, openWithdrawalModal, 
     openChangeFreqModal, openAddInvestmentModal,iWealthyReductionsNeedReview,
-    iWealthyAge, iWealthyGender, iWealthyPaymentFrequency,
-    iWealthyRpp, iWealthyRtu, iWealthySumInsured,
+    //iWealthyAge, iWealthyGender, iWealthyPaymentFrequency,
+    //iWealthyRpp, iWealthyRtu, iWealthySumInsured,
   } = useAppStore();
 
   const activeActions = useMemo(() => ({
@@ -80,62 +79,6 @@ export default function IWealthyLayout() {
     }
     // ถ้าไม่ได้มาจากหน้าฟอร์ม (เช่น กดคำนวณซ้ำจากหน้าตาราง/กราฟ) ก็ไม่ต้องทำอะไร
   }, [location.pathname, runIWealthyCalculation, navigate]);
-
-  const executeSave = async (recordName: string) => {
-    if (!pin) {
-        alert('เกิดข้อผิดพลาด: ไม่พบข้อมูลผู้ใช้งาน (PIN)');
-        return;
-    }
-
-    // --- 1. รวบรวมข้อมูลทั้งหมดที่ต้องใช้ในการบันทึก ---
-    const lifeCoverage = calculateLifeCoverage(iWealthySumInsured);
-    const totalAnnualPremium = (iWealthyRpp || 0) + (iWealthyRtu || 0);
-    const dataToSave = {
-        age: iWealthyAge,
-        gender: iWealthyGender,
-        paymentFrequency: iWealthyPaymentFrequency,
-        rpp: iWealthyRpp,
-        rtu: iWealthyRtu,
-        sumInsured: iWealthySumInsured,
-        sumInsuredReductions: iWealthySumInsuredReductions,
-        lifeCoverage: lifeCoverage,
-        totalAnnualPremium: totalAnnualPremium,
-        // เพิ่ม state อื่นๆ ที่เกี่ยวข้องกับโปรเจกต์ iWealthy ที่นี่...
-    };
-
-    try {
-      let response;
-      
-      // --- 2. เพิ่ม Logic if/else เพื่อเลือกว่าจะ "สร้างใหม่" หรือ "อัปเดต" ---
-      if (activeRecordId) {
-        // UPDATE (บันทึกทับ)
-        response = await fetch(`/api/record/${activeRecordId}`, {
-          method: 'PUT',
-          headers: { 
-            'Content-Type': 'application/json',
-            'x-user-pin': pin,
-          },
-          body: JSON.stringify({ recordName, data: dataToSave }),
-        });
-      } else {
-        // CREATE (สร้างใหม่)
-        response = await fetch('/api/save-project', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pin, projectName: 'iWealthy', recordName, data: dataToSave }),
-        });
-      }
-
-      const result = await response.json();
-      if (response.ok) {
-        alert('🎉 บันทึกข้อมูลสำเร็จ!');
-      } else {
-        alert(`❌ เกิดข้อผิดพลาดในการบันทึก: ${result.error}`);
-      }
-    } catch (error) {
-      alert('❌ ไม่สามารถเชื่อมต่อกับ Server ได้');
-    }
-  };
 
   return (
     <div className="flex flex-col h-auto -mt-2">
@@ -204,7 +147,7 @@ export default function IWealthyLayout() {
             <WithdrawalPlanModal />
             <ChangeFrequencyModal />
             <AddInvestmentModal />
-            <SaveRecordModal onConfirmSave={executeSave} />
+            <SaveRecordModal />
             <LoadRecordModal />
         </div>
     );

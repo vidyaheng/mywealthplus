@@ -171,6 +171,7 @@ export interface IWealthyState {
   savedRecords: SavedRecord[];
   setSavedRecords: (records: SavedRecord[]) => void;
   activeRecordId: string | null;
+  activeRecordName: string | null;
   setActiveRecordId: (id: string | null) => void;
   loadIWealthyState: (data: any) => void;
   setIWealthyAge: (age: number) => void;
@@ -594,6 +595,7 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     iWealthyIsLoading: false,
     iWealthyError: null,
     activeRecordId: null,
+    activeRecordName: null,
     setActiveRecordId: (id) => set({ activeRecordId: id }),
     setIWealthyAge: (newAge) => {
     const state = get();
@@ -904,7 +906,8 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
         iWealthySumInsuredReductions: recordData.sumInsuredReductions || [],
         
         // ✨ ส่วนสำคัญ: set activeRecordId จาก _id ของ fullRecord
-        activeRecordId: fullRecord._id 
+        activeRecordId: fullRecord._id, 
+        activeRecordName: fullRecord.recordName 
     });
     },
     // ===================================================================
