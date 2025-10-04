@@ -156,51 +156,10 @@ export default function CiPlannerPage() {
     };
 
     // ⭐ 2. ดึง State และ Actions ที่ต้องใช้สำหรับ Save/Load
-    const { pin, openSaveModal, openLoadModal } = useAppStore();
+    const { openSaveModal, openLoadModal } = useAppStore();
     // ดึง state ทั้งหมดของ CI มาเพื่อใช้ในการ Save
-    const allCiState = useAppStore(state => state); 
+    //const allCiState = useAppStore(state => state); 
 
-    // ⭐ 3. สร้างฟังก์ชันสำหรับบันทึกข้อมูล CI
-    const executeCiSave = async (recordName: string) => {
-        if (!pin) { return alert('Error: Not logged in.'); }
-
-        // รวบรวมข้อมูล CI ทั้งหมดที่จะบันทึก
-        const dataToSave = {
-            ciPlanningAge: allCiState.ciPlanningAge,
-            ciGender: allCiState.ciGender,
-            ciPolicyOriginMode: allCiState.ciPolicyOriginMode,
-            ciExistingEntryAge: allCiState.ciExistingEntryAge,
-            ciPlanSelections: allCiState.ciPlanSelections,
-            ciUseIWealthy: allCiState.ciUseIWealthy,
-            ciIWealthyMode: allCiState.ciIWealthyMode,
-            ciManualRpp: allCiState.ciManualRpp,
-            ciManualRtu: allCiState.ciManualRtu,
-            ciManualInvReturn: allCiState.ciManualInvReturn,
-            ciManualPpt: allCiState.ciManualPpt,
-            ciManualWithdrawalStartAge: allCiState.ciManualWithdrawalStartAge,
-            ciAutoInvReturn: allCiState.ciAutoInvReturn,
-            ciAutoPpt: allCiState.ciAutoPpt,
-            ciAutoRppRtuRatio: allCiState.ciAutoRppRtuRatio,
-            ciAutoWithdrawalStartAge: allCiState.ciAutoWithdrawalStartAge,
-            ciUseCustomWithdrawalAge: allCiState.ciUseCustomWithdrawalAge
-        };
-
-        try {
-            const response = await fetch('http://localhost:3001/api/save-project', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    pin,
-                    projectName: 'CI', // <--- ระบุว่าเป็นโปรเจกต์ CI
-                    recordName,
-                    data: dataToSave,
-                }),
-            });
-            const result = await response.json();
-            if (response.ok) { alert('🎉 บันทึกข้อมูล CI สำเร็จ!'); }
-            else { alert(`❌ เกิดข้อผิดพลาด: ${result.error}`); }
-        } catch (error) { alert('❌ ไม่สามารถเชื่อมต่อกับ Server ได้'); }
-    };
     
     return (
         <>
@@ -281,7 +240,7 @@ export default function CiPlannerPage() {
             </div>
 
             {/* ⭐ 5. Render Modals */}
-            <SaveRecordModal onConfirmSave={executeCiSave} />
+            <SaveRecordModal />
             <LoadRecordModal />
         </>
     );

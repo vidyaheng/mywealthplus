@@ -32,49 +32,12 @@ export default function LTHCLayout() {
   const location = useLocation();
 
   const {
-        pin,
-        isLoading,
-        runCalculation,
-        openSaveModal,
-        openLoadModal,
-        // ดึง state ทั้งหมดของ LTHC มาเพื่อใช้ในการ Save
-        policyholderEntryAge, policyholderGender, selectedHealthPlans, 
-        policyOriginMode, existingPolicyEntryAge, fundingSource, 
-        iWealthyMode, pensionMode, pensionFundingOptions, manualPensionPremium, 
-        manualRpp, manualRtu, manualInvestmentReturn, manualIWealthyPPT, 
-        manualWithdrawalStartAge, autoInvestmentReturn, autoIWealthyPPT, 
-        autoRppRtuRatio, saReductionStrategy
-    } = useAppStore();
+    isLoading,
+    runCalculation,
+    openSaveModal,
+    openLoadModal,
+  } = useAppStore();
 
-    // --- ฟังก์ชันสำหรับบันทึกข้อมูล LTHC ---
-    const executeLthcSave = async (recordName: string) => {
-        if (!pin) { return alert('Error: Not logged in.'); }
-
-        const dataToSave = {
-            policyholderEntryAge, policyholderGender, selectedHealthPlans, 
-            policyOriginMode, existingPolicyEntryAge, fundingSource, 
-            iWealthyMode, pensionMode, pensionFundingOptions, manualPensionPremium, 
-            manualRpp, manualRtu, manualInvestmentReturn, manualIWealthyPPT, 
-            manualWithdrawalStartAge, autoInvestmentReturn, autoIWealthyPPT, 
-            autoRppRtuRatio, saReductionStrategy
-        };
-
-        try {
-            const response = await fetch('/api/save-project', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    pin,
-                    projectName: 'LTHC', // <--- ระบุว่าเป็นโปรเจกต์ LTHC
-                    recordName,
-                    data: dataToSave,
-                }),
-            });
-            const result = await response.json();
-            if (response.ok) { alert('🎉 บันทึกข้อมูล LTHC สำเร็จ!'); }
-            else { alert(`❌ เกิดข้อผิดพลาด: ${result.error}`); }
-        } catch (error) { alert('❌ ไม่สามารถเชื่อมต่อกับ Server ได้'); }
-    };
 
   return (
     // Container หลักของ Layout
@@ -144,7 +107,7 @@ export default function LTHCLayout() {
         </div>
             
         {/* --- Render Modals สำหรับ Save/Load --- */}
-        <SaveRecordModal onConfirmSave={executeLthcSave} />
+        <SaveRecordModal />
         <LoadRecordModal />
     </div>
   );
