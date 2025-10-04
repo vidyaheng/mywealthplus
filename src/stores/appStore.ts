@@ -1117,7 +1117,7 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
 // ==========================================================
 
 // --- ส่วนของ State (ข้อมูล) ---
-retirementPlanningAge: 35,
+retirementPlanningAge: 30,
 retirementGender: 'male',
 retirementDesiredAge: 60,
 retirementPlanningMode: 'goalBased',
