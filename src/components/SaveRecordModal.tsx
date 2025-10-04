@@ -51,6 +51,17 @@ export default function SaveRecordModal() {
     ciManualRtu, ciManualInvReturn, ciManualPpt, ciManualWithdrawalStartAge,
     ciAutoInvReturn, ciAutoPpt, ciAutoRppRtuRatio, ciAutoWithdrawalStartAge,
     ciUseCustomWithdrawalAge,
+
+    // --- State ของ Retirement ---
+    retirementPlanningAge, retirementGender, retirementDesiredAge,
+    retirementPlanningMode, retirementDesiredAnnualPension,
+    retirementAssumedInflationRate, retirementManualIWealthyPremium,
+    retirementManualPensionPremium, retirementFundingMix,
+    retirementHybridPensionRatio, retirementInvestmentReturn,
+    retirementIWealthyPPT, retirementPensionOptions, retirementHybridMode,
+    retirementIWealthyWithdrawalPlan, retirementIWealthyWithdrawalMode,
+    retirementTaxInfo,
+
   } = useAppStore();
 
   // --- State ภายในสำหรับจัดการ UI ของ Modal ---
@@ -100,6 +111,31 @@ export default function SaveRecordModal() {
         }
       };
     }
+    else if (path.startsWith('/retire')) { // ✨ เพิ่มส่วนนี้
+      return {
+        projectName: 'Retirement',
+        dataToSave: {
+          // ✨ ใส่ State ทั้งหมดของ Retirement ที่นี่
+          retirementPlanningAge,
+          retirementGender,
+          retirementDesiredAge,
+          retirementPlanningMode,
+          retirementDesiredAnnualPension,
+          retirementAssumedInflationRate,
+          retirementManualIWealthyPremium,
+          retirementManualPensionPremium,
+          retirementFundingMix,
+          retirementHybridPensionRatio,
+          retirementInvestmentReturn,
+          retirementIWealthyPPT,
+          retirementPensionOptions,
+          retirementHybridMode,
+          retirementIWealthyWithdrawalPlan,
+          retirementIWealthyWithdrawalMode,
+          retirementTaxInfo,
+        }
+      };
+    }
     
     return { projectName: 'Unknown', dataToSave: {} };
   }, [
@@ -107,7 +143,15 @@ export default function SaveRecordModal() {
     // Dependency array ต้องมี state ทั้งหมดที่ใช้ในการ save
     iWealthyAge, iWealthyGender, iWealthyPaymentFrequency, iWealthyRpp, iWealthyRtu, iWealthySumInsured, iWealthySumInsuredReductions,
     policyholderEntryAge, policyholderGender, selectedHealthPlans, policyOriginMode, existingPolicyEntryAge, fundingSource, iWealthyMode, pensionMode, pensionFundingOptions, manualPensionPremium, manualRpp, manualRtu, manualInvestmentReturn, manualIWealthyPPT, manualWithdrawalStartAge, autoInvestmentReturn, autoIWealthyPPT, autoRppRtuRatio, saReductionStrategy,
-    ciPlanningAge, ciGender, ciPolicyOriginMode, ciExistingEntryAge, ciPlanSelections, ciUseIWealthy, ciIWealthyMode, ciManualRpp, ciManualRtu, ciManualInvReturn, ciManualPpt, ciManualWithdrawalStartAge, ciAutoInvReturn, ciAutoPpt, ciAutoRppRtuRatio, ciAutoWithdrawalStartAge, ciUseCustomWithdrawalAge
+    ciPlanningAge, ciGender, ciPolicyOriginMode, ciExistingEntryAge, ciPlanSelections, ciUseIWealthy, ciIWealthyMode, ciManualRpp, ciManualRtu, ciManualInvReturn, ciManualPpt, ciManualWithdrawalStartAge, ciAutoInvReturn, ciAutoPpt, ciAutoRppRtuRatio, ciAutoWithdrawalStartAge, ciUseCustomWithdrawalAge,
+    retirementPlanningAge, retirementGender, retirementDesiredAge,
+    retirementPlanningMode, retirementDesiredAnnualPension,
+    retirementAssumedInflationRate, retirementManualIWealthyPremium,
+    retirementManualPensionPremium, retirementFundingMix,
+    retirementHybridPensionRatio, retirementInvestmentReturn,
+    retirementIWealthyPPT, retirementPensionOptions, retirementHybridMode,
+    retirementIWealthyWithdrawalPlan, retirementIWealthyWithdrawalMode,
+    retirementTaxInfo,
   ]);
 
   // --- 3. Effect สำหรับดึงรายการไฟล์เก่าและตั้งค่าเริ่มต้นเมื่อ Modal เปิด ---

@@ -332,6 +332,7 @@ interface RetirementPlannerState {
     setRetirementIWealthyWithdrawalPlan: Dispatch<SetStateAction<WithdrawalPlanRecord[]>>;
     setRetirementIWealthyWithdrawalMode: Dispatch<SetStateAction<'automatic' | 'manual'>>;
     runRetirementCalculation: () => Promise<void>;
+    loadRetirementState: (record: any) => void;
     // --- ✨ [ใหม่] Setters สำหรับควบคุมกราฟ ---
     setRetirementShowFundValue: Dispatch<SetStateAction<boolean>>;
     setRetirementShowPayoutCumulative: Dispatch<SetStateAction<boolean>>;
@@ -1241,5 +1242,20 @@ runRetirementCalculation: async () => {
         set({ pin: null, isAuthenticated: false, isAdmin: false });
     }
     },
+
+    loadRetirementState: (fullRecord) => {
+    const data = fullRecord.data;
+    set({
+      // --- นำค่าจาก data มาใส่ใน state ของ retirement ---
+      retirementPlanningAge: data.retirementPlanningAge,
+      retirementGender: data.retirementGender,
+      retirementDesiredAge: data.retirementDesiredAge,
+      // ... ใส่ state อื่นๆ ของ retirement ทั้งหมดที่นี่ ...
+
+      // --- อัปเดต active record ---
+      activeRecordId: fullRecord._id,
+      activeRecordName: fullRecord.recordName,
+    });
+  },
     
 }));

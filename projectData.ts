@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 // กำหนดชนิดของข้อมูลที่จะรับเข้ามา
 export interface IProjectData extends Document {
   pin: string;
-  projectName: 'iWealthy' | 'LTHC' | 'CI'; // บังคับให้เป็นแค่ 3 ค่านี้เท่านั้น
+  projectName: 'iWealthy' | 'LTHC' | 'CI' | 'Retirement'; // บังคับให้เป็นแค่ 3 ค่านี้เท่านั้น
   recordName: string;
   data: mongoose.Schema.Types.Mixed; // 'Mixed' คือสามารถเก็บ Object ที่มีโครงสร้างซับซ้อนได้
   createdAt: Date;
@@ -20,7 +20,7 @@ const ProjectDataSchema: Schema = new Schema(
     projectName: {
       type: String,
       required: true, // บังคับว่าต้องมีชื่อ project
-      enum: ['iWealthy', 'LTHC', 'CI'], // ค่าที่อนุญาต
+      enum: ['iWealthy', 'LTHC', 'CI', 'Retirement'], // ค่าที่อนุญาต
     },
     recordName: { // ⭐ 2. เพิ่ม field ใน Schema
       type: String,
