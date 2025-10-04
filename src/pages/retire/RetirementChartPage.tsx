@@ -14,7 +14,7 @@ interface RetirementChartPageProps {
 const RetirementChartPage = ({ isCaptureMode = false, isEmbedded = false }: RetirementChartPageProps) => {
     // --- ✨ [อัปเดตแล้ว] ดึง State การแสดงผลมาจาก Store โดยตรง ---
     const { 
-        retirementResult, retirementIsLoading, retirementPlanningAge, retirementInvestmentReturn,
+        retirementResult, retirementFundingMix, retirementIsLoading, retirementPlanningAge, retirementInvestmentReturn,
         retirementShowFundValue, setRetirementShowFundValue,
         retirementShowPayoutCumulative, setRetirementShowPayoutCumulative,
         retirementShowPremium, setRetirementShowPremium,
@@ -25,10 +25,19 @@ const RetirementChartPage = ({ isCaptureMode = false, isEmbedded = false }: Reti
     const [hoveredData, setHoveredData] = useState<RetirementChartData | null>(null);
     const [currentAge, setCurrentAge] = useState<number | undefined>(retirementPlanningAge);
     
-    const chartData = useMemo((): RetirementChartData[] => {
+
+const chartData = useMemo(() => {
         if (!retirementResult) return [];
+        
+        let filteredResult = retirementResult;
+
+        // 2. ใช้ 'retirementFundingMix' เป็นเงื่อนไขในการเช็ค
+        if (retirementFundingMix === 'pensionOnly') {
+            filteredResult = retirementResult.filter(row => row.age <= 88);
+        }
+
         let cumulativePayout = 0;
-        return retirementResult.map(row => {
+        return filteredResult.map(row => {
             cumulativePayout += row.totalWithdrawal;
             return {
                 age: row.age,
@@ -38,7 +47,9 @@ const RetirementChartPage = ({ isCaptureMode = false, isEmbedded = false }: Reti
                 deathBenefit: row.iWealthyDeathBenefit + row.pensionDeathBenefit,
             };
         });
-    }, [retirementResult]);
+    // 3. เปลี่ยน Dependency ให้ถูกต้อง
+}, [retirementResult, retirementFundingMix]);
+
 
     const handleAgeChange = useCallback((ageFromGraph: number | undefined) => {
         setCurrentAge(ageFromGraph);
