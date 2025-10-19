@@ -74,16 +74,16 @@ const ReportPageChartLegend = ({ fundingSource, controls }: { fundingSource: str
 };
 
 // --- Component การ์ด KPI ---
-const KPICard = ({ title, value, unit = '', description }: { title: string; value: string | number | null; unit?: string, description?: string }) => (
-    <div className="flex flex-col p-4 bg-slate-50 rounded-lg border border-slate-200 h-full">
-        <h3 className="text-sm font-medium text-slate-600">{title}</h3>
-        <p className="mt-1 text-2xl font-semibold text-sky-800">
-            {value}
-            {value !== '-' && unit && <span className="text-base font-normal ml-1.5 text-slate-500">{unit}</span>}
-        </p>
-        {description && <p className="text-xs text-slate-400 mt-1">{description}</p>}
-    </div>
-);
+//const KPICard = ({ title, value, unit = '', description }: { title: string; value: string | number | null; unit?: string, description?: string }) => (
+//    <div className="flex flex-col p-4 bg-slate-50 rounded-lg border border-slate-200 h-full">
+//        <h3 className="text-sm font-medium text-slate-600">{title}</h3>
+//        <p className="mt-1 text-2xl font-semibold text-sky-800">
+//            {value}
+//            {value !== '-' && unit && <span className="text-base font-normal ml-1.5 text-slate-500">{unit}</span>}
+//        </p>
+//        {description && <p className="text-xs text-slate-400 mt-1">{description}</p>}
+//    </div>
+//);
 
 // --- Component หลักของหน้ารายงาน LTHC ---
 export const LthcReportPage = () => {
@@ -97,40 +97,78 @@ export const LthcReportPage = () => {
 
     // 2. คำนวณ Metrics และข้อมูลสรุปที่ต้องการ
     const summaryData = useMemo(() => {
-        if (!result || result.length === 0) return null;
+    if (!result || result.length === 0) return null;
 
-        // คำนวณเบี้ยสุขภาพปีแรก
-        const entryAgeForLr = (policyOriginMode === 'existingPolicy' && existingPolicyEntryAge) ? existingPolicyEntryAge : policyholderEntryAge;
-        const firstYearLrPremium = calculateLifeReadyPremium(entryAgeForLr, policyholderGender, selectedHealthPlans.lifeReadySA, selectedHealthPlans.lifeReadyPPT);
-        const firstYearIhuPremium = selectedHealthPlans.iHealthyUltraPlan ? calculateIHealthyUltraPremium(policyholderEntryAge, policyholderGender, selectedHealthPlans.iHealthyUltraPlan) : 0;
-        const firstYearMebPremium = selectedHealthPlans.mebPlan ? calculateMEBPremium(policyholderEntryAge, selectedHealthPlans.mebPlan) : 0;
+    // คำนวณเบี้ยสุขภาพปีแรก
+    const entryAgeForLr = (policyOriginMode === 'existingPolicy' && existingPolicyEntryAge) ? existingPolicyEntryAge : policyholderEntryAge;
+    const firstYearLrPremium = calculateLifeReadyPremium(entryAgeForLr, policyholderGender, selectedHealthPlans.lifeReadySA, selectedHealthPlans.lifeReadyPPT);
+    const firstYearIhuPremium = selectedHealthPlans.iHealthyUltraPlan ? calculateIHealthyUltraPremium(policyholderEntryAge, policyholderGender, selectedHealthPlans.iHealthyUltraPlan) : 0;
+    const firstYearMebPremium = selectedHealthPlans.mebPlan ? calculateMEBPremium(policyholderEntryAge, selectedHealthPlans.mebPlan) : 0;
 
-        // คำนวณค่าเปรียบเทียบ
-        let totalHealthPremiumIfPaidAlone = 0;
-        let lthcHealthPremiumPaidByUser = 0;
-        let lthcTotalFundingPremium = 0;
-        let totalWithdrawals = 0;
+    // คำนวณค่าเปรียบเทียบ
+    let totalHealthPremiumIfPaidAlone = 0;
+    let lthcHealthPremiumPaidByUser = 0;
+    let lthcTotalFundingPremium = 0;
+    let totalWithdrawals = 0;
+    let lthcFundingBenefits = 0;
 
-        result.forEach(row => {
-            totalHealthPremiumIfPaidAlone += row.totalHealthPremium || 0;
-            const fundIsActive = (row.iWealthyWithdrawal ?? 0) > 0 || (row.pensionPayout ?? 0) > 0;
-            if (!fundIsActive) {
-                lthcHealthPremiumPaidByUser += row.totalHealthPremium || 0;
-            }
-            lthcTotalFundingPremium += (row.iWealthyTotalPremium || 0) + (row.pensionPremium || 0);
-            totalWithdrawals += (row.iWealthyWithdrawal || 0) + (row.pensionPayout || 0);
-        });
+    result.forEach(row => {
+        totalHealthPremiumIfPaidAlone += row.totalHealthPremium || 0;
+        const fundIsActive = (row.iWealthyWithdrawal ?? 0) > 0 || (row.pensionPayout ?? 0) > 0;
+        if (!fundIsActive) {
+            lthcHealthPremiumPaidByUser += row.totalHealthPremium || 0;
+        }
+        lthcTotalFundingPremium += (row.iWealthyTotalPremium || 0) + (row.pensionPremium || 0);
+        totalWithdrawals += (row.iWealthyWithdrawal || 0) + (row.pensionPayout || 0);
         
-        const lthcTotalCombinedPremiumPaid = lthcHealthPremiumPaidByUser + lthcTotalFundingPremium;
-        const totalSavings = totalHealthPremiumIfPaidAlone - lthcTotalCombinedPremiumPaid;
-        const initialSA = result[0].iWealthyEoyDeathBenefit ?? 0;
+        // คำนวณผลประโยชน์จาก Funding (เงินถอน + เงินบำนาญ)
+        if (fundingSource === 'iWealthy') {
+            lthcFundingBenefits += row.iWealthyWithdrawal || 0;
+        } else if (fundingSource === 'pension') {
+            lthcFundingBenefits += row.pensionPayout || 0;
+        } else if (fundingSource === 'hybrid') {
+            lthcFundingBenefits += (row.pensionPayout || 0) + (row.iWealthyWithdrawal || 0);
+        }
+    });
+    
+    // เพิ่มมูลค่าบัญชีสุดท้าย
+    const lastRow = result[result.length - 1];
+    if (fundingSource === 'iWealthy' || fundingSource === 'hybrid') {
+        lthcFundingBenefits += lastRow.iWealthyEoyAccountValue || 0;
+    }
+    
+    const lthcTotalCombinedPremiumPaid = lthcHealthPremiumPaidByUser + lthcTotalFundingPremium;
+    const totalSavings = totalHealthPremiumIfPaidAlone - lthcTotalCombinedPremiumPaid;
+    const initialSA = result[0].iWealthyEoyDeathBenefit ?? 0;
+    
+    const lifeReadyMaturityBenefit = selectedHealthPlans.lifeReadySA || 150000;
+    
+    // คำนวณผลประโยชน์รวมและสุทธิ
+    const healthOnlyTotalBenefit = lifeReadyMaturityBenefit;
+    const healthOnlyNetBenefit = lifeReadyMaturityBenefit - totalHealthPremiumIfPaidAlone;
+    
+    const lthcTotalBenefit = lthcFundingBenefits + lifeReadyMaturityBenefit;
+    const lthcNetBenefit = lthcTotalBenefit - lthcTotalCombinedPremiumPaid;
 
-        return {
-            firstYearLrPremium, firstYearIhuPremium, firstYearMebPremium,
-            totalHealthPremiumIfPaidAlone, lthcTotalCombinedPremiumPaid, totalSavings,
-            totalWithdrawals, initialSA
-        };
-    }, [result, policyholderEntryAge, policyholderGender, selectedHealthPlans, policyOriginMode, existingPolicyEntryAge]);
+    return {
+        firstYearLrPremium, 
+        firstYearIhuPremium, 
+        firstYearMebPremium,
+        totalHealthPremiumIfPaidAlone, 
+        lthcHealthPremiumPaidByUser,
+        lthcTotalFundingPremium,
+        lthcTotalCombinedPremiumPaid, 
+        totalSavings,
+        totalWithdrawals,
+        lthcFundingBenefits,
+        lifeReadyMaturityBenefit,
+        healthOnlyTotalBenefit,
+        healthOnlyNetBenefit,
+        lthcTotalBenefit,
+        lthcNetBenefit,
+        initialSA
+    };
+}, [result, policyholderEntryAge, policyholderGender, selectedHealthPlans, policyOriginMode, existingPolicyEntryAge, fundingSource]);
 
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const [chartImage, setChartImage] = useState<string | null>(null);
@@ -250,25 +288,113 @@ export const LthcReportPage = () => {
                 {/* --- การวิเคราะห์เชิงเปรียบเทียบ --- */}
                 <section className="mt-6">
                     <h2 className="text-xl font-semibold text-green-800 border-l-4 border-green-800 pl-3 mb-3">การวิเคราะห์เชิงเปรียบเทียบ</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <KPICard 
-                            title="เบี้ยสุขภาพที่ต้องจ่าย (หากจ่ายเองทั้งหมด)" 
-                            value={formatNum(summaryData.totalHealthPremiumIfPaidAlone)}
-                            unit="บาท"
-                        />
-                        <KPICard 
-                            title="ค่าใช้จ่ายรวมตลอดสัญญา (ในแผน LTHC)" 
-                            value={formatNum(summaryData.lthcTotalCombinedPremiumPaid)} 
-                            unit="บาท"
-                            description="เบี้ยสุขภาพที่จ่ายเอง + เบี้ยกองทุน"
-                        />
-                        <KPICard 
-                            title="ความประหยัดที่เกิดขึ้น" 
-                            value={formatNum(summaryData.totalSavings)} 
-                            unit="บาท"
-                            description="ส่วนต่างระหว่าง 2 แผน"
-                        />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                        {/* กรณีจ่ายเบี้ยสุขภาพเองทั้งหมด */}
+                        <div className="p-4 bg-white rounded shadow border border-gray-200 space-y-3">
+                            <h3 className="font-semibold text-gray-600 mb-3">1. กรณีจ่ายเบี้ยสุขภาพเองทั้งหมด:</h3>
+                            
+                            {/* กลุ่มเบี้ย */}
+                            <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+                                <p className="text-xs text-gray-500 uppercase font-semibold mb-2">💰 เบี้ยที่จ่าย</p>
+                                <p className="font-bold text-rose-600 text-xl">{formatNum(summaryData.totalHealthPremiumIfPaidAlone)} บาท</p>
+                            </div>
+                            
+                            {/* กลุ่มผลประโยชน์ */}
+                            <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                                <p className="text-xs text-gray-500 uppercase font-semibold mb-2">🎁 ผลประโยชน์รวม</p>
+                                <p className="text-sm mb-1">• ทุนประกัน (Life Ready): <span className="font-semibold text-green-600">{formatNum(selectedHealthPlans.lifeReadySA || 150000)} บาท</span></p>
+                                <p className="font-bold text-purple-600 text-xl mt-2 pt-2 border-t border-purple-300">
+                                    รวม: {formatNum(selectedHealthPlans.lifeReadySA || 150000)} บาท
+                                </p>
+                            </div>
+                            
+                            {/* ผลประโยชน์สุทธิ */}
+                            <div className={`p-3 rounded-lg border-2 ${
+                                ((selectedHealthPlans.lifeReadySA || 150000) - summaryData.totalHealthPremiumIfPaidAlone) >= 0 
+                                    ? 'bg-green-50 border-green-300' 
+                                    : 'bg-red-50 border-red-300'
+                            }`}>
+                                <p className="text-xs text-gray-500 uppercase font-semibold mb-2">📊 ผลประโยชน์สุทธิ</p>
+                                <p className={`font-bold text-2xl ${
+                                    ((selectedHealthPlans.lifeReadySA || 150000) - summaryData.totalHealthPremiumIfPaidAlone) >= 0 
+                                        ? 'text-green-600' 
+                                        : 'text-red-600'
+                                }`}>
+                                    {((selectedHealthPlans.lifeReadySA || 150000) - summaryData.totalHealthPremiumIfPaidAlone) >= 0 ? '+' : ''}
+                                    {formatNum((selectedHealthPlans.lifeReadySA || 150000) - summaryData.totalHealthPremiumIfPaidAlone)} บาท
+                                </p>
+                            </div>
+                        </div>
+                        
+                        {/* กรณีใช้แผน LTHC */}
+                        {fundingSource !== 'none' && (
+                            <div className="p-4 bg-white rounded shadow border border-gray-200 space-y-3">
+                                <h3 className="font-semibold text-gray-600 mb-3">2. กรณีใช้แผน LTHC:</h3>
+                                
+                                {/* กลุ่มเบี้ย */}
+                                <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+                                    <p className="text-xs text-gray-500 uppercase font-semibold mb-2">💰 เบี้ยที่จ่าย</p>
+                                    <p className="text-sm mb-1">• เบี้ยสุขภาพที่จ่ายเอง: <span className="font-semibold text-rose-600">{formatNum(summaryData.totalHealthPremiumIfPaidAlone - summaryData.totalWithdrawals)} บาท</span></p>
+                                    <p className="text-sm mb-1">• เบี้ย {fundingSource === 'iWealthy' ? 'iWealthy' : fundingSource === 'pension' ? 'บำนาญ' : 'Funding'}: <span className="font-semibold text-blue-600">{formatNum(summaryData.lthcTotalFundingPremium)} บาท</span></p>
+                                    <p className="font-bold text-rose-600 text-xl mt-2 pt-2 border-t border-red-300">
+                                        รวม: {formatNum(summaryData.lthcTotalCombinedPremiumPaid)} บาท
+                                    </p>
+                                </div>
+                                
+                                {/* กลุ่มผลประโยชน์ */}
+                                <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                                    <p className="text-xs text-gray-500 uppercase font-semibold mb-2">🎁 ผลประโยชน์รวม</p>
+                                    <p className="text-sm mb-1">• ผลประโยชน์จาก {fundingSource === 'iWealthy' ? 'iWealthy' : fundingSource === 'pension' ? 'บำนาญ' : 'Funding'}: <span className="font-semibold text-orange-600">{formatNum(summaryData.totalWithdrawals + (result[result.length - 1]?.iWealthyEoyAccountValue || 0))} บาท</span></p>
+                                    <p className="text-sm mb-1">• ทุนประกัน (Life Ready): <span className="font-semibold text-green-600">{formatNum(selectedHealthPlans.lifeReadySA || 150000)} บาท</span></p>
+                                    <p className="font-bold text-purple-600 text-xl mt-2 pt-2 border-t border-purple-300">
+                                        รวม: {formatNum((summaryData.totalWithdrawals + (result[result.length - 1]?.iWealthyEoyAccountValue || 0)) + (selectedHealthPlans.lifeReadySA || 150000))} บาท
+                                    </p>
+                                </div>
+                                
+                                {/* ผลประโยชน์สุทธิ */}
+                                <div className={`p-3 rounded-lg border-2 ${
+                                    (((summaryData.totalWithdrawals + (result[result.length - 1]?.iWealthyEoyAccountValue || 0)) + (selectedHealthPlans.lifeReadySA || 150000)) - summaryData.lthcTotalCombinedPremiumPaid) >= 0 
+                                        ? 'bg-green-50 border-green-300' 
+                                        : 'bg-red-50 border-red-300'
+                                }`}>
+                                    <p className="text-xs text-gray-500 uppercase font-semibold mb-2">📊 ผลประโยชน์สุทธิ</p>
+                                    <p className={`font-bold text-2xl ${
+                                        (((summaryData.totalWithdrawals + (result[result.length - 1]?.iWealthyEoyAccountValue || 0)) + (selectedHealthPlans.lifeReadySA || 150000)) - summaryData.lthcTotalCombinedPremiumPaid) >= 0 
+                                            ? 'text-green-600' 
+                                            : 'text-red-600'
+                                    }`}>
+                                        {(((summaryData.totalWithdrawals + (result[result.length - 1]?.iWealthyEoyAccountValue || 0)) + (selectedHealthPlans.lifeReadySA || 150000)) - summaryData.lthcTotalCombinedPremiumPaid) >= 0 ? '+' : ''}
+                                        {formatNum(((summaryData.totalWithdrawals + (result[result.length - 1]?.iWealthyEoyAccountValue || 0)) + (selectedHealthPlans.lifeReadySA || 150000)) - summaryData.lthcTotalCombinedPremiumPaid)} บาท
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
+                    
+                    {/* แสดงส่วนต่างผลประโยชน์ */}
+                    {fundingSource !== 'none' && (
+                        <div className={`mt-6 p-4 rounded-lg text-center ${
+                            (((summaryData.totalWithdrawals + (result[result.length - 1]?.iWealthyEoyAccountValue || 0)) + (selectedHealthPlans.lifeReadySA || 150000)) - summaryData.lthcTotalCombinedPremiumPaid) > 
+                            ((selectedHealthPlans.lifeReadySA || 150000) - summaryData.totalHealthPremiumIfPaidAlone)
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-amber-100 text-amber-800'
+                        }`}>
+                            <p className="text-lg font-semibold">
+                                {(((summaryData.totalWithdrawals + (result[result.length - 1]?.iWealthyEoyAccountValue || 0)) + (selectedHealthPlans.lifeReadySA || 150000)) - summaryData.lthcTotalCombinedPremiumPaid) > 
+                                ((selectedHealthPlans.lifeReadySA || 150000) - summaryData.totalHealthPremiumIfPaidAlone) ? (
+                                    <>คุณได้รับผลประโยชน์เพิ่มขึ้น <span className="text-2xl font-bold">
+                                        {formatNum((((summaryData.totalWithdrawals + (result[result.length - 1]?.iWealthyEoyAccountValue || 0)) + (selectedHealthPlans.lifeReadySA || 150000)) - summaryData.lthcTotalCombinedPremiumPaid) - 
+                                        ((selectedHealthPlans.lifeReadySA || 150000) - summaryData.totalHealthPremiumIfPaidAlone))}
+                                    </span> บาท เมื่อใช้แผน LTHC!</>
+                                ) : (
+                                    <>ผลประโยชน์สุทธิจากแผน LTHC: <span className="text-2xl font-bold">
+                                        {formatNum(((summaryData.totalWithdrawals + (result[result.length - 1]?.iWealthyEoyAccountValue || 0)) + (selectedHealthPlans.lifeReadySA || 150000)) - summaryData.lthcTotalCombinedPremiumPaid)}
+                                    </span> บาท</>
+                                )}
+                            </p>
+                        </div>
+                    )}
                 </section>
 
                 {/* --- กราฟ และ ตาราง --- */}

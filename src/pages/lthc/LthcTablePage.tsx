@@ -88,6 +88,12 @@ export default function LthcTablePage({ isReportMode }: { isReportMode?: boolean
         let totalHealthPremiumIfPaidAlone = 0;
         let lthcHealthPremiumPaidByUser = 0;
         let lthcTotalFundingPremium = 0;
+        
+        // 🎨 ผลประโยชน์ฝั่งสุขภาพอย่างเดียว
+        const lifeReadyMaturityBenefit = selectedHealthPlans.lifeReadySA || 150000;
+        
+        // 🎨 ผลประโยชน์ฝั่ง LTHC
+        let lthcFundingBenefits = 0;
 
         displayedResult.forEach(row => {
             totalHealthPremiumIfPaidAlone += row.totalHealthPremium || 0;
@@ -102,13 +108,43 @@ export default function LthcTablePage({ isReportMode }: { isReportMode?: boolean
             }
             
             lthcTotalFundingPremium += (row.iWealthyTotalPremium || 0) + (row.pensionPremium || 0);
+            
+            // 🎨 คำนวณผลประโยชน์จาก Funding (เงินถอน + เงินบำนาญ)
+            if (fundingSource === 'iWealthy') {
+                lthcFundingBenefits += row.iWealthyWithdrawal || 0;
+            } else if (fundingSource === 'pension') {
+                lthcFundingBenefits += row.pensionPayout || 0;
+            } else if (fundingSource === 'hybrid') {
+                lthcFundingBenefits += (row.pensionPayout || 0) + (row.iWealthyWithdrawal || 0);
+            }
         });
 
-        const lthcTotalCombinedPremiumPaid = lthcHealthPremiumPaidByUser + lthcTotalFundingPremium;
-        const totalSavings = totalHealthPremiumIfPaidAlone - lthcTotalCombinedPremiumPaid;
+        // 🎨 เพิ่มมูลค่าบัญชีสุดท้าย
+        const lastRow = displayedResult[displayedResult.length - 1];
+        if (fundingSource === 'iWealthy' || fundingSource === 'hybrid') {
+            lthcFundingBenefits += lastRow.iWealthyEoyAccountValue || 0;
+        }
+        
+        // 🎨 คำนวณผลประโยชน์รวมและสุทธิ
+        const healthOnlyTotalBenefit = lifeReadyMaturityBenefit;
+        const healthOnlyNetBenefit = lifeReadyMaturityBenefit - totalHealthPremiumIfPaidAlone;
+        
+        const lthcTotalPremium = lthcHealthPremiumPaidByUser + lthcTotalFundingPremium;
+        const lthcTotalBenefit = lthcFundingBenefits + lifeReadyMaturityBenefit;
+        const lthcNetBenefit = lthcTotalBenefit - lthcTotalPremium;
 
-        return { totalHealthPremiumIfPaidAlone, lthcHealthPremiumPaidByUser, lthcTotalFundingPremium, lthcTotalCombinedPremiumPaid, totalSavings };
-    }, [displayedResult, fundingSource, showFullPensionTerm]);
+        return { 
+            totalHealthPremiumIfPaidAlone, 
+            lthcHealthPremiumPaidByUser, 
+            lthcTotalFundingPremium, 
+            lifeReadyMaturityBenefit,
+            lthcFundingBenefits,
+            healthOnlyTotalBenefit,
+            lthcTotalBenefit,
+            healthOnlyNetBenefit,
+            lthcNetBenefit
+        };
+    }, [displayedResult, fundingSource, showFullPensionTerm, selectedHealthPlans]);
 
 
 
@@ -420,25 +456,80 @@ export default function LthcTablePage({ isReportMode }: { isReportMode?: boolean
             {summaryValues && (
                 <section className="mt-8 p-6 border-t-2 border-sky-600 bg-slate-50 rounded-lg shadow-lg">
                     <h2 className="text-xl font-semibold mb-4 text-slate-700">
-                        สรุปเปรียบเทียบค่าใช้จ่าย (ถึงอายุ {isTaxDeductionEnabled ? taxDeductionEndAge : (fundingSource === 'pension' && !showFullPensionTerm ? 88 : 99)} ปี):
+                        สรุปผลประโยชน์ (ถึงอายุ {isTaxDeductionEnabled ? taxDeductionEndAge : (fundingSource === 'pension' && !showFullPensionTerm ? 88 : 99)} ปี):
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                         <div className="p-4 bg-white rounded shadow border border-gray-200">
-                            <h3 className="font-semibold text-gray-600 mb-1">1. กรณีจ่ายเบี้ยสุขภาพเองทั้งหมด:</h3>
-                            <p className="font-bold text-xl text-rose-600">{formatNum(summaryValues.totalHealthPremiumIfPaidAlone)} บาท</p>
-                        </div>
+                        <div className="p-4 bg-white rounded shadow border border-gray-200 space-y-3">
+                            <h3 className="font-semibold text-gray-600 mb-3">1. กรณีจ่ายเบี้ยสุขภาพเองทั้งหมด:</h3>
+                            
+                            {/* กลุ่มเบี้ย */}
+                            <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+                                <p className="text-xs text-gray-500 uppercase font-semibold mb-2">💰 เบี้ยที่จ่าย</p>
+                                <p className="font-bold text-rose-600 text-xl">{formatNum(summaryValues.totalHealthPremiumIfPaidAlone)} บาท</p>
+                            </div>
+                            
+                            {/* กลุ่มผลประโยชน์ */}
+                            <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                                <p className="text-xs text-gray-500 uppercase font-semibold mb-2">🎁 ผลประโยชน์รวม</p>
+                                <p className="text-sm mb-1">• ทุนประกัน (Life Ready): <span className="font-semibold text-green-600">{formatNum(summaryValues.lifeReadyMaturityBenefit)} บาท</span></p>
+                                <p className="font-bold text-purple-600 text-xl mt-2 pt-2 border-t border-purple-300">รวม: {formatNum(summaryValues.healthOnlyTotalBenefit)} บาท</p>
+                            </div>
+                            
+                            {/* ผลประโยชน์สุทธิ */}
+                            <div className={`p-3 rounded-lg border-2 ${summaryValues.healthOnlyNetBenefit >= 0 ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'}`}>
+                                <p className="text-xs text-gray-500 uppercase font-semibold mb-2">📊 ผลประโยชน์สุทธิ</p>
+                                <p className={`font-bold text-2xl ${summaryValues.healthOnlyNetBenefit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {summaryValues.healthOnlyNetBenefit >= 0 ? '+' : ''}{formatNum(summaryValues.healthOnlyNetBenefit)} บาท
+                                </p>
+                            </div>
+                        </div>
+                        
                         {fundingSource !== 'none' && (
-                            <div className="p-4 bg-white rounded shadow border border-gray-200 space-y-1">
-                                <h3 className="font-semibold text-gray-600 mb-1">2. กรณีใช้แผน LTHC:</h3>
-                                <p>เบี้ยสุขภาพที่จ่ายเอง: <span className="font-bold text-sky-600 ml-2">{formatNum(summaryValues.lthcHealthPremiumPaidByUser)} บาท</span></p>
-                                <p>{getFundingSummaryLabel()} <span className="font-bold text-blue-600 ml-2">{formatNum(summaryValues.lthcTotalFundingPremium)} บาท</span></p>
-                                <p className="text-gray-800 font-medium border-t pt-2 mt-2">รวมเบี้ยที่จ่ายทั้งหมด: <span className="font-bold text-xl text-emerald-600 ml-2">{formatNum(summaryValues.lthcTotalCombinedPremiumPaid)} บาท</span></p>
+                            <div className="p-4 bg-white rounded shadow border border-gray-200 space-y-3">
+                                <h3 className="font-semibold text-gray-600 mb-3">2. กรณีใช้แผน LTHC:</h3>
+                                
+                                {/* กลุ่มเบี้ย */}
+                                <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+                                    <p className="text-xs text-gray-500 uppercase font-semibold mb-2">💰 เบี้ยที่จ่าย</p>
+                                    <p className="text-sm mb-1">• เบี้ยสุขภาพที่จ่ายเอง: <span className="font-semibold text-rose-600">{formatNum(summaryValues.lthcHealthPremiumPaidByUser)} บาท</span></p>
+                                    <p className="text-sm mb-1">• {getFundingSummaryLabel()}: <span className="font-semibold text-blue-600">{formatNum(summaryValues.lthcTotalFundingPremium)} บาท</span></p>
+                                    <p className="font-bold text-rose-600 text-xl mt-2 pt-2 border-t border-red-300">รวม: {formatNum((summaryValues.lthcHealthPremiumPaidByUser || 0) + (summaryValues.lthcTotalFundingPremium || 0))} บาท</p>
+                                </div>
+                                
+                                {/* กลุ่มผลประโยชน์ */}
+                                <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                                    <p className="text-xs text-gray-500 uppercase font-semibold mb-2">🎁 ผลประโยชน์รวม</p>
+                                    <p className="text-sm mb-1">• ผลประโยชน์จาก {(() => {
+                                        switch(fundingSource) {
+                                            case 'iWealthy': return 'iWealthy';
+                                            case 'pension': return pensionFundingOptions.planType === 'pension8' ? 'บำนาญ 8' : 'บำนาญ 60';
+                                            case 'hybrid': return 'iWealthy + บำนาญ';
+                                            default: return 'Funding';
+                                        }
+                                    })()}: <span className="font-semibold text-orange-600">{formatNum(summaryValues.lthcFundingBenefits)} บาท</span></p>
+                                    <p className="text-sm mb-1">• ทุนประกัน (Life Ready): <span className="font-semibold text-green-600">{formatNum(summaryValues.lifeReadyMaturityBenefit)} บาท</span></p>
+                                    <p className="font-bold text-purple-600 text-xl mt-2 pt-2 border-t border-purple-300">รวม: {formatNum(summaryValues.lthcTotalBenefit)} บาท</p>
+                                </div>
+                                
+                                {/* ผลประโยชน์สุทธิ */}
+                                <div className={`p-3 rounded-lg border-2 ${summaryValues.lthcNetBenefit >= 0 ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'}`}>
+                                    <p className="text-xs text-gray-500 uppercase font-semibold mb-2">📊 ผลประโยชน์สุทธิ</p>
+                                    <p className={`font-bold text-2xl ${summaryValues.lthcNetBenefit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {summaryValues.lthcNetBenefit >= 0 ? '+' : ''}{formatNum(summaryValues.lthcNetBenefit)} บาท
+                                    </p>
+                                </div>
                             </div>
                         )}
                     </div>
-                    {fundingSource !== 'none' && summaryValues.totalSavings > 0 && (
-                        <div className="mt-6 p-4 bg-green-100 text-green-800 rounded-lg text-center">
-                            <p className="text-lg font-semibold">คุณประหยัดค่าใช้จ่ายโดยรวมไปได้ถึง <span className="text-2xl font-bold">{formatNum(summaryValues.totalSavings)}</span> บาท!</p>
+                    {fundingSource !== 'none' && (
+                        <div className={`mt-6 p-4 rounded-lg text-center ${summaryValues.lthcNetBenefit > summaryValues.healthOnlyNetBenefit ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                            <p className="text-lg font-semibold">
+                                {summaryValues.lthcNetBenefit > summaryValues.healthOnlyNetBenefit ? (
+                                    <>คุณได้รับผลประโยชน์เพิ่มขึ้น <span className="text-2xl font-bold">{formatNum(summaryValues.lthcNetBenefit - summaryValues.healthOnlyNetBenefit)}</span> บาท เมื่อใช้แผน LTHC!</>
+                                ) : (
+                                    <>ผลประโยชน์สุทธิจากแผน LTHC: <span className="text-2xl font-bold">{formatNum(summaryValues.lthcNetBenefit)}</span> บาท</>
+                                )}
+                            </p>
                         </div>
                     )}
                 </section>
