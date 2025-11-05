@@ -2,17 +2,17 @@
 
 // --- Original Imports ---
 import type {
-    CalculationInput as OriginalIWealthyCalculationInput,
-    AnnualCalculationOutputRow as OriginalIWealthyAnnualOutputRow,
-    SumInsuredReductionRecord as OriginalSumInsuredReductionRecord,
-    FrequencyChangeRecord as OriginalFrequencyChangeRecord,
-    WithdrawalPlanRecord as OriginalWithdrawalPlanRecord,
+    CalculationInput as OriginalIWealthyCalculationInput,
+    AnnualCalculationOutputRow as OriginalIWealthyAnnualOutputRow,
+    SumInsuredReductionRecord as OriginalSumInsuredReductionRecord,
+    FrequencyChangeRecord as OriginalFrequencyChangeRecord,
+    WithdrawalPlanRecord as OriginalWithdrawalPlanRecord,
 } from '../lib/calculations';
 import type {
-    Gender as HealthPlanGenderOriginal,
-    LifeReadyPaymentTerm as LifeReadyPaymentTermOriginal,
-    IHealthyUltraPlan as IHealthyUltraPlanOriginal,
-    MEBPlan as MEBPlanOriginal,
+    Gender as HealthPlanGenderOriginal,
+    LifeReadyPaymentTerm as LifeReadyPaymentTermOriginal,
+    IHealthyUltraPlan as IHealthyUltraPlanOriginal,
+    MEBPlan as MEBPlanOriginal,
 } from '../lib/healthPlanCalculations';
 import type { PensionPlanType as PensionPlanTypeOriginal } from '../data/pensionRates';
 
@@ -24,6 +24,20 @@ export type PensionMode = 'automatic' | 'manual';
 
 export interface PensionFundingOptions {
     planType: PensionPlanType;
+}
+
+export interface PensionInputParams {
+    pensionMode: PensionMode; 
+    
+    // พารามิเตอร์สำหรับโหมด Manual
+    manualPensionPlanType: PensionPlanType;
+    manualPensionPremium: number;
+    pensionStartAge: number;
+    pensionEndAge: number; 
+
+    // พารามิเตอร์สำหรับโหมด Automatic
+    autoPensionPlanType: PensionPlanType;
+    autoPensionPremium: number;
 }
 
 // --- Original Type Aliases ---
@@ -38,10 +52,11 @@ export type MEBPlan = MEBPlanOriginal;
 export type MEBPlanSelection = MEBPlan | null;
 
 export interface HealthPlanSelections {
-    lifeReadySA: number;
-    lifeReadyPPT: LifeReadyPaymentTerm;
-    iHealthyUltraPlan: IHealthyUltraPlanSelection;
-    mebPlan: MEBPlanSelection;
+    lifeReadySA: number;
+    lifeReadyPPT: LifeReadyPaymentTerm;
+    iHealthyUltraPlan: IHealthyUltraPlanSelection;
+    mebPlan: MEBPlanSelection;
+    pensionPlanType?: PensionPlanType;
 }
 
 export type SumInsuredReductionRecord = OriginalSumInsuredReductionRecord;
@@ -61,23 +76,23 @@ export type LthcTaxSavingsResult = Map<number, TaxSavingsBreakdown>;
 
 
 export interface AnnualLTHCOutputRow {
-    policyYear: number;
-    age: number;
-    lifeReadyPremium: number;
-    lifeReadyDeathBenefit: number;
-    iHealthyUltraPremium: number;
-    mebPremium: number;
-    totalHealthPremium: number;
-    totalCombinedDeathBenefit?: number;
-    // iWealthy
-    iWealthyRpp?: number;
-    iWealthyRtu?: number;
-    iWealthyTotalPremium?: number;
-    iWealthyWithdrawal?: number;
-    iWealthyEoyAccountValue?: number;
-    iWealthyEoyDeathBenefit?: number;
-    iWealthySumAssured?: number;
-    iWealthyEOYCSV?: number;
+    policyYear: number;
+    age: number;
+    lifeReadyPremium: number;
+    lifeReadyDeathBenefit: number;
+    iHealthyUltraPremium: number;
+    mebPremium: number;
+    totalHealthPremium: number;
+    totalCombinedDeathBenefit?: number;
+    // iWealthy
+    iWealthyRpp?: number;
+    iWealthyRtu?: number;
+    iWealthyTotalPremium?: number;
+    iWealthyWithdrawal?: number;
+    iWealthyEoyAccountValue?: number;
+    iWealthyEoyDeathBenefit?: number;
+    iWealthySumAssured?: number;
+    iWealthyEOYCSV?: number;
     iWealthyPremiumCharge?: number;
     iWealthyCOI?: number;
     iWealthyAdminFee?: number;
@@ -93,12 +108,12 @@ export interface AnnualLTHCOutputRow {
 }
 
 export interface AnnualHealthPremiumDetail {
-    year: number;
-    age: number;
-    totalPremium: number;
-    lrPrem: number;
-    ihuPrem: number;
-    mebPrem: number;
+    year: number;
+    age: number;
+    totalPremium: number;
+    lrPrem: number;
+    ihuPrem: number;
+    mebPrem: number;
 }
 
 // --- Constants ---

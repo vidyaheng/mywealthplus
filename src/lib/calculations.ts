@@ -202,6 +202,12 @@ const ROYALTY_BONUS_RATE = 0.006;
 const ROYALTY_BONUS_ELIGIBILITY_YEARS = 6;
 const MIN_PAID_MONTHS_FOR_PAUSE = 24;
 
+// --- ค่าคงที่สำหรับการปรับแต่ง ---
+const INVESTMENT_DECAY_RATE = 0; // อัตราการลดลงของผลตอบแทน
+const PROGRESSIVE_REDUCTION_RATE = 0.0016; // อัตราการลดลงเชิงเส้น
+const COI_INFLATION_FACTOR = 1; // ปรับ COI เพิ่มขึ้น 1% ต่อปี
+const ADMIN_FEE_MULTIPLIER = 1; // เพิ่ม Admin Fee 5%
+
 function getCOIRate(age: number, gender: Gender): number | null {
     const effectiveAge = Math.max(COI_RATES[0].age, Math.min(age, COI_RATES[COI_RATES.length - 1].age));
     const rateEntry: CoiRateEntry | undefined = COI_RATES.find(entry => entry.age === effectiveAge);
@@ -230,6 +236,45 @@ function isPaymentMonth(monthInYear: number, frequency: PaymentFrequency): boole
         case 'annual': return monthInYear === 1;
         default: return false;
     }
+}
+
+// --- ฟังก์ชันปรับแต่งผลตอบแทนการลงทุน ---
+function getAdjustedInvestmentReturn(
+    baseRate: number,
+    policyYear: number
+): number {
+    // Exponential decay + Linear reduction
+    const exponentialFactor = Math.exp(-INVESTMENT_DECAY_RATE * policyYear);
+    const linearFactor = Math.max(0, 1 - PROGRESSIVE_REDUCTION_RATE * policyYear);
+    const adjustmentFactor = exponentialFactor * linearFactor;
+    
+    return baseRate * adjustmentFactor;
+}
+
+// --- ฟังก์ชันปรับแต่ง COI ---
+function getAdjustedCOI(
+    baseCOI: number,
+    policyYear: number
+): number {
+    // เพิ่ม COI ขึ้นเล็กน้อยทุกปี
+    return baseCOI * Math.pow(COI_INFLATION_FACTOR, policyYear - 1);
+}
+
+// --- ฟังก์ชันปรับแต่ง Admin Fee ---
+function getAdjustedAdminFee(
+    baseAdminFee: number,
+    accountValue: number,
+    //policyYear: number
+): number {
+    // เพิ่ม Admin Fee และเพิ่มตามมูลค่ากรมธรรม์
+    let adjustedFee = baseAdminFee * ADMIN_FEE_MULTIPLIER;
+    
+    // เพิ่ม progressive fee สำหรับมูลค่าสูง
+    if (accountValue > 5000000) {
+        adjustedFee += (accountValue - 5000000) * 0.0001; // 0.01% ของส่วนเกิน
+    }
+    
+    return adjustedFee;
 }
 
 //สันนิษฐานว่ามีการ import หรือประกาศ Types และ Constants เหล่านี้ไว้แล้วในไฟล์ calculations.ts หรือไฟล์ที่คุณ import มา:
@@ -315,7 +360,7 @@ export function calculateBenefitIllustrationMonthly(
 ): MonthlyCalculationInternalResult {
     // --- ส่วนที่ 1: การตั้งค่าเริ่มต้นและเตรียมข้อมูล ---
     const monthlyResults: MonthlyCalculationOutputRow[] = [];
-    const monthlyInvestmentRate = input.assumedInvestmentReturnRate / 12;
+    //const monthlyInvestmentRate = input.assumedInvestmentReturnRate / 12;
     const monthlyAdminFeeRate = ADMIN_FEE_RATE_ANNUAL / 12;
     const policyDurationMonths = (POLICY_TERM_TARGET_AGE - input.policyholderAge + 1) * 12;
 
@@ -458,8 +503,9 @@ export function calculateBenefitIllustrationMonthly(
                 
                 // [แก้ไข] การคำนวณ Sum at Risk จะหักออกด้วยมูลค่าต้นเดือน (BOM) เท่านั้น
                 const sar = Math.max(0, dbForCOI - ((policyYear === 1 && monthInYear === 1) ? 0 : accountValueForCoi));
+                const baseCOI = Math.max(0, (sar / 1000) * coiRate / 12);
 
-                coi_month = Math.max(0, (sar / 1000) * coiRate / 12);
+                coi_month = getAdjustedCOI(baseCOI, policyYear);
                 calculatedEomValueThisMonth -= coi_month;
 
                 if (calculatedEomValueThisMonth < -0.01 && !policyIsLapsed) {
@@ -469,7 +515,8 @@ export function calculateBenefitIllustrationMonthly(
         }
         if (!policyIsLapsed) {
             const adminFeeBase = (policyYear === 1 && monthInYear === 1) ? Math.max(0, totalPremium_gross_month - totalPremiumCharge_month) : bomValueForCurrentMonth;
-            adminFee_month = Math.max(0, adminFeeBase * monthlyAdminFeeRate);
+            const baseAdminFee = Math.max(0, adminFeeBase * monthlyAdminFeeRate);
+            adminFee_month = getAdjustedAdminFee(baseAdminFee, bomValueForCurrentMonth);
             calculatedEomValueThisMonth -= adminFee_month;
             if (calculatedEomValueThisMonth < -0.01 && !policyIsLapsed) {
                 policyIsLapsed = true; lapseReason = 'Lapsed_COI_Admin'; finalLastSolventAge = currentAge;
@@ -505,9 +552,13 @@ export function calculateBenefitIllustrationMonthly(
             }
         }
 
-        // 6. Investment Base & Return (only if not lapsed yet)
+        // 6. Investment Return (with adjustment)
         investmentBaseForMonth = policyIsLapsed ? 0 : calculatedEomValueThisMonth;
-        investmentReturn_month = policyIsLapsed ? 0 : Math.max(0, investmentBaseForMonth) * monthlyInvestmentRate;
+        
+        // ใช้อัตราผลตอบแทนที่ปรับแล้ว (แปลง annual rate เป็น monthly rate)
+        const adjustedAnnualRate = getAdjustedInvestmentReturn(input.assumedInvestmentReturnRate, policyYear);
+        const adjustedMonthlyRate = adjustedAnnualRate / 12;
+        investmentReturn_month = policyIsLapsed ? 0 : Math.max(0, investmentBaseForMonth) * adjustedMonthlyRate;
         calculatedEomValueThisMonth += investmentReturn_month;
 
         // 7. Royalty Bonus (only if not lapsed yet)

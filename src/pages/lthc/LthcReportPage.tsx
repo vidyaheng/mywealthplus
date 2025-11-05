@@ -90,9 +90,11 @@ export const LthcReportPage = () => {
     // 1. ดึงข้อมูล LTHC ทั้งหมดที่จำเป็นจาก Store
     const {
         result, isLoading, fundingSource, policyholderEntryAge, policyholderGender,
-        selectedHealthPlans, policyOriginMode, existingPolicyEntryAge,
-        iWealthyMode, manualRpp, manualRtu, manualInvestmentReturn, manualIWealthyPPT, manualWithdrawalStartAge,
-        autoInvestmentReturn, autoIWealthyPPT,lthcControls 
+    selectedHealthPlans, policyOriginMode, existingPolicyEntryAge,
+    iWealthyMode, manualRpp, manualRtu, manualInvestmentReturn, manualIWealthyPPT, manualWithdrawalStartAge,
+    autoInvestmentReturn, autoIWealthyPPT, lthcControls, 
+    pensionMode, manualPensionPlanType, manualPensionPremium: _manualPremium, autoPensionPlanType, autoPensionPremium: _autoPremium,
+    pensionStartAge, pensionEndAge,
     } = useAppStore();
 
     // 2. คำนวณ Metrics และข้อมูลสรุปที่ต้องการ
@@ -111,6 +113,14 @@ export const LthcReportPage = () => {
     let lthcTotalFundingPremium = 0;
     let totalWithdrawals = 0;
     let lthcFundingBenefits = 0;
+    let pensionTotalPremium = 0;
+    let totalPensionPayout = 0;
+
+    // ⭐ เพิ่ม Logic สำหรับค้นหา Age ที่เริ่มถอน ⭐
+    const firstWithdrawalRow = result.find(row => 
+        (fundingSource === 'iWealthy' || fundingSource === 'hybrid') && (row.iWealthyWithdrawal ?? 0) > 0
+    );
+    const firstWithdrawalAge = firstWithdrawalRow?.age ?? policyholderEntryAge; // ใช้อายุเริ่มต้นเป็นค่า Default
 
     result.forEach(row => {
         totalHealthPremiumIfPaidAlone += row.totalHealthPremium || 0;
@@ -129,10 +139,15 @@ export const LthcReportPage = () => {
         } else if (fundingSource === 'hybrid') {
             lthcFundingBenefits += (row.pensionPayout || 0) + (row.iWealthyWithdrawal || 0);
         }
+        pensionTotalPremium += row.pensionPremium || 0;
+        totalPensionPayout += row.pensionPayout || 0;
     });
     
     // เพิ่มมูลค่าบัญชีสุดท้าย
     const lastRow = result[result.length - 1];
+    if (fundingSource === 'pension' || fundingSource === 'hybrid') {
+        lthcFundingBenefits += lastRow.pensionEOYCSV || 0;
+    }
     if (fundingSource === 'iWealthy' || fundingSource === 'hybrid') {
         lthcFundingBenefits += lastRow.iWealthyEoyAccountValue || 0;
     }
@@ -166,7 +181,11 @@ export const LthcReportPage = () => {
         healthOnlyNetBenefit,
         lthcTotalBenefit,
         lthcNetBenefit,
-        initialSA
+        initialSA,
+        pensionTotalPremium,
+        totalPensionPayout,
+        firstWithdrawalAge,
+        
     };
 }, [result, policyholderEntryAge, policyholderGender, selectedHealthPlans, policyOriginMode, existingPolicyEntryAge, fundingSource]);
 
@@ -192,6 +211,10 @@ export const LthcReportPage = () => {
 
     if (isLoading) return <div className="text-center p-10">กำลังจัดทำรายงาน...</div>;
     if (!result || !summaryData) return <div className="text-center p-10 text-gray-500">กรุณากดคำนวณในหน้า "กรอกข้อมูล" เพื่อจัดทำรายงาน</div>;
+
+    const isHybrid = fundingSource === 'hybrid';
+    const isIWealthy = fundingSource === 'iWealthy';
+    const isPension = fundingSource === 'pension';
 
     //const planDetailsForPdf = {
     //    healthPlans: [
@@ -231,7 +254,15 @@ export const LthcReportPage = () => {
                                 manualIWealthyPPT={manualIWealthyPPT}
                                 autoIWealthyPPT={autoIWealthyPPT}
                                 manualWithdrawalStartAge={manualWithdrawalStartAge}
-                                selectedHealthPlans={selectedHealthPlans}
+                                selectedHealthPlans={{
+                                    ...selectedHealthPlans,
+                                    pensionPlanType: selectedHealthPlans.pensionPlanType // 👈 เพิ่มบรรทัดนี้
+                                }}
+                                pensionMode={pensionMode}
+                                manualPensionPlanType={manualPensionPlanType}
+                                autoPensionPlanType={autoPensionPlanType}
+                                pensionStartAge={pensionStartAge}
+                                pensionEndAge={pensionEndAge}
                             />
                         }
                         fileName={`LTHC-Report-${new Date().toISOString().slice(0,10)}.pdf`}
@@ -268,19 +299,59 @@ export const LthcReportPage = () => {
                             </div>
                         </div>
                         {/* Column 2: Funding Plan */}
-                        {fundingSource === 'iWealthy' && (
+                        {/* ------------------- แผน iWealthy ------------------- */}
+                        {isIWealthy && (
                             <div className="space-y-3">
-                                <h3 className="font-semibold text-slate-700">สรุปแผนจัดหาทุน (iWealthy)</h3>
+                                <h3 className="font-semibold text-slate-700">สรุปแผน iWealthy</h3>
                                 <div className="text-sm space-y-2">
                                     <div className="flex justify-between"><span>ความคุ้มครองชีวิตเริ่มต้น:</span> <span className="font-semibold">{formatNum(summaryData.initialSA)} บาท</span></div>
                                     <div className="flex justify-between"><span>เบี้ยประกัน (RPP+RTU):</span> <span className="font-semibold">{formatNum(iWealthyMode === 'manual' ? manualRpp + manualRtu : result[0].iWealthyTotalPremium)} บาท/ปี</span></div>
                                     <div className="flex justify-between"><span>ระยะเวลาชำระเบี้ย:</span> <span className="font-semibold">{iWealthyMode === 'manual' ? manualIWealthyPPT : autoIWealthyPPT} ปี</span></div>
                                     <div className="flex justify-between"><span>ผลตอบแทนคาดหวัง:</span> <span className="font-semibold">{iWealthyMode === 'manual' ? manualInvestmentReturn : autoInvestmentReturn} %</span></div>
-                                    <div className="flex justify-between"><span>เริ่มถอนเพื่อจ่ายเบี้ยสุขภาพอายุ:</span> <span className="font-semibold">{iWealthyMode === 'manual' ? manualWithdrawalStartAge : 'ตามแผน'} ปี</span></div>
+                                    <div className="flex justify-between"><span>เริ่มถอนเพื่อจ่ายเบี้ยสุขภาพอายุ:</span> <span className="font-semibold">{iWealthyMode === 'manual' ? manualWithdrawalStartAge : formatNum(summaryData.firstWithdrawalAge)} ปี</span></div>
                                     <div className="flex justify-between border-t pt-2 mt-2 font-bold"><span>รวมถอนจาก iWealthy ทั้งหมด:</span> <span>{formatNum(summaryData.totalWithdrawals)} บาท</span></div>
                                 </div>
                             </div>
                         )}
+                        {/* ------------------- แผนบำนาญ ------------------- */}
+                        {isPension && (
+                            <div className="space-y-3">
+                                <h3 className="font-semibold text-slate-700">สรุปแผนบำนาญ</h3>
+                                <div className="text-sm space-y-2">
+                                    <div className="flex justify-between"><span>แบบประกัน:</span> <span className="font-semibold">{pensionMode === 'manual' ? manualPensionPlanType : autoPensionPlanType}</span></div>
+                                    <div className="flex justify-between"><span>เบี้ยประกันบำนาญ (รวม):</span> <span className="font-semibold">{formatNum(summaryData.pensionTotalPremium)} บาท</span></div>
+                                    <div className="flex justify-between"><span>รับเงินบำนาญช่วงอายุ:</span> <span className="font-semibold">{pensionStartAge} - {pensionEndAge} ปี</span></div>
+                                    <div className="flex justify-between border-t pt-2 mt-2 font-bold"><span>รวมเงินบำนาญที่ได้รับ:</span> <span>{formatNum(summaryData.totalPensionPayout)} บาท</span></div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* ------------------- แผน Hybrid ------------------- */}
+                        {isHybrid && (
+                            <div className="space-y-3">
+                                <h3 className="font-semibold text-slate-700">สรุปแผน Hybrid (iWealthy + บำนาญ)</h3>
+                                
+                                <div className="text-sm space-y-3 p-3 bg-white rounded-md border border-teal-200">
+                                    <h4 className="font-semibold text-base text-teal-700 border-b pb-1">ส่วนบำนาญ:</h4>
+                                    <div className="flex justify-between"><span>แบบประกัน:</span> <span className="font-semibold">{manualPensionPlanType}</span></div>
+                                    <div className="flex justify-between"><span>รวมเบี้ยบำนาญ:</span> <span className="font-semibold">{formatNum(summaryData.pensionTotalPremium)} บาท</span></div>
+                                    <div className="flex justify-between"><span>รวมเงินบำนาญที่ได้รับ:</span> <span className="font-semibold">{formatNum(summaryData.totalPensionPayout)} บาท</span></div>
+                                </div>
+
+                                <div className="text-sm space-y-3 p-3 bg-white rounded-md border border-blue-200">
+                                    <h4 className="font-semibold text-base text-blue-700 border-b pb-1">ส่วน iWealthy:</h4>
+                                    <div className="flex justify-between"><span>ผลตอบแทนคาดหวัง:</span> <span className="font-semibold">{autoInvestmentReturn} %</span></div>
+                                    <div className="flex justify-between"><span>รวมเบี้ย iWealthy:</span> <span className="font-semibold">{formatNum(result.reduce((sum, row) => sum + (row.iWealthyTotalPremium || 0), 0))} บาท</span></div>
+                                    <div className="flex justify-between"><span>รวมถอนจาก iWealthy:</span> <span className="font-semibold">{formatNum(result.reduce((sum, row) => sum + (row.iWealthyWithdrawal || 0), 0))} บาท</span></div>
+                                </div>
+                                
+                                <div className="flex justify-between border-t pt-2 mt-2 font-bold">
+                                    <span>รวมเบี้ย Funding ทั้งหมด:</span> 
+                                    <span>{formatNum(summaryData.lthcTotalFundingPremium)} บาท</span>
+                                </div>
+                            </div>
+                        )}
+                        
                         {/* (สามารถเพิ่มเงื่อนไขสำหรับ Pension และ Hybrid ได้ที่นี่) */}
                     </div>
                 </section>

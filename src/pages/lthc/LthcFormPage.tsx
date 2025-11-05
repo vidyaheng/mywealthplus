@@ -11,6 +11,8 @@ const MIN_LR_SA_NORMAL_MODE = 150000;
 const PACKAGE_LR_SA = 50000;
 const DEFAULT_LR_PPT_PACKAGE = 99 as LifeReadyPaymentTerm;
 const DEFAULT_LR_PPT_NORMAL = 18 as LifeReadyPaymentTerm;
+const PENSION_MIN_START_AGE = 55;
+const PENSION_MAX_START_AGE = 70;
 
 const iHealthyUltraPlanColors: Record<string, string> = {
     Smart: 'text-green-700', Bronze: 'text-yellow-700', Silver: 'text-gray-500',
@@ -40,7 +42,14 @@ const ModeButton = ({ label, isActive, onClick, className = 'bg-blue-600 hover:b
 // --- Main Component ---
 export default function LthcFormPage() {
     // --- All store logic, state, effects, and handlers remain the same ---
-    const { policyholderEntryAge, setPolicyholderEntryAge, policyholderGender, setPolicyholderGender, policyOriginMode, setPolicyOriginMode, existingPolicyEntryAge, setExistingPolicyEntryAge, selectedHealthPlans, setSelectedHealthPlans, fundingSource, setFundingSource, iWealthyMode, setIWealthyMode, autoInvestmentReturn, setAutoInvestmentReturn, autoIWealthyPPT, setAutoIWealthyPPT, autoRppRtuRatio, setAutoRppRtuRatio, manualRpp, setManualRpp, manualRtu, setManualRtu, manualInvestmentReturn, setManualInvestmentReturn, manualIWealthyPPT, setManualIWealthyPPT, manualWithdrawalStartAge, setManualWithdrawalStartAge, pensionMode, setPensionMode, pensionFundingOptions, setPensionFundingOptions, manualPensionPremium, setManualPensionPremium, isLoading, error, solvedPensionSA, solvedPensionPremium, calculatedMinPremium, calculatedRpp, calculatedRtu, saReductionStrategy, setSaReductionStrategy } = useAppStore();
+    const { policyholderEntryAge, setPolicyholderEntryAge, policyholderGender, setPolicyholderGender, policyOriginMode, setPolicyOriginMode, existingPolicyEntryAge, setExistingPolicyEntryAge, selectedHealthPlans, setSelectedHealthPlans, fundingSource, setFundingSource, iWealthyMode, setIWealthyMode, autoInvestmentReturn, setAutoInvestmentReturn, autoIWealthyPPT, setAutoIWealthyPPT, autoRppRtuRatio, setAutoRppRtuRatio, manualRpp, setManualRpp, manualRtu, setManualRtu, manualInvestmentReturn, setManualInvestmentReturn, manualIWealthyPPT, setManualIWealthyPPT, manualWithdrawalStartAge, setManualWithdrawalStartAge, pensionMode, setPensionMode, 
+        manualPensionPremium, setManualPensionPremium, 
+        pensionStartAge, setPensionStartAge,
+        pensionEndAge, setPensionEndAge,
+        manualPensionPlanType, setManualPensionPlanType,
+        autoPensionPlanType, setAutoPensionPlanType,
+        autoPensionPremium, 
+        isLoading, error, solvedPensionSA, solvedPensionPremium, calculatedMinPremium, calculatedRpp, calculatedRtu, saReductionStrategy, setSaReductionStrategy } = useAppStore();
     const [isReduceSaModalOpen, setIsReduceSaModalOpen] = useState(false);
     const [lifeReadyMode, setLifeReadyMode] = useState<'normal' | 'package'>(() => (selectedHealthPlans.lifeReadySA === PACKAGE_LR_SA && selectedHealthPlans.lifeReadyPPT === DEFAULT_LR_PPT_PACKAGE) ? 'package' : 'normal');
     const [isIHUSelected, setIsIHUSelected] = useState<boolean>(() => selectedHealthPlans.iHealthyUltraPlan !== null);
@@ -103,23 +112,121 @@ export default function LthcFormPage() {
             );
             case 'pension': return (
                 <div className="animate-fadeIn space-y-3">
-                    <div className="flex space-x-2"><ModeButton label="Auto" isActive={pensionMode === 'automatic'} onClick={() => setPensionMode('automatic')} className="bg-sky-600 hover:bg-sky-700"/><ModeButton label="Manual" isActive={pensionMode === 'manual'} onClick={() => setPensionMode('manual')} className="bg-emerald-600 hover:bg-emerald-700"/></div>
+                    <div className="flex space-x-2">
+                        <ModeButton label="Auto" isActive={pensionMode === 'automatic'} onClick={() => setPensionMode('automatic')} className="bg-sky-600 hover:bg-sky-700"/>
+                        <ModeButton label="Manual" isActive={pensionMode === 'manual'} onClick={() => setPensionMode('manual')} className="bg-emerald-600 hover:bg-emerald-700"/>
+                    </div>
                     <div className="space-y-2 p-2 bg-gray-50 rounded-md border">
-                        <div><label className="block text-[11px] font-medium text-gray-700">เลือกแผนบำนาญ:</label><select value={pensionFundingOptions.planType} onChange={e => setPensionFundingOptions({ planType: e.target.value as PensionPlanType })} className="mt-0.5 p-1.5 w-full border rounded-md shadow-sm text-xs"><option value="pension8">บำนาญ 8 (จ่ายเบี้ย 8 ปี)</option><option value="pension60">บำนาญ 60 (จ่ายเบี้ยถึงอายุ 60)</option></select></div>
-                        {pensionMode === 'manual' && (<div className="animate-fadeIn pt-2"><label className="block text-[11px] font-medium text-gray-700">เบี้ยบำนาญที่ต้องการ (ต่อปี):</label><input type="number" step="1000" value={manualPensionPremium} onChange={e => setManualPensionPremium(Number(e.target.value))} className="mt-0.5 p-1.5 w-full border rounded-md shadow-sm text-xs" /></div>)}
+                        {/* เลือกแผนบำนาญ: ใช้ตัวแปรตามโหมด */}
+                        <div>
+                            <label className="block text-[11px] font-medium text-gray-700">เลือกแผนบำนาญ:</label>
+                            <select 
+                                value={pensionMode === 'manual' ? manualPensionPlanType : autoPensionPlanType} 
+                                onChange={e => {
+                                    const newPlanType = e.target.value as PensionPlanType;
+                                    pensionMode === 'manual' 
+                                        ? setManualPensionPlanType(newPlanType)
+                                        : setAutoPensionPlanType(newPlanType);
+                                }} 
+                                className="mt-0.5 p-1.5 w-full border rounded-md shadow-sm text-xs"
+                            >
+                                <option value="pension8">บำนาญ 8 (จ่ายเบี้ย 8 ปี)</option>
+                                <option value="pension60">บำนาญ 60 (จ่ายเบี้ยถึงอายุ 60)</option>
+                            </select>
+                        </div>
+                        
+                        {/* อายุรับบำนาญ */}
+                        <div className="flex space-x-2">
+                            <div className='flex-1'>
+                                <label className="block text-[11px] font-medium text-gray-700">เริ่มรับอายุ:</label>
+                                <input 
+                                    type="number" 
+                                    value={pensionStartAge} 
+                                    onChange={e => setPensionStartAge(Math.max(PENSION_MIN_START_AGE, Math.min(PENSION_MAX_START_AGE, Number(e.target.value))))} 
+                                    min={PENSION_MIN_START_AGE}
+                                    max={PENSION_MAX_START_AGE}
+                                    className="mt-0.5 p-1.5 w-full border rounded-md shadow-sm text-xs" 
+                                />
+                            </div>
+                            <div className='flex-1'>
+                                <label className="block text-[11px] font-medium text-gray-700">สิ้นสุดรับอายุ:</label>
+                                <input 
+                                    type="number" 
+                                    value={pensionEndAge} 
+                                    onChange={e => setPensionEndAge(Math.max(pensionStartAge + 1, Math.min(MAX_POLICY_AGE_TYPE, Number(e.target.value))))} 
+                                    min={pensionStartAge + 1}
+                                    max={MAX_POLICY_AGE_TYPE}
+                                    className="mt-0.5 p-1.5 w-full border rounded-md shadow-sm text-xs" 
+                                />
+                            </div>
+                        </div>
+                        
+                        {/* เบี้ยบำนาญ */}
+                        {pensionMode === 'manual' ? (
+                            <div className="animate-fadeIn pt-2">
+                                <label className="block text-[11px] font-medium text-gray-700">เบี้ยบำนาญที่ต้องการ (ต่อปี):</label>
+                                <input type="number" step="1000" value={manualPensionPremium} onChange={e => setManualPensionPremium(Number(e.target.value))} className="mt-0.5 p-1.5 w-full border rounded-md shadow-sm text-xs" />
+                            </div>
+                        ) : (
+                            <div className="animate-fadeIn pt-2">
+                                <label className="block text-[11px] font-medium text-gray-700">เบี้ยบำนาญที่คำนวณได้:</label>
+                                <input type="text" disabled value={autoPensionPremium > 0 ? autoPensionPremium.toLocaleString() : '-'} className="mt-0.5 p-1.5 w-full border rounded-md shadow-sm text-xs disabled:bg-gray-200" />
+                                <p className="text-[10px] text-gray-500 mt-1">*(จะถูกคำนวณอัตโนมัติเมื่อกด "คำนวณ")</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             );
             case 'hybrid': return (
                 <div className="animate-fadeIn space-y-3">
                      <div className="space-y-2 p-2 bg-teal-50 rounded-md border border-teal-200">
-                           <h3 className="font-semibold text-teal-800 text-sm">ส่วนของแผนบำนาญ</h3>
-                           <div><label className="block text-[11px] font-medium text-gray-700">เลือกแผนบำนาญ:</label><select value={pensionFundingOptions.planType} onChange={e => setPensionFundingOptions({ planType: e.target.value as PensionPlanType })} className="mt-0.5 p-1.5 w-full border rounded-md shadow-sm text-xs"><option value="pension8">บำนาญ 8</option><option value="pension60">บำนาญ 60</option></select></div>
-                           <div><label className="block text-[11px] font-medium text-gray-700">เบี้ยบำนาญ (ต่อปี):</label><input type="number" step="1000" value={manualPensionPremium} onChange={e => setManualPensionPremium(Number(e.target.value))} className="mt-0.5 p-1.5 w-full border rounded-md shadow-sm text-xs" /></div>
+                         <h3 className="font-semibold text-teal-800 text-sm">ส่วนของแผนบำนาญ (Manual Premium)</h3>
+                         {/* เลือกแผนบำนาญ: ใช้ manualPensionPlanType */}
+                         <div>
+                             <label className="block text-[11px] font-medium text-gray-700">เลือกแผนบำนาญ:</label>
+                             <select 
+                                 value={manualPensionPlanType} 
+                                 onChange={e => setManualPensionPlanType(e.target.value as PensionPlanType)} 
+                                 className="mt-0.5 p-1.5 w-full border rounded-md shadow-sm text-xs"
+                             >
+                                 <option value="pension8">บำนาญ 8</option>
+                                 <option value="pension60">บำนาญ 60</option>
+                             </select>
+                         </div>
+                         {/* เบี้ยบำนาญ (Manual) */}
+                         <div>
+                             <label className="block text-[11px] font-medium text-gray-700">เบี้ยบำนาญที่ต้องการ (ต่อปี):</label>
+                             <input type="number" step="1000" value={manualPensionPremium} onChange={e => setManualPensionPremium(Number(e.target.value))} className="mt-0.5 p-1.5 w-full border rounded-md shadow-sm text-xs" />
+                         </div>
+                         {/* อายุรับบำนาญ (ใช้ร่วมกัน) */}
+                         <div className="flex space-x-2">
+                            <div className='flex-1'>
+                                <label className="block text-[11px] font-medium text-gray-700">เริ่มรับอายุ:</label>
+                                <input 
+                                    type="number" 
+                                    value={pensionStartAge} 
+                                    onChange={e => setPensionStartAge(Math.max(PENSION_MIN_START_AGE, Math.min(PENSION_MAX_START_AGE, Number(e.target.value))))} 
+                                    min={PENSION_MIN_START_AGE}
+                                    max={PENSION_MAX_START_AGE}
+                                    className="mt-0.5 p-1.5 w-full border rounded-md shadow-sm text-xs" 
+                                />
+                            </div>
+                            <div className='flex-1'>
+                                <label className="block text-[11px] font-medium text-gray-700">สิ้นสุดรับอายุ:</label>
+                                <input 
+                                    type="number" 
+                                    value={pensionEndAge} 
+                                    onChange={e => setPensionEndAge(Math.max(pensionStartAge + 1, Math.min(MAX_POLICY_AGE_TYPE, Number(e.target.value))))} 
+                                    min={pensionStartAge + 1}
+                                    max={MAX_POLICY_AGE_TYPE}
+                                    className="mt-0.5 p-1.5 w-full border rounded-md shadow-sm text-xs" 
+                                />
+                            </div>
+                        </div>
                      </div>
                      <div className="space-y-2 p-2 bg-blue-50 rounded-md border border-blue-200">
-                         <h3 className="font-semibold text-blue-800 text-sm">ส่วนของ iWealthy</h3>
-                         <p className="text-[11px] text-gray-600">iWealthy จะคำนวณส่วนต่างอัตโนมัติ</p>
+                         <h3 className="font-semibold text-blue-800 text-sm">ส่วนของ iWealthy (Auto Solve)</h3>
+                         <p className="text-[11px] text-gray-600">iWealthy จะคำนวณเบี้ยที่ต้องจ่ายส่วนต่างโดยอัตโนมัติ</p>
                          <div><label className="block text-[11px] font-medium text-gray-700">ผลตอบแทน (%):</label><input type="number" step="0.5" value={autoInvestmentReturn} onChange={e => setAutoInvestmentReturn(Number(e.target.value))} className="mt-0.5 p-1.5 w-full border rounded-md shadow-sm text-xs" /></div>
                          <div><label className="block text-[11px] font-medium text-gray-700">ระยะเวลาชำระเบี้ย iWealthy (ปี):</label><input type="number" value={autoIWealthyPPT} onChange={e => setAutoIWealthyPPT(Number(e.target.value))} className="mt-0.5 p-1.5 w-full border rounded-md shadow-sm text-xs" /></div>
                      </div>
@@ -135,8 +242,18 @@ export default function LthcFormPage() {
             return (
                 <div className="text-white text-left animate-fadeIn">
                     <h3 className="text-sm font-semibold">เบี้ยบำนาญที่คำนวณได้:</h3>
-                    <p className="text-2xl font-bold">{solvedPensionPremium?.toLocaleString() ?? '-'} <span className="text-base font-medium">บาท/ปี</span></p>
-                    <p className="text-[11px]">(ทุน: {solvedPensionSA?.toLocaleString() ?? '-'})</p>
+                    {pensionMode === 'automatic' && (
+                        <>
+                            <p className="text-2xl font-bold">{solvedPensionPremium?.toLocaleString() ?? '-'} <span className="text-base font-medium">บาท/ปี</span></p>
+                            <p className="text-[11px]">(ทุน: {solvedPensionSA?.toLocaleString() ?? '-'})</p>
+                        </>
+                    )}
+                    {pensionMode === 'manual' && (
+                        <>
+                            <p className="text-2xl font-bold">{manualPensionPremium?.toLocaleString() ?? '-'} <span className="text-base font-medium">บาท/ปี</span></p>
+                            <p className="text-[11px]">(ทุนที่คำนวณได้: {solvedPensionSA?.toLocaleString() ?? '-'})</p>
+                        </>
+                    )}
                 </div>
             );
         }
@@ -152,9 +269,9 @@ export default function LthcFormPage() {
          if (fundingSource === 'hybrid') {
              return (
                 <div className="text-white text-left animate-fadeIn">
-                    <h3 className="text-sm font-semibold">เบี้ยที่คำนวณได้ (Hybrid):</h3>
-                    <p className="text-lg font-bold">บำนาญ: {manualPensionPremium?.toLocaleString() ?? '-'} บ.</p>
-                    <p className="text-lg font-bold">iWealthy: {calculatedMinPremium?.toLocaleString() ?? '-'} บ.</p>
+                    <h3 className="text-sm font-semibold">เบี้ยที่ต้องชำระ (Hybrid):</h3>
+                    <p className="text-sm font-semibold">บำนาญ: {manualPensionPremium?.toLocaleString() ?? '-'} บ./ปี</p>
+                    <p className="text-2xl font-bold">iWealthy: {calculatedMinPremium?.toLocaleString() ?? '-'} <span className="text-base font-medium">บ./ปี</span></p>
                 </div>
             );
         }

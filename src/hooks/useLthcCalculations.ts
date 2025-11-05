@@ -30,15 +30,23 @@ import { getPensionCsvRatePer1000 } from '../data/pensionCsvRates';
 // +++ PENSION PLAN & HELPER FUNCTIONS +++
 // =================================================================================
 
-const calculateTotalPensionPayoutFactor = (planType: PensionPlanType): number => {
-    if (planType === 'pension8') return 0.18 * (88 - 60 + 1);
-    const factor60to70 = 0.15 * (70 - 60 + 1);
-    const factor71to80 = 0.20 * (80 - 71 + 1);
-    const factor81to88 = 0.25 * (88 - 81 + 1);
-    return factor60to70 + factor71to80 + factor81to88;
+const calculateTotalPensionPayoutFactor = (planType: PensionPlanType, startAge: number, endAge: number): number => {
+    let totalFactor = 0;
+    // วนลูปเฉพาะในช่วงอายุที่ผู้ใช้กำหนด (แต่จำกัดที่ 60-88 ปีตามแบบประกัน)
+    for (let age = Math.max(startAge, 60); age <= Math.min(endAge, 88); age++) {
+        if (planType === 'pension8') {
+            totalFactor += 0.18;
+        } else {
+            // Logic ของ Pension 60: 60-70 = 15%, 71-80 = 20%, 81-88 = 25%
+            if (age <= 70) totalFactor += 0.15;
+            else if (age <= 80) totalFactor += 0.20;
+            else totalFactor += 0.25;
+        }
+    }
+    return totalFactor;
 };
 
-export const generatePensionIllustration = (entryAge: number, gender: Gender, planType: PensionPlanType, solvedSumAssured: number): any[] => {
+export const generatePensionIllustration = (entryAge: number, gender: Gender, planType: PensionPlanType, solvedSumAssured: number, startAge: number, endAge: number): any[] => {
     const illustration = [];
     const annualPensionPremiumRate = getPensionPremiumRate(entryAge, gender, planType);
     if (annualPensionPremiumRate === null) throw new Error(`ไม่พบอัตราค่าเบี้ยบำนาญสำหรับอายุ ${entryAge}`);
@@ -47,9 +55,11 @@ export const generatePensionIllustration = (entryAge: number, gender: Gender, pl
     
     let cumulativePensionPremium = 0;
     let cumulativeAnnuityPayout = 0;
+    
+    // [แก้ไข]: คำนวณ Remaining Annuity 60-74 โดยใช้ช่วงอายุที่กำหนด
     let remainingAnnuity60to74 = 0;
-
-    for (let age = 60; age <= 74; age++) {
+    // คำนวณยอดรวมของเงินบำนาญที่จะได้รับในช่วง 60 ถึง 74 (หรือ endAge ถ้าเร็วกว่า)
+    for (let age = Math.max(startAge, 60); age <= Math.min(endAge, 74); age++) {
         if (planType === 'pension8') {
             remainingAnnuity60to74 += solvedSumAssured * 0.18;
         } else {
@@ -61,13 +71,16 @@ export const generatePensionIllustration = (entryAge: number, gender: Gender, pl
     for (let policyYear = 1; (entryAge + policyYear - 1) <= MAX_POLICY_AGE_TYPE; policyYear++) {
         const attainedAge = entryAge + policyYear - 1;
         let currentYearPremium = 0;
+        
+        // ... (Logic การจ่ายเบี้ย Premium เดิม)
         if ((planType === 'pension8' && policyYear <= 8) || (planType === 'pension60' && attainedAge < 60)) {
-            currentYearPremium = annualPensionPremium;
+             currentYearPremium = annualPensionPremium;
         }
         cumulativePensionPremium += currentYearPremium;
 
+        // [แก้ไข]: เงินบำนาญ จ่ายเฉพาะในช่วงอายุ startAge ถึง endAge
         let payout = 0;
-        if (attainedAge >= 60 && attainedAge <= 88) {
+        if (attainedAge >= startAge && attainedAge <= endAge) {
             if (planType === 'pension8') payout = solvedSumAssured * 0.18;
             else {
                 if (attainedAge <= 70) payout = solvedSumAssured * 0.15;
@@ -80,17 +93,23 @@ export const generatePensionIllustration = (entryAge: number, gender: Gender, pl
         const csvRate = getPensionCsvRatePer1000(entryAge, gender, policyYear, planType);
         const eoyCsv = (solvedSumAssured / 1000) * csvRate;
 
+        // [แก้ไข]: คำนวณ Death Benefit โดยใช้ช่วงอายุที่กำหนด
         let deathBenefit = 0;
-        if (policyYear <= 4) {
-            deathBenefit = Math.max(solvedSumAssured, eoyCsv, cumulativePensionPremium * 1.01);
-        } else if (attainedAge <= 59) {
-            deathBenefit = Math.max(solvedSumAssured * 1.8, eoyCsv, cumulativePensionPremium * 1.01);
-        } else if (attainedAge <= 74) {
+        if (attainedAge < startAge) { // ก่อนเริ่มรับบำนาญ
+            if (policyYear <= 4) {
+                deathBenefit = Math.max(solvedSumAssured, eoyCsv, cumulativePensionPremium * 1.01);
+            } else {
+                deathBenefit = Math.max(solvedSumAssured * 1.8, eoyCsv, cumulativePensionPremium * 1.01);
+            }
+        } else if (attainedAge >= startAge && attainedAge <= 74) { // ช่วงรับบำนาญ และไม่เกิน 74
             const annuityPaidUntilThisYear = cumulativeAnnuityPayout;
-            const remainingPayouts = remainingAnnuity60to74 - annuityPaidUntilThisYear;
+            // ใช้ remainingAnnuity60to74 ที่คำนวณจากช่วงที่ผู้ใช้กำหนด (startAge-min(endAge, 74))
+            const remainingPayouts = remainingAnnuity60to74 - annuityPaidUntilThisYear; 
             deathBenefit = Math.max(cumulativePensionPremium - annuityPaidUntilThisYear, remainingPayouts);
-        } else if (attainedAge <= 88) {
+        } else if (attainedAge > 74 && attainedAge <= endAge) { // ช่วงรับบำนาญ และเกิน 74
             deathBenefit = Math.max(0, cumulativePensionPremium - cumulativeAnnuityPayout);
+        } else { // หลังสิ้นสุดการรับบำนาญ (attainedAge > endAge)
+            deathBenefit = 0; 
         }
 
         illustration.push({ 
@@ -106,22 +125,37 @@ export const generatePensionIllustration = (entryAge: number, gender: Gender, pl
     return illustration;
 };
 
-const findOptimalPensionPlan = async (entryAge: number, gender: Gender, allHealthPremiums: AnnualHealthPremiumDetail[], pensionOptions: PensionFundingOptions): Promise<any> => {
+const findOptimalPensionPlan = async (entryAge: number, gender: Gender, allHealthPremiums: AnnualHealthPremiumDetail[], pensionOptions: PensionFundingOptions, startAge: number, endAge: number): Promise<any> => {
     const { planType } = pensionOptions;
-    const totalHealthPremiumNeeded = allHealthPremiums.filter(hp => hp.age >= 60 && hp.age <= 88).reduce((sum, hp) => sum + hp.totalPremium, 0);
+    
+    // [แก้ไข]: คำนวณเบี้ยสุขภาพที่ต้องใช้ในช่วงรับบำนาญที่กำหนด
+    const totalHealthPremiumNeeded = allHealthPremiums.filter(hp => hp.age >= startAge && hp.age <= endAge).reduce((sum, hp) => sum + hp.totalPremium, 0);
+    
     if (totalHealthPremiumNeeded <= 0) {
-        throw new Error("ไม่พบค่าเบี้ยสุขภาพที่ต้องชำระในช่วงอายุ 60-88 ปี จึงไม่สามารถคำนวณแผนบำนาญอัตโนมัติได้");
+        throw new Error(`ไม่พบค่าเบี้ยสุขภาพที่ต้องชำระในช่วงอายุ ${startAge}-${endAge} ปี จึงไม่สามารถคำนวณแผนบำนาญอัตโนมัติได้`);
     }
-    const totalPayoutFactor = calculateTotalPensionPayoutFactor(planType);
+    
+    // [แก้ไข]: ส่ง startAge และ endAge ไปคำนวณ Total Payout Factor
+    const totalPayoutFactor = calculateTotalPensionPayoutFactor(planType, startAge, endAge);
+    
+    if (totalPayoutFactor <= 0) {
+        throw new Error(`ช่วงอายุ ${startAge}-${endAge} ไม่อยู่ในเกณฑ์การจ่ายเงินบำนาญ (60-88 ปี)`);
+    }
+
     const rawRequiredSumAssured = totalHealthPremiumNeeded / totalPayoutFactor;
     const solvedSumAssured = Math.ceil(rawRequiredSumAssured / 1000) * 1000;
     const premiumRate = getPensionPremiumRate(entryAge, gender, planType);
+    
     if (premiumRate === null) {
         throw new Error(`ไม่พบอัตราเบี้ยบำนาญสำหรับอายุ ${entryAge}, เพศ ${gender}, แผน ${planType}`);
     }
+    
     const rawAnnualPensionPremium = (solvedSumAssured / 1000) * premiumRate;
     const solvedAnnualPremium = Math.ceil(rawAnnualPensionPremium / 100) * 100;
-    const pensionIllustration = generatePensionIllustration(entryAge, gender, planType, solvedSumAssured);
+    
+    // [แก้ไข]: ส่ง startAge และ endAge ไปสร้าง Illustration
+    const pensionIllustration = generatePensionIllustration(entryAge, gender, planType, solvedSumAssured, startAge, endAge);
+    
     return { solvedSA: solvedSumAssured, solvedAnnualPremium, pensionIllustration };
 };
 
@@ -149,16 +183,22 @@ const processPensionResultsToLTHC = (healthPremiumsLocal: AnnualHealthPremiumDet
     return illustration;
 };
 
-export const calculateManualPensionPlan = async (entryAge: number, gender: Gender, allHealthPremiums: AnnualHealthPremiumDetail[], pensionOptions: PensionFundingOptions, manualPremium: number, healthPlans: HealthPlanSelections): Promise<any> => {
-    const { planType } = pensionOptions;
+export const calculateManualPensionPlan = async (entryAge: number, gender: Gender, allHealthPremiums: AnnualHealthPremiumDetail[], planType: PensionPlanType, manualPremium: number, healthPlans: HealthPlanSelections, startAge: number, endAge: number): Promise<any> => {
+    
     const premiumRate = getPensionPremiumRate(entryAge, gender, planType);
+    
     if (premiumRate === null || premiumRate <= 0) {
         throw new Error(`ไม่พบอัตราเบี้ยสำหรับแผนบำนาญที่เลือก หรืออัตราเบี้ยเป็นศูนย์`);
     }
+    
     const calculatedSA = (manualPremium / premiumRate) * 1000;
     const solvedSA = Math.round(calculatedSA / 1000) * 1000;
-    const pensionIllustration = generatePensionIllustration(entryAge, gender, planType, solvedSA);
+    
+    // [แก้ไข]: ส่ง startAge และ endAge ไปสร้าง Illustration
+    const pensionIllustration = generatePensionIllustration(entryAge, gender, planType, solvedSA, startAge, endAge);
+    
     const processedOutput = processPensionResultsToLTHC(allHealthPremiums, pensionIllustration, healthPlans);
+    
     return { outputIllustration: processedOutput, solvedSA: solvedSA, pensionIllustration };
 };
 
@@ -579,7 +619,12 @@ export const calculateLthcPlan = async (
         existingEntryAge?: number; fundingSource: FundingSource; iWealthyMode: IWealthyMode;
         pensionMode: PensionMode;
         iWealthyOptions: { invReturn: number; ppt: number; rppRtuRatio: string; saReductionStrategy: SAReductionStrategy; manualRpp: number; manualRtu: number; manualWithdrawalStartAge: number; };
-        pensionOptions: PensionFundingOptions; manualPensionPremium: number;
+        manualPensionPlanType: PensionPlanType;
+        manualPensionPremium: number;
+        pensionStartAge: number;
+        pensionEndAge: number;
+        autoPensionPlanType: PensionPlanType;
+        autoPensionPremium: number;
     }
 ): Promise<{
     outputIllustration: AnnualLTHCOutputRow[] | null;
@@ -587,15 +632,17 @@ export const calculateLthcPlan = async (
     solvedPensionSA?: number; solvedPensionPremium?: number;
     errorMsg?: string;
 }> => {
-    const { entryAge, gender, healthPlans, policyOrigin, existingEntryAge, fundingSource, iWealthyMode, pensionMode, iWealthyOptions, pensionOptions, manualPensionPremium } = params;
+    const { entryAge, gender, healthPlans, policyOrigin, existingEntryAge, fundingSource, iWealthyMode, pensionMode, iWealthyOptions, manualPensionPremium, 
+        manualPensionPlanType, pensionStartAge, pensionEndAge, autoPensionPlanType, autoPensionPremium: _,
+    } = params;
     const allHealthPremiumsData = calculateAllHealthPremiums(entryAge, gender, healthPlans, policyOrigin, existingEntryAge);
 
     try {
         switch (fundingSource) {
             case 'hybrid': {
-                const manualPensionResult = await calculateManualPensionPlan(entryAge, gender, allHealthPremiumsData, pensionOptions, manualPensionPremium, healthPlans);
+                const manualPensionResult = await calculateManualPensionPlan(entryAge, gender, allHealthPremiumsData,  manualPensionPlanType, manualPensionPremium, healthPlans, pensionStartAge, pensionEndAge);
                 if (!manualPensionResult.pensionIllustration) {
-                    throw new Error("ไม่สามารถคำนวณส่วนของแผนบำนาญในโหมด Hybrid ได้");
+                    throw new Error("ไม่สามารถคำนวณส่วนของแผนบำนาญในโหมด Hybrid ได้"); 
                 }
                 const iWealthyTargetPremiums = allHealthPremiumsData.map(hp => {
                     const pensionPayout = manualPensionResult.pensionIllustration.find((p: any) => p.age === hp.age)?.pensionPayout ?? 0;
@@ -623,11 +670,11 @@ export const calculateLthcPlan = async (
 
             case 'pension':
                 if (pensionMode === 'automatic') {
-                    const pensionSolverResult = await findOptimalPensionPlan(entryAge, gender, allHealthPremiumsData, pensionOptions);
+                    const pensionSolverResult = await findOptimalPensionPlan(entryAge, gender, allHealthPremiumsData, { planType: autoPensionPlanType }, pensionStartAge, pensionEndAge);
                     const processedOutput = processPensionResultsToLTHC(allHealthPremiumsData, pensionSolverResult.pensionIllustration, healthPlans);
                     return { outputIllustration: processedOutput, solvedPensionSA: pensionSolverResult.solvedSA, solvedPensionPremium: pensionSolverResult.solvedAnnualPremium, errorMsg: pensionSolverResult.errorMessage };
                 } else { // Manual Pension
-                    const manualResult = await calculateManualPensionPlan(entryAge, gender, allHealthPremiumsData, pensionOptions, manualPensionPremium, healthPlans);
+                    const manualResult = await calculateManualPensionPlan(entryAge, gender, allHealthPremiumsData, manualPensionPlanType, manualPensionPremium, healthPlans, pensionStartAge, pensionEndAge);
                     return { ...manualResult, solvedPensionPremium: manualPensionPremium };
                 }
 

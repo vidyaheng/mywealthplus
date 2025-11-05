@@ -11,7 +11,7 @@ import type {
     HealthPlanSelections, SAReductionStrategy, PolicyOriginMode, 
     IWealthyMode, AnnualLTHCOutputRow,
     FundingSource, PensionFundingOptions, 
-    PensionMode, PensionPlanType 
+    PensionMode, PensionPlanType
 } from '../hooks/useLthcTypes';
 import { calculateLthcPlan } from '../hooks/useLthcCalculations';
 
@@ -38,8 +38,8 @@ import {
 
 // CI Types & Calculations
 import { 
-    calculateManualPlanCi, 
-    calculateAutomaticPlanCi 
+      calculateManualPlanCi, 
+      calculateAutomaticPlanCi 
 } from '@/components/ci/hooks/useCiCalculations';
 import type { CiPlanSelections, AnnualCiOutputRow, PolicyOriginMode as CiPolicyOriginMode } from '@/components/ci/types/useCiTypes';
 
@@ -64,36 +64,41 @@ export type SavedRecord = {
 
 // 1. Interface สำหรับ LTHC
 interface LthcState {
-  policyholderEntryAge: number;
-  policyholderGender: Gender;
-  selectedHealthPlans: HealthPlanSelections;
-  policyOriginMode: PolicyOriginMode;
-  existingPolicyEntryAge?: number;
+   policyholderEntryAge: number;
+   policyholderGender: Gender;
+   selectedHealthPlans: HealthPlanSelections;
+   policyOriginMode: PolicyOriginMode;
+   existingPolicyEntryAge?: number;
   // --- Funding Source Selection ---
   fundingSource: FundingSource; 
   iWealthyMode: IWealthyMode;
   pensionMode: PensionMode;
   pensionFundingOptions: PensionFundingOptions;
+  manualPensionPlanType: PensionPlanType;
   manualPensionPremium: number;
+  pensionStartAge: number; // อายุเริ่มรับบำนาญ
+  pensionEndAge: number; // อายุสิ้นสุดรับบำนาญ
+  autoPensionPlanType: PensionPlanType;
+  autoPensionPremium: number;
   // iWealthy Manual Mode Inputs
-  manualRpp: number;
-  manualRtu: number;
-  manualInvestmentReturn: number;
-  manualIWealthyPPT: number;
-  manualWithdrawalStartAge: number;
+   manualRpp: number;
+   manualRtu: number;
+   manualInvestmentReturn: number;
+   manualIWealthyPPT: number;
+   manualWithdrawalStartAge: number;
   // iWealthy Automatic Mode Inputs
-  autoInvestmentReturn: number;
-  autoIWealthyPPT: number;
-  autoRppRtuRatio: string;
-  saReductionStrategy: SAReductionStrategy;
+   autoInvestmentReturn: number;
+   autoIWealthyPPT: number;
+   autoRppRtuRatio: string;
+   saReductionStrategy: SAReductionStrategy;
   // --- Results ---
-  result: AnnualLTHCOutputRow[] | null;
-  isLoading: boolean;
-  error: string | null;
+   result: AnnualLTHCOutputRow[] | null;
+   isLoading: boolean;
+   error: string | null;
   // iWealthy Results
-  calculatedMinPremium?: number;
-  calculatedRpp?: number;
-  calculatedRtu?: number;
+   calculatedMinPremium?: number;
+   calculatedRpp?: number;
+   calculatedRtu?: number;
   // Pension Results
   solvedPensionSA?: number;
   solvedPensionPremium?: number;
@@ -110,6 +115,11 @@ interface LthcState {
   setPensionMode: Dispatch<SetStateAction<PensionMode>>;
   setPensionFundingOptions: Dispatch<SetStateAction<PensionFundingOptions>>;
   setManualPensionPremium: Dispatch<SetStateAction<number>>;
+  setManualPensionPlanType: Dispatch<SetStateAction<PensionPlanType>>;
+  setPensionStartAge: Dispatch<SetStateAction<number>>;
+  setPensionEndAge: Dispatch<SetStateAction<number>>;
+  setAutoPensionPlanType: Dispatch<SetStateAction<PensionPlanType>>;
+  setAutoPensionPremium: Dispatch<SetStateAction<number>>;
   setManualRpp: Dispatch<SetStateAction<number>>;
   setManualRtu: Dispatch<SetStateAction<number>>;
   setManualInvestmentReturn: Dispatch<SetStateAction<number>>;
@@ -119,7 +129,7 @@ interface LthcState {
   setAutoIWealthyPPT: Dispatch<SetStateAction<number>>;
   setAutoRppRtuRatio: Dispatch<SetStateAction<string>>;
   setSaReductionStrategy: Dispatch<SetStateAction<SAReductionStrategy>>;
-  runCalculation: () => Promise<void>;
+   runCalculation: () => Promise<void>;
   loadLthcState: (data: any) => void;
   // controls
   setLthcControls: (controls: any) => void;
@@ -136,22 +146,22 @@ interface LthcState {
 
 // 2. Interface สำหรับข้อมูล iWealthy
 export interface IWealthyState {
-  iWealthyAge: number;
-  iWealthyGender: Gender;
-  iWealthyPaymentFrequency: PaymentFrequency;
-  iWealthyRpp: number;
-  iWealthyRtu: number;
-  iWealthySumInsured: number;
-  iWealthyInvestmentReturn: number;
-  iWealthyPausePeriods: PausePeriodRecord[];
-  iWealthySumInsuredReductions: SumInsuredReductionRecord[];
-  iWealthyAdditionalInvestments: AddInvestmentRecord[];
-  iWealthyFrequencyChanges: FrequencyChangeRecord[];
-  iWealthyWithdrawalPlan: WithdrawalPlanRecord[];
-  iWealthyResult: CalculationResult | null;
-  iWealthyIsLoading: boolean;
-  iWealthyError: string | null;
-  iWealthyReductionsNeedReview: boolean;
+   iWealthyAge: number;
+   iWealthyGender: Gender;
+   iWealthyPaymentFrequency: PaymentFrequency;
+   iWealthyRpp: number;
+   iWealthyRtu: number;
+   iWealthySumInsured: number;
+   iWealthyInvestmentReturn: number;
+   iWealthyPausePeriods: PausePeriodRecord[];
+   iWealthySumInsuredReductions: SumInsuredReductionRecord[];
+   iWealthyAdditionalInvestments: AddInvestmentRecord[];
+   iWealthyFrequencyChanges: FrequencyChangeRecord[];
+   iWealthyWithdrawalPlan: WithdrawalPlanRecord[];
+   iWealthyResult: CalculationResult | null;
+   iWealthyIsLoading: boolean;
+   iWealthyError: string | null;
+   iWealthyReductionsNeedReview: boolean;
   iWealthyMetrics: {
         projectIRR: number | null;
         breakEvenYear: number | null;
@@ -174,45 +184,45 @@ export interface IWealthyState {
   activeRecordName: string | null;
   setActiveRecordId: (id: string | null) => void;
   loadIWealthyState: (data: any) => void;
-  setIWealthyAge: (age: number) => void;
-  setIWealthyGender: (gender: Gender) => void;
-  setIWealthyPaymentFrequency: (freq: PaymentFrequency) => void;
-  setIWealthyRpp: (rpp: number) => void;
-  setIWealthyRtu: (rtu: number) => void;
+   setIWealthyAge: (age: number) => void;
+   setIWealthyGender: (gender: Gender) => void;
+   setIWealthyPaymentFrequency: (freq: PaymentFrequency) => void;
+   setIWealthyRpp: (rpp: number) => void;
+   setIWealthyRtu: (rtu: number) => void;
   debouncedSetIWealthyRtu: (rtu: number) => void;
   handleSliderChange: (newRpp: number) => void; 
-  setIWealthySumInsured: (sa: number) => void;
-  setIWealthyInvestmentReturn: (rate: number) => void;
-  //handleIWealthyRppRtuSlider: (percent: number) => void;
-  setIWealthyPausePeriods: (periods: PausePeriodRecord[]) => void;
-  setIWealthySumInsuredReductions: (reductions: SumInsuredReductionRecord[]) => void;
-  setIWealthyAdditionalInvestments: (investments: AddInvestmentRecord[]) => void;
-  setIWealthyFrequencyChanges: (changes: FrequencyChangeRecord[]) => void;
-  setIWealthyWithdrawalPlan: (plan: WithdrawalPlanRecord[]) => void;
-  runIWealthyCalculation: () => Promise<void>;
-  acknowledgeIWealthyReductionChanges: () => void;
+   setIWealthySumInsured: (sa: number) => void;
+   setIWealthyInvestmentReturn: (rate: number) => void;
+   //handleIWealthyRppRtuSlider: (percent: number) => void;
+   setIWealthyPausePeriods: (periods: PausePeriodRecord[]) => void;
+   setIWealthySumInsuredReductions: (reductions: SumInsuredReductionRecord[]) => void;
+   setIWealthyAdditionalInvestments: (investments: AddInvestmentRecord[]) => void;
+   setIWealthyFrequencyChanges: (changes: FrequencyChangeRecord[]) => void;
+   setIWealthyWithdrawalPlan: (plan: WithdrawalPlanRecord[]) => void;
+   runIWealthyCalculation: () => Promise<void>;
+   acknowledgeIWealthyReductionChanges: () => void;
   
 }
 
 // 3. Interface สำหรับ UI (Modal) ของ iWealthy
 interface IWealthyUIState {
-  isPauseModalOpen: boolean;
-  isReduceModalOpen: boolean;
-  isWithdrawalModalOpen: boolean;
-  isChangeFreqModalOpen: boolean;
-  isAddInvestmentModalOpen: boolean;
+   isPauseModalOpen: boolean;
+   isReduceModalOpen: boolean;
+   isWithdrawalModalOpen: boolean;
+   isChangeFreqModalOpen: boolean;
+   isAddInvestmentModalOpen: boolean;
   isSaveModalOpen: boolean;
   isLoadModalOpen: boolean;
-  openPauseModal: () => void;
-  closePauseModal: () => void;
-  openReduceModal: () => void;
-  closeReduceModal: () => void;
-  openWithdrawalModal: () => void;
-  closeWithdrawalModal: () => void;
-  openChangeFreqModal: () => void;
-  closeChangeFreqModal: () => void;
-  openAddInvestmentModal: () => void;
-  closeAddInvestmentModal: () => void;
+   openPauseModal: () => void;
+   closePauseModal: () => void;
+   openReduceModal: () => void;
+   closeReduceModal: () => void;
+   openWithdrawalModal: () => void;
+   closeWithdrawalModal: () => void;
+   openChangeFreqModal: () => void;
+   closeChangeFreqModal: () => void;
+   openAddInvestmentModal: () => void;
+   closeAddInvestmentModal: () => void;
   openSaveModal: () => void;
   closeSaveModal: () => void;
   openLoadModal: () => void;
@@ -221,48 +231,48 @@ interface IWealthyUIState {
 
 // 4. Interface สำหรับ CI Planner
 interface CIPlannerState {
-    ciPlanningAge: number;
-    ciGender: Gender;
-    ciPolicyOriginMode: CiPolicyOriginMode;
-    ciExistingEntryAge?: number;
-    ciPlanSelections: CiPlanSelections;
-    ciUseIWealthy: boolean;
-    ciIWealthyMode: 'manual' | 'automatic';
-    ciManualRpp: number;
-    ciManualRtu: number;
-    ciManualInvReturn: number;
-    ciManualPpt: number;
-    ciManualWithdrawalStartAge: number;
-    ciAutoInvReturn: number;
-    ciAutoPpt: number;
-    ciAutoRppRtuRatio: string;
-    ciAutoWithdrawalStartAge: number;
-    ciResult: AnnualCiOutputRow[] | null;
-    ciIsLoading: boolean;
-    ciError: string | null;
-    ciSolvedMinPremium?: number;
-    ciSolvedRpp?: number;
-    ciSolvedRtu?: number;
+      ciPlanningAge: number;
+      ciGender: Gender;
+      ciPolicyOriginMode: CiPolicyOriginMode;
+      ciExistingEntryAge?: number;
+      ciPlanSelections: CiPlanSelections;
+      ciUseIWealthy: boolean;
+      ciIWealthyMode: 'manual' | 'automatic';
+      ciManualRpp: number;
+      ciManualRtu: number;
+      ciManualInvReturn: number;
+      ciManualPpt: number;
+      ciManualWithdrawalStartAge: number;
+      ciAutoInvReturn: number;
+      ciAutoPpt: number;
+      ciAutoRppRtuRatio: string;
+      ciAutoWithdrawalStartAge: number;
+      ciResult: AnnualCiOutputRow[] | null;
+      ciIsLoading: boolean;
+      ciError: string | null;
+      ciSolvedMinPremium?: number;
+      ciSolvedRpp?: number;
+      ciSolvedRtu?: number;
     ciUseCustomWithdrawalAge: boolean;
     ciControls: any;
-    setCiPlanningAge: Dispatch<SetStateAction<number>>;
-    setCiGender: Dispatch<SetStateAction<Gender>>;
-    setCiPolicyOriginMode: Dispatch<SetStateAction<CiPolicyOriginMode>>;
-    setCiExistingEntryAge: Dispatch<SetStateAction<number | undefined>>;
-    setCiPlanSelections: Dispatch<SetStateAction<CiPlanSelections>>;
-    setCiUseIWealthy: Dispatch<SetStateAction<boolean>>;
-    setCiIWealthyMode: Dispatch<SetStateAction<'manual' | 'automatic'>>;
-    setCiManualRpp: Dispatch<SetStateAction<number>>;
-    setCiManualRtu: Dispatch<SetStateAction<number>>;
-    setCiManualInvReturn: Dispatch<SetStateAction<number>>;
-    setCiManualPpt: Dispatch<SetStateAction<number>>;
-    setCiManualWithdrawalStartAge: Dispatch<SetStateAction<number>>;
-    setCiAutoInvReturn: Dispatch<SetStateAction<number>>;
-    setCiAutoPpt: Dispatch<SetStateAction<number>>;
-    setCiAutoRppRtuRatio: Dispatch<SetStateAction<string>>;
-    setCiAutoWithdrawalStartAge: Dispatch<SetStateAction<number>>;
+      setCiPlanningAge: Dispatch<SetStateAction<number>>;
+      setCiGender: Dispatch<SetStateAction<Gender>>;
+      setCiPolicyOriginMode: Dispatch<SetStateAction<CiPolicyOriginMode>>;
+      setCiExistingEntryAge: Dispatch<SetStateAction<number | undefined>>;
+      setCiPlanSelections: Dispatch<SetStateAction<CiPlanSelections>>;
+      setCiUseIWealthy: Dispatch<SetStateAction<boolean>>;
+      setCiIWealthyMode: Dispatch<SetStateAction<'manual' | 'automatic'>>;
+      setCiManualRpp: Dispatch<SetStateAction<number>>;
+      setCiManualRtu: Dispatch<SetStateAction<number>>;
+      setCiManualInvReturn: Dispatch<SetStateAction<number>>;
+      setCiManualPpt: Dispatch<SetStateAction<number>>;
+      setCiManualWithdrawalStartAge: Dispatch<SetStateAction<number>>;
+      setCiAutoInvReturn: Dispatch<SetStateAction<number>>;
+      setCiAutoPpt: Dispatch<SetStateAction<number>>;
+      setCiAutoRppRtuRatio: Dispatch<SetStateAction<string>>;
+      setCiAutoWithdrawalStartAge: Dispatch<SetStateAction<number>>;
     setCiUseCustomWithdrawalAge: Dispatch<SetStateAction<boolean>>;
-    runCiCalculation: () => Promise<void>;
+      runCiCalculation: () => Promise<void>;
     loadCiState: (data: any) => void;
     setCiControls: (controls: any) => void;
 }
@@ -358,25 +368,25 @@ const ageToPolicyYear = (age: number, entryAge: number) => Math.max(1, age - ent
 const policyYearToAge = (policyYear: number, entryAge: number) => entryAge + policyYear - 1;
 
 const adjustReductions = (rpp: number, reductions: SumInsuredReductionRecord[]): {
-    adjustedList: SumInsuredReductionRecord[];
-    wasAdjusted: boolean;
+      adjustedList: SumInsuredReductionRecord[];
+      wasAdjusted: boolean;
 } => {
-    if (reductions.length === 0) {
-        return { adjustedList: [], wasAdjusted: false };
-    }
-    let wasAdjusted = false;
-    const adjustedList = reductions.map(record => {
-        const multipliers = getReductionMultipliers(record.age);
-        const min = Math.round(rpp * multipliers.min);
-        const max = Math.round(rpp * multipliers.max);
-        const clampedAmount = Math.max(min, Math.min(record.newSumInsured, max));
-        if (clampedAmount !== record.newSumInsured) {
-            wasAdjusted = true;
-            return { ...record, newSumInsured: clampedAmount };
-        }
-        return record;
-    });
-    return { adjustedList, wasAdjusted };
+      if (reductions.length === 0) {
+            return { adjustedList: [], wasAdjusted: false };
+      }
+      let wasAdjusted = false;
+      const adjustedList = reductions.map(record => {
+            const multipliers = getReductionMultipliers(record.age);
+            const min = Math.round(rpp * multipliers.min);
+            const max = Math.round(rpp * multipliers.max);
+            const clampedAmount = Math.max(min, Math.min(record.newSumInsured, max));
+            if (clampedAmount !== record.newSumInsured) {
+                  wasAdjusted = true;
+                  return { ...record, newSumInsured: clampedAmount };
+            }
+            return record;
+      });
+      return { adjustedList, wasAdjusted };
 };
 
 
@@ -385,25 +395,30 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     // ===================================================================
     // SECTION 1: LTHC State & Actions (UPDATED)
     // ===================================================================
-    policyholderEntryAge: 30,
-    policyholderGender: 'male',
-    selectedHealthPlans: { lifeReadySA: 150000, lifeReadyPPT: 18, iHealthyUltraPlan: 'Bronze', mebPlan: 1000 },
-    policyOriginMode: 'newPolicy',
+      policyholderEntryAge: 30,
+      policyholderGender: 'male',
+      selectedHealthPlans: { lifeReadySA: 150000, lifeReadyPPT: 18, iHealthyUltraPlan: 'Bronze', mebPlan: 1000 },
+      policyOriginMode: 'newPolicy',
     existingPolicyEntryAge: undefined,
     fundingSource: 'iWealthy',
     iWealthyMode: 'automatic',
     pensionMode: 'automatic',
     pensionFundingOptions: { planType: 'pension8' },
+    manualPensionPlanType: 'pension8',
     manualPensionPremium: 200000,
+    pensionStartAge: 60,
+    pensionEndAge: 88,
+    autoPensionPlanType: 'pension8',
+    autoPensionPremium: 0,
     manualRpp: 100000,
-    manualRtu: 0,
-    manualInvestmentReturn: 5,
-    manualIWealthyPPT: 15,
-    manualWithdrawalStartAge: 61,
-    autoInvestmentReturn: 5,
-    autoIWealthyPPT: 15,
-    autoRppRtuRatio: '100/0',
-    saReductionStrategy: { type: 'auto' },
+      manualRtu: 0,
+      manualInvestmentReturn: 5,
+      manualIWealthyPPT: 15,
+      manualWithdrawalStartAge: 61,
+      autoInvestmentReturn: 5,
+      autoIWealthyPPT: 15,
+      autoRppRtuRatio: '100/0',
+      saReductionStrategy: { type: 'auto' },
     result: null,
     isLoading: false,
     error: null,
@@ -451,6 +466,11 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     setIWealthyMode: (arg) => set(state => ({ iWealthyMode: typeof arg === 'function' ? arg(state.iWealthyMode) : arg })),
     setPensionMode: (arg) => set(state => ({ pensionMode: typeof arg === 'function' ? arg(state.pensionMode) : arg })),
     setPensionFundingOptions: (arg) => set(state => ({ pensionFundingOptions: typeof arg === 'function' ? arg(state.pensionFundingOptions) : arg })),
+    setManualPensionPlanType: (arg) => set(state => ({ manualPensionPlanType: typeof arg === 'function' ? arg(state.manualPensionPlanType) : arg })),
+    setPensionStartAge: (arg) => set(state => ({ pensionStartAge: typeof arg === 'function' ? arg(state.pensionStartAge) : arg })),
+    setPensionEndAge: (arg) => set(state => ({ pensionEndAge: typeof arg === 'function' ? arg(state.pensionEndAge) : arg })),
+    setAutoPensionPlanType: (arg) => set(state => ({ autoPensionPlanType: typeof arg === 'function' ? arg(state.autoPensionPlanType) : arg })),
+    setAutoPensionPremium: (arg) => set(state => ({ autoPensionPremium: typeof arg === 'function' ? arg(state.autoPensionPremium) : arg })),
     setManualPensionPremium: (arg) => set(state => ({ manualPensionPremium: typeof arg === 'function' ? arg(state.manualPensionPremium) : arg })),
     setManualRpp: (arg) => set(state => ({ manualRpp: typeof arg === 'function' ? arg(state.manualRpp) : arg })),
     setManualRtu: (arg) => set(state => ({ manualRtu: typeof arg === 'function' ? arg(state.manualRtu) : arg })),
@@ -501,8 +521,12 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
                     manualRtu: s.manualRtu,
                     manualWithdrawalStartAge: s.manualWithdrawalStartAge,
                 },
-                pensionOptions: s.pensionFundingOptions,
+                manualPensionPlanType: s.manualPensionPlanType,
                 manualPensionPremium: s.manualPensionPremium,
+                pensionStartAge: s.pensionStartAge,
+                pensionEndAge: s.pensionEndAge,
+                autoPensionPlanType: s.autoPensionPlanType,
+                autoPensionPremium: s.autoPensionPremium,
             });
 
             // --- ✅ START: Logic ใหม่สำหรับจัดการผลลัพธ์ ---
@@ -533,6 +557,9 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
                     calculatedRtu: result.rtuResult,
                     solvedPensionSA: result.solvedPensionSA,
                     solvedPensionPremium: result.solvedPensionPremium,
+                    autoPensionPremium: (s.fundingSource === 'pension' && s.pensionMode === 'automatic') 
+                        ? (result.solvedPensionPremium ?? 0) 
+                        : s.autoPensionPremium,
                     error: null, // ไม่มี Error
                     isLoading: false,
                     lthcControls: getInitialControlsState(s.fundingSource)
@@ -556,7 +583,12 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
             iWealthyMode: data.iWealthyMode,
             pensionMode: data.pensionMode,
             pensionFundingOptions: data.pensionFundingOptions,
+            manualPensionPlanType: data.manualPensionPlanType,
             manualPensionPremium: data.manualPensionPremium,
+            pensionStartAge: data.pensionStartAge,
+            pensionEndAge: data.pensionEndAge,
+            autoPensionPlanType: data.autoPensionPlanType,
+            autoPensionPremium: data.autoPensionPremium,
             manualRpp: data.manualRpp,
             manualRtu: data.manualRtu,
             manualInvestmentReturn: data.manualInvestmentReturn,
@@ -572,20 +604,20 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     // ===================================================================
     // SECTION 2: iWealthy Data State & Actions
     // ===================================================================
-    iWealthyAge: 30,
-    iWealthyGender: 'male',
-    iWealthyPaymentFrequency: 'annual',
-    iWealthyRpp: 100000,
-    iWealthyRtu: 0,
-    iWealthySumInsured: 100000 * getSumInsuredFactor(30),
-    iWealthyInvestmentReturn: 5,
-    iWealthyPausePeriods: [],
-    iWealthySumInsuredReductions: [],
-    iWealthyReductionsNeedReview: false,
-    iWealthyAdditionalInvestments: [],
-    iWealthyFrequencyChanges: [],
-    iWealthyWithdrawalPlan: [],
-    iWealthyResult: null,
+      iWealthyAge: 30,
+      iWealthyGender: 'male',
+      iWealthyPaymentFrequency: 'annual',
+      iWealthyRpp: 100000,
+      iWealthyRtu: 0,
+      iWealthySumInsured: 100000 * getSumInsuredFactor(30),
+      iWealthyInvestmentReturn: 5,
+      iWealthyPausePeriods: [],
+      iWealthySumInsuredReductions: [],
+      iWealthyReductionsNeedReview: false,
+      iWealthyAdditionalInvestments: [],
+      iWealthyFrequencyChanges: [],
+      iWealthyWithdrawalPlan: [],
+      iWealthyResult: null,
     iWealthyMetrics: null,
     investmentOnlyMIRR: null,
     investmentOnlyROI: null,
@@ -593,12 +625,12 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     annualMIRRData: null,
     initialDB: null,
     maxDB: null,
-    iWealthyIsLoading: false,
-    iWealthyError: null,
+      iWealthyIsLoading: false,
+      iWealthyError: null,
     activeRecordId: null,
     activeRecordName: null,
     setActiveRecordId: (id) => set({ activeRecordId: id }),
-    setIWealthyAge: (newAge) => {
+      setIWealthyAge: (newAge) => {
     const state = get();
     const currentAge = state.iWealthyAge;
 
@@ -645,9 +677,9 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
         iWealthyPausePeriods: adjustedPausePeriods,
     });
 },
-    setIWealthyGender: (gender) => set({ iWealthyGender: gender }),
-    setIWealthyPaymentFrequency: (freq) => set({ iWealthyPaymentFrequency: freq }),
-    // 1. ฟังก์ชันสำหรับช่อง RPP (เมื่อกรอก RPP ให้ RTU คงที่)
+      setIWealthyGender: (gender) => set({ iWealthyGender: gender }),
+      setIWealthyPaymentFrequency: (freq) => set({ iWealthyPaymentFrequency: freq }),
+      // 1. ฟังก์ชันสำหรับช่อง RPP (เมื่อกรอก RPP ให้ RTU คงที่)
     setIWealthyRpp: (rpp) => {
         const { iWealthyAge, iWealthySumInsuredReductions } = get();
         const newSumInsured = rpp * getSumInsuredFactor(iWealthyAge);
@@ -735,26 +767,26 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
         });
     },
 
-    setIWealthySumInsured: (sa) => {
-        const { iWealthyAge, iWealthySumInsuredReductions } = get();
-        const factor = getSumInsuredFactor(iWealthyAge);
-        const newRpp = factor > 0 ? Math.round(sa / factor) : 0;
-        const { adjustedList, wasAdjusted } = adjustReductions(newRpp, iWealthySumInsuredReductions);
-        set({ iWealthySumInsured: sa, iWealthyRpp: newRpp, iWealthySumInsuredReductions: adjustedList, iWealthyReductionsNeedReview: get().iWealthyReductionsNeedReview || wasAdjusted });
-    },
-    setIWealthyInvestmentReturn: (rate) => set({ iWealthyInvestmentReturn: rate }),
-    //handleIWealthyRppRtuSlider: (percent) => {
-    //    const { iWealthyRpp, iWealthyRtu, iWealthyAge, iWealthySumInsuredReductions } = get();
-    //    const total = iWealthyRpp + iWealthyRtu;
-    //    if (total > 0) {
-    //        const newRpp = Math.round(total * (percent / 100));
-    //        const newRtu = total - newRpp;
-    //        const newSumInsured = newRpp * getSumInsuredFactor(iWealthyAge);
-    //        const { adjustedList, wasAdjusted } = adjustReductions(newRpp, iWealthySumInsuredReductions);
-    //        set({ iWealthyRpp: newRpp, iWealthyRtu: newRtu, iWealthySumInsured: newSumInsured, iWealthySumInsuredReductions: adjustedList, iWealthyReductionsNeedReview: get().iWealthyReductionsNeedReview || wasAdjusted });
-    //    }
-    //},
-    setIWealthyPausePeriods: (periods) => {
+      setIWealthySumInsured: (sa) => {
+            const { iWealthyAge, iWealthySumInsuredReductions } = get();
+            const factor = getSumInsuredFactor(iWealthyAge);
+            const newRpp = factor > 0 ? Math.round(sa / factor) : 0;
+            const { adjustedList, wasAdjusted } = adjustReductions(newRpp, iWealthySumInsuredReductions);
+            set({ iWealthySumInsured: sa, iWealthyRpp: newRpp, iWealthySumInsuredReductions: adjustedList, iWealthyReductionsNeedReview: get().iWealthyReductionsNeedReview || wasAdjusted });
+      },
+      setIWealthyInvestmentReturn: (rate) => set({ iWealthyInvestmentReturn: rate }),
+      //handleIWealthyRppRtuSlider: (percent) => {
+      //      const { iWealthyRpp, iWealthyRtu, iWealthyAge, iWealthySumInsuredReductions } = get();
+      //      const total = iWealthyRpp + iWealthyRtu;
+      //      if (total > 0) {
+      //            const newRpp = Math.round(total * (percent / 100));
+      //            const newRtu = total - newRpp;
+      //            const newSumInsured = newRpp * getSumInsuredFactor(iWealthyAge);
+      //            const { adjustedList, wasAdjusted } = adjustReductions(newRpp, iWealthySumInsuredReductions);
+      //            set({ iWealthyRpp: newRpp, iWealthyRtu: newRtu, iWealthySumInsured: newSumInsured, iWealthySumInsuredReductions: adjustedList, iWealthyReductionsNeedReview: get().iWealthyReductionsNeedReview || wasAdjusted });
+      //      }
+      //},
+      setIWealthyPausePeriods: (periods) => {
     const state = get();
     const currentEntryAge = state.iWealthyAge;
 
@@ -771,16 +803,16 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
 
     set({ iWealthyPausePeriods: updatedPeriods });
 },
-    setIWealthySumInsuredReductions: (reductions) => {
-        set({ iWealthySumInsuredReductions: reductions, iWealthyReductionsNeedReview: false });
-    },
-    setIWealthyAdditionalInvestments: (investments) => set({ iWealthyAdditionalInvestments: investments }),
-    setIWealthyFrequencyChanges: (changes) => set({ iWealthyFrequencyChanges: changes }),
-    setIWealthyWithdrawalPlan: (plan) => set({ iWealthyWithdrawalPlan: plan }),
-    acknowledgeIWealthyReductionChanges: () => {
-        set({ iWealthyReductionsNeedReview: false });
-    },
-    runIWealthyCalculation: async () => {
+      setIWealthySumInsuredReductions: (reductions) => {
+            set({ iWealthySumInsuredReductions: reductions, iWealthyReductionsNeedReview: false });
+      },
+      setIWealthyAdditionalInvestments: (investments) => set({ iWealthyAdditionalInvestments: investments }),
+      setIWealthyFrequencyChanges: (changes) => set({ iWealthyFrequencyChanges: changes }),
+      setIWealthyWithdrawalPlan: (plan) => set({ iWealthyWithdrawalPlan: plan }),
+      acknowledgeIWealthyReductionChanges: () => {
+            set({ iWealthyReductionsNeedReview: false });
+      },
+      runIWealthyCalculation: async () => {
         // 1. ตั้งค่าสถานะเริ่มต้นและล้างข้อมูลเก่า
         set({ 
             iWealthyIsLoading: true, 
@@ -914,7 +946,7 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     // ===================================================================
     // SECTION 3: iWealthy UI State & Actions
     // ===================================================================
-    isPauseModalOpen: false,
+      isPauseModalOpen: false,
     isReduceModalOpen: false,
     isWithdrawalModalOpen: false,
     isChangeFreqModalOpen: false,
@@ -940,40 +972,40 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     // ===================================================================
     // SECTION 4: CI Planner State & Actions
     // ===================================================================
-    ciPlanningAge: 30,
-    ciGender: 'male',
-    ciPolicyOriginMode: 'newPolicy',
-    ciExistingEntryAge: undefined,
-    ciPlanSelections: { 
-        mainRiderChecked: true, lifeReadySA: 150000, lifeReadyPPT: 18, lifeReadyPlan: 18,
+      ciPlanningAge: 30,
+      ciGender: 'male',
+      ciPolicyOriginMode: 'newPolicy',
+      ciExistingEntryAge: undefined,
+      ciPlanSelections: { 
+            mainRiderChecked: true, lifeReadySA: 150000, lifeReadyPPT: 18, lifeReadyPlan: 18,
         lifeReadyStopPayment: { useCustomStopAge: false, stopAge: 98 },
-        icareChecked: true, icareSA: 1000000,
+            icareChecked: true, icareSA: 1000000,
         icareStopPayment: { useCustomStopAge: false, stopAge: 84 },
-        ishieldChecked: false, ishieldSA: 1000000, ishieldPlan: null, 
+            ishieldChecked: false, ishieldSA: 1000000, ishieldPlan: null, 
         ishieldStopPayment: { useCustomStopAge: false, stopAge: 84 },
-        rokraiChecked: false, rokraiPlan: null, 
+            rokraiChecked: false, rokraiPlan: null, 
         rokraiStopPayment: { useCustomStopAge: false, stopAge: 98 },
-        dciChecked: false, dciSA: 1000000,
+            dciChecked: false, dciSA: 1000000,
         dciStopPayment: { useCustomStopAge: false, stopAge: 74 },
-    } as CiPlanSelections,
-    ciUseIWealthy: false,
-    ciIWealthyMode: 'automatic',
+      } as CiPlanSelections,
+      ciUseIWealthy: false,
+      ciIWealthyMode: 'automatic',
     ciUseCustomWithdrawalAge: false,
-    ciManualRpp: 100000,
-    ciManualRtu: 0,
-    ciManualInvReturn: 5,
-    ciManualPpt: 15,
-    ciManualWithdrawalStartAge: 61,
-    ciAutoInvReturn: 5,
-    ciAutoPpt: 15,
-    ciAutoRppRtuRatio: '100:0',
-    ciAutoWithdrawalStartAge: 61,
-    ciResult: null,
-    ciIsLoading: false,
-    ciError: null,
-    ciSolvedMinPremium: undefined,
-    ciSolvedRpp: undefined,
-    ciSolvedRtu: undefined,
+      ciManualRpp: 100000,
+      ciManualRtu: 0,
+      ciManualInvReturn: 5,
+      ciManualPpt: 15,
+      ciManualWithdrawalStartAge: 61,
+      ciAutoInvReturn: 5,
+      ciAutoPpt: 15,
+      ciAutoRppRtuRatio: '100:0',
+      ciAutoWithdrawalStartAge: 61,
+      ciResult: null,
+      ciIsLoading: false,
+      ciError: null,
+      ciSolvedMinPremium: undefined,
+      ciSolvedRpp: undefined,
+      ciSolvedRtu: undefined,
     ciControls: {
         showCiPremium: true,
         showIWealthyPremium: true,
@@ -981,23 +1013,23 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
         showIWealthyAV: true,
         showTotalDB: false,
     },
-    setCiPlanningAge: (arg) => set(state => ({ ciPlanningAge: typeof arg === 'function' ? arg(state.ciPlanningAge) : arg })),
-    setCiGender: (arg) => set(state => ({ ciGender: typeof arg === 'function' ? arg(state.ciGender) : arg })),
-    setCiPolicyOriginMode: (arg) => set(state => ({ ciPolicyOriginMode: typeof arg === 'function' ? arg(state.ciPolicyOriginMode) : arg })),
-    setCiExistingEntryAge: (arg) => set(state => ({ ciExistingEntryAge: typeof arg === 'function' ? arg(state.ciExistingEntryAge) : arg })),
-    setCiPlanSelections: (arg) => set(state => ({ ciPlanSelections: typeof arg === 'function' ? arg(state.ciPlanSelections) : arg })),
-    setCiUseIWealthy: (arg) => set(state => ({ ciUseIWealthy: typeof arg === 'function' ? arg(state.ciUseIWealthy) : arg })),
-    setCiIWealthyMode: (arg) => set(state => ({ ciIWealthyMode: typeof arg === 'function' ? arg(state.ciIWealthyMode) : arg })),
-    setCiManualRpp: (arg) => set(state => ({ ciManualRpp: typeof arg === 'function' ? arg(state.ciManualRpp) : arg })),
-    setCiManualRtu: (arg) => set(state => ({ ciManualRtu: typeof arg === 'function' ? arg(state.ciManualRtu) : arg })),
-    setCiManualInvReturn: (arg) => set(state => ({ ciManualInvReturn: typeof arg === 'function' ? arg(state.ciManualInvReturn) : arg })),
-    setCiManualPpt: (arg) => set(state => ({ ciManualPpt: typeof arg === 'function' ? arg(state.ciManualPpt) : arg })),
-    setCiManualWithdrawalStartAge: (arg) => set(state => ({ ciManualWithdrawalStartAge: typeof arg === 'function' ? arg(state.ciManualWithdrawalStartAge) : arg })),
-    setCiAutoInvReturn: (arg) => set(state => ({ ciAutoInvReturn: typeof arg === 'function' ? arg(state.ciAutoInvReturn) : arg })),
-    setCiAutoPpt: (arg) => set(state => ({ ciAutoPpt: typeof arg === 'function' ? arg(state.ciAutoPpt) : arg })),
-    setCiAutoRppRtuRatio: (arg) => set(state => ({ ciAutoRppRtuRatio: typeof arg === 'function' ? arg(state.ciAutoRppRtuRatio) : arg })),
-    setCiAutoWithdrawalStartAge: (arg) => set(state => ({ ciAutoWithdrawalStartAge: typeof arg === 'function' ? arg(state.ciAutoWithdrawalStartAge) : arg })),
-    setCiUseCustomWithdrawalAge: (arg) => set(state => ({ ciUseCustomWithdrawalAge: typeof arg === 'function' ? arg(state.ciUseCustomWithdrawalAge) : arg })),
+      setCiPlanningAge: (arg) => set(state => ({ ciPlanningAge: typeof arg === 'function' ? arg(state.ciPlanningAge) : arg })),
+      setCiGender: (arg) => set(state => ({ ciGender: typeof arg === 'function' ? arg(state.ciGender) : arg })),
+      setCiPolicyOriginMode: (arg) => set(state => ({ ciPolicyOriginMode: typeof arg === 'function' ? arg(state.ciPolicyOriginMode) : arg })),
+      setCiExistingEntryAge: (arg) => set(state => ({ ciExistingEntryAge: typeof arg === 'function' ? arg(state.ciExistingEntryAge) : arg })),
+      setCiPlanSelections: (arg) => set(state => ({ ciPlanSelections: typeof arg === 'function' ? arg(state.ciPlanSelections) : arg })),
+      setCiUseIWealthy: (arg) => set(state => ({ ciUseIWealthy: typeof arg === 'function' ? arg(state.ciUseIWealthy) : arg })),
+      setCiIWealthyMode: (arg) => set(state => ({ ciIWealthyMode: typeof arg === 'function' ? arg(state.ciIWealthyMode) : arg })),
+      setCiManualRpp: (arg) => set(state => ({ ciManualRpp: typeof arg === 'function' ? arg(state.ciManualRpp) : arg })),
+      setCiManualRtu: (arg) => set(state => ({ ciManualRtu: typeof arg === 'function' ? arg(state.ciManualRtu) : arg })),
+      setCiManualInvReturn: (arg) => set(state => ({ ciManualInvReturn: typeof arg === 'function' ? arg(state.ciManualInvReturn) : arg })),
+      setCiManualPpt: (arg) => set(state => ({ ciManualPpt: typeof arg === 'function' ? arg(state.ciManualPpt) : arg })),
+      setCiManualWithdrawalStartAge: (arg) => set(state => ({ ciManualWithdrawalStartAge: typeof arg === 'function' ? arg(state.ciManualWithdrawalStartAge) : arg })),
+      setCiAutoInvReturn: (arg) => set(state => ({ ciAutoInvReturn: typeof arg === 'function' ? arg(state.ciAutoInvReturn) : arg })),
+      setCiAutoPpt: (arg) => set(state => ({ ciAutoPpt: typeof arg === 'function' ? arg(state.ciAutoPpt) : arg })),
+      setCiAutoRppRtuRatio: (arg) => set(state => ({ ciAutoRppRtuRatio: typeof arg === 'function' ? arg(state.ciAutoRppRtuRatio) : arg })),
+      setCiAutoWithdrawalStartAge: (arg) => set(state => ({ ciAutoWithdrawalStartAge: typeof arg === 'function' ? arg(state.ciAutoWithdrawalStartAge) : arg })),
+      setCiUseCustomWithdrawalAge: (arg) => set(state => ({ ciUseCustomWithdrawalAge: typeof arg === 'function' ? arg(state.ciUseCustomWithdrawalAge) : arg })),
     setCiControls: (controls) => set(state => ({
         ciControls: typeof controls === 'function' ? controls(state.ciControls) : controls
     })),
