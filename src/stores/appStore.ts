@@ -403,7 +403,12 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     fundingSource: 'iWealthy',
     iWealthyMode: 'automatic',
     pensionMode: 'automatic',
-    pensionFundingOptions: { planType: 'pension8' },
+    pensionFundingOptions: { 
+        planType: 'pension8',
+        // ⭐ เพิ่ม Properties ที่ขาดหายไป ⭐
+        startAge: 60, 
+        endAge: 88
+    },
     manualPensionPlanType: 'pension8',
     manualPensionPremium: 200000,
     pensionStartAge: 60,
@@ -1243,6 +1248,9 @@ runRetirementCalculation: async () => {
         hybridMode: s.retirementHybridMode,
         iWealthyWithdrawalPlan: s.retirementIWealthyWithdrawalPlan,
         iWealthyWithdrawalMode: s.retirementIWealthyWithdrawalMode,
+        pensionStartAge: s.pensionStartAge, 
+        pensionEndAge: s.pensionEndAge,
+        
     };
 
     try {
