@@ -34,6 +34,8 @@ export interface RetirementPlanParams {
   hybridMode: 'automatic' | 'manual';
   iWealthyWithdrawalPlan: WithdrawalPlanRecord[]; // ✨ เพิ่ม property ที่ขาดหายไป
   iWealthyWithdrawalMode: 'automatic' | 'manual';
+  pensionStartAge: number; 
+  pensionEndAge: number;
 }
 
 /**

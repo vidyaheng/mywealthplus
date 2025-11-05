@@ -196,7 +196,7 @@ const solveForRetirementPremiums = async (params: RetirementPlanParams) => {
             const premiumRate = getPensionPremiumRate(params.planningAge, params.gender, params.pensionOptions.planType);
             if (premiumRate) {
                 const manualSA = Math.round(((params.manualPensionPremium / premiumRate) * 1000) / 1000) * 1000;
-                pensionIllustration = generatePensionIllustration(params.planningAge, params.gender, params.pensionOptions.planType, manualSA);
+                pensionIllustration = generatePensionIllustration(params.planningAge, params.gender, params.pensionOptions.planType, manualSA, params. pensionStartAge, params.pensionEndAge);
                 const totalPayoutFactor = calculateTotalPensionPayoutFactor(params.pensionOptions.planType);
                 pensionLumpSumTarget = manualSA * totalPayoutFactor;
                 solvedPensionPremium = params.manualPensionPremium;
@@ -211,7 +211,7 @@ const solveForRetirementPremiums = async (params: RetirementPlanParams) => {
         const premiumRate = getPensionPremiumRate(params.planningAge, params.gender, params.pensionOptions.planType);
         if (premiumRate) {
             solvedPensionPremium = Math.ceil(((solvedSA / 1000) * premiumRate) / 100) * 100;
-            pensionIllustration = generatePensionIllustration(params.planningAge, params.gender, params.pensionOptions.planType, solvedSA);
+            pensionIllustration = generatePensionIllustration(params.planningAge, params.gender, params.pensionOptions.planType, solvedSA, params. pensionStartAge, params.pensionEndAge);
         }
     }
     
@@ -319,7 +319,7 @@ const runRetirementProjection = async (params: RetirementPlanParams) => {
         const premiumRate = getPensionPremiumRate(params.planningAge, params.gender, params.pensionOptions.planType);
         if (premiumRate) {
             const solvedSA = Math.round(((params.manualPensionPremium / premiumRate) * 1000) / 1000) * 1000;
-            pensionIllustration = generatePensionIllustration(params.planningAge, params.gender, params.pensionOptions.planType, solvedSA);
+            pensionIllustration = generatePensionIllustration(params.planningAge, params.gender, params.pensionOptions.planType, solvedSA, params.pensionStartAge, params.pensionEndAge);
         }
     }
     

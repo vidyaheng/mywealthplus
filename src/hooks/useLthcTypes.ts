@@ -24,6 +24,8 @@ export type PensionMode = 'automatic' | 'manual';
 
 export interface PensionFundingOptions {
     planType: PensionPlanType;
+    startAge: number; 
+    endAge: number;
 }
 
 export interface PensionInputParams {

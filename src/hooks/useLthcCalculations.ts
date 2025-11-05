@@ -2,24 +2,24 @@
 
 // --- Imports ---
 import {
-    generateIllustrationTables,
-    getSumInsuredFactor,
-    type AnnualCalculationOutputRow as OriginalIWealthyAnnualOutputRow,
+    generateIllustrationTables,
+    getSumInsuredFactor,
+    type AnnualCalculationOutputRow as OriginalIWealthyAnnualOutputRow,
 } from '../lib/calculations';
 import {
-    calculateLifeReadyPremium,
-    calculateIHealthyUltraPremium,
-    calculateMEBPremium,
+    calculateLifeReadyPremium,
+    calculateIHealthyUltraPremium,
+    calculateMEBPremium,
 } from '../lib/healthPlanCalculations';
 import type {
-    Gender, HealthPlanSelections, SumInsuredReductionRecord, FrequencyChangeRecord,
-    WithdrawalPlanRecord, CalculationInput, IHealthyUltraPlan, MEBPlan,
-    AnnualHealthPremiumDetail, PolicyOriginMode, AnnualLTHCOutputRow, 
+    Gender, HealthPlanSelections, SumInsuredReductionRecord, FrequencyChangeRecord,
+    WithdrawalPlanRecord, CalculationInput, IHealthyUltraPlan, MEBPlan,
+    AnnualHealthPremiumDetail, PolicyOriginMode, AnnualLTHCOutputRow, 
     FundingSource, PensionFundingOptions, PensionMode, IWealthyMode, SAReductionStrategy
 } from './useLthcTypes';
 import {
-    MINIMUM_ALLOWABLE_SYSTEM_RPP_TYPE as MINIMUM_RPP,
-    MAX_POLICY_AGE_TYPE, MEB_TERMINATION_AGE_TYPE,
+    MINIMUM_ALLOWABLE_SYSTEM_RPP_TYPE as MINIMUM_RPP,
+    MAX_POLICY_AGE_TYPE, MEB_TERMINATION_AGE_TYPE,
 } from './useLthcTypes';
 import { IHEALTHY_ULTRA_RATES } from '../data/iHealthyUltraRates';
 import { getPensionPremiumRate, PensionPlanType } from '../data/pensionRates';
@@ -231,8 +231,8 @@ const processHybridResultsToLTHC = (healthPremiums: AnnualHealthPremiumDetail[],
 // +++ ORIGINAL FUNCTIONS (FULL IMPLEMENTATION) +++
 // =================================================================================
 const roundUpToNearestThousand = (num: number): number => {
-    if (num <= 0) return 0;
-    return Math.ceil(num / 1000) * 1000;
+    if (num <= 0) return 0;
+    return Math.ceil(num / 1000) * 1000;
 };
 
 const checkIWealthySolvency = (
@@ -332,8 +332,8 @@ export const calculateAllHealthPremiums = (currentPolicyholderAge: number, gende
 };
 
 export const generateSAReductionsForIWealthy = (entryAge: number, rpp: number, reductionAges?: number[]): SumInsuredReductionRecord[] => {
-    const reductions: SumInsuredReductionRecord[] = [];
-    if (rpp <= 0) {
+    const reductions: SumInsuredReductionRecord[] = [];
+    if (rpp <= 0) {
         return reductions;
     }
 
@@ -349,42 +349,42 @@ export const generateSAReductionsForIWealthy = (entryAge: number, rpp: number, r
         return reductions;
     }
 
-    const getFactor = (milestoneAge: number, currentEntryAge: number): number => {
-        if (milestoneAge === currentEntryAge + 1) {
-            if (currentEntryAge <= 40) return 40;
-            if (currentEntryAge <= 50) return 30;
-            if (currentEntryAge <= 60) return 20;
-            if (currentEntryAge <= 65) return 15;
-            return 5;
-        }
-        if (milestoneAge === 41) return 30;
-        if (milestoneAge === 51) return 20;
-        if (milestoneAge === 61) return 15;
-        if (milestoneAge === 66) return 5;
-        return 0;
-    };
+    const getFactor = (milestoneAge: number, currentEntryAge: number): number => {
+        if (milestoneAge === currentEntryAge + 1) {
+            if (currentEntryAge <= 40) return 40;
+            if (currentEntryAge <= 50) return 30;
+            if (currentEntryAge <= 60) return 20;
+            if (currentEntryAge <= 65) return 15;
+            return 5;
+        }
+        if (milestoneAge === 41) return 30;
+        if (milestoneAge === 51) return 20;
+        if (milestoneAge === 61) return 15;
+        if (milestoneAge === 66) return 5;
+        return 0;
+    };
 
-    // กำหนด milestones ตาม input: auto (undefined), none ([]), or manual ([...ages])
-    const milestones = reductionAges === undefined ? [entryAge + 1, 41, 51, 61, 66] : reductionAges;
+    // กำหนด milestones ตาม input: auto (undefined), none ([]), or manual ([...ages])
+    const milestones = reductionAges === undefined ? [entryAge + 1, 41, 51, 61, 66] : reductionAges;
 
-    const reductionMap = new Map<number, number>();
-    milestones.forEach(age => {
-        if (age > entryAge && age <= 99) { // MAX_POLICY_AGE_TYPE
-            const factor = getFactor(age, entryAge);
-            if (factor > 0) {
-                const newSA = Math.round(rpp * factor);
-                if (!reductionMap.has(age) || newSA < (reductionMap.get(age) ?? Infinity)) {
-                    reductionMap.set(age, newSA);
-                }
-            }
-        }
-    });
-    
-    reductionMap.forEach((newSumInsured, age) => {
+    const reductionMap = new Map<number, number>();
+    milestones.forEach(age => {
+        if (age > entryAge && age <= 99) { // MAX_POLICY_AGE_TYPE
+            const factor = getFactor(age, entryAge);
+            if (factor > 0) {
+                const newSA = Math.round(rpp * factor);
+                if (!reductionMap.has(age) || newSA < (reductionMap.get(age) ?? Infinity)) {
+                    reductionMap.set(age, newSA);
+                }
+            }
+        }
+    });
+    
+    reductionMap.forEach((newSumInsured, age) => {
         reductions.push({ age, newSumInsured });
     });
 
-    return reductions.sort((a, b) => a.age - b.age);
+    return reductions.sort((a, b) => a.age - b.age);
 };
 
 
@@ -670,7 +670,7 @@ export const calculateLthcPlan = async (
 
             case 'pension':
                 if (pensionMode === 'automatic') {
-                    const pensionSolverResult = await findOptimalPensionPlan(entryAge, gender, allHealthPremiumsData, { planType: autoPensionPlanType }, pensionStartAge, pensionEndAge);
+                    const pensionSolverResult = await findOptimalPensionPlan(entryAge, gender, allHealthPremiumsData, { planType: autoPensionPlanType,startAge: pensionStartAge,endAge: pensionEndAge }, pensionStartAge, pensionEndAge);
                     const processedOutput = processPensionResultsToLTHC(allHealthPremiumsData, pensionSolverResult.pensionIllustration, healthPlans);
                     return { outputIllustration: processedOutput, solvedPensionSA: pensionSolverResult.solvedSA, solvedPensionPremium: pensionSolverResult.solvedAnnualPremium, errorMsg: pensionSolverResult.errorMessage };
                 } else { // Manual Pension
@@ -683,23 +683,23 @@ export const calculateLthcPlan = async (
                 if (iWealthyMode === 'automatic') {
                     let solverResult;
 
-                    // ✅ ตรวจสอบเงื่อนไขพิเศษ (ไม่ลดทุน และ RPP 100%)
-                    if (strategy.type === 'none' && iWealthyOptions.rppRtuRatio === '100/0') {
-                        // ✅ ถ้าใช่, เรียกใช้ Super Solver ตัวใหม่
-                        solverResult = await solveForBestOutcomeWithNoReduction(
-                            entryAge, gender, allHealthPremiumsData, 
-                            iWealthyOptions.ppt, iWealthyOptions.invReturn, iWealthyOptions.rppRtuRatio,
-                            strategy
-                        );
-                    } else {
-                        // ✅ ถ้าเป็นกรณีอื่นๆ, เรียกใช้ Solver ตัวเดิมตามปกติ
-                        solverResult = await findOptimalIWealthyPremium(
-                            entryAge, gender, allHealthPremiumsData, 
-                            iWealthyOptions.ppt, iWealthyOptions.invReturn, iWealthyOptions.rppRtuRatio,
-                            strategy,
-                            null // ไม่มีการกำหนดอายุหยุดถอนเอง
-                        );
-                    }
+                    // ✅ ตรวจสอบเงื่อนไขพิเศษ (ไม่ลดทุน และ RPP 100%)
+                    if (strategy.type === 'none' && iWealthyOptions.rppRtuRatio === '100/0') {
+                        // ✅ ถ้าใช่, เรียกใช้ Super Solver ตัวใหม่
+                        solverResult = await solveForBestOutcomeWithNoReduction(
+                            entryAge, gender, allHealthPremiumsData, 
+                            iWealthyOptions.ppt, iWealthyOptions.invReturn, iWealthyOptions.rppRtuRatio,
+                            strategy
+                        );
+                    } else {
+                        // ✅ ถ้าเป็นกรณีอื่นๆ, เรียกใช้ Solver ตัวเดิมตามปกติ
+                        solverResult = await findOptimalIWealthyPremium(
+                            entryAge, gender, allHealthPremiumsData, 
+                            iWealthyOptions.ppt, iWealthyOptions.invReturn, iWealthyOptions.rppRtuRatio,
+                            strategy,
+                            null // ไม่มีการกำหนดอายุหยุดถอนเอง
+                        );
+                    }
 
                     if (solverResult.finalIWealthyAnnualData) {
                         const rppResult = solverResult.solvedRpp || 0;
