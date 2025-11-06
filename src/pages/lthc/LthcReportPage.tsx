@@ -444,7 +444,7 @@ export const LthcReportPage = () => {
                     </div>
                     
                     {/* แสดงส่วนต่างผลประโยชน์ */}
-                    {fundingSource !== 'none' && (
+                    {/*{fundingSource !== 'none' && (
                         <div className={`mt-6 p-4 rounded-lg text-center ${
                             (((summaryData.totalWithdrawals + (result[result.length - 1]?.iWealthyEoyAccountValue || 0)) + (selectedHealthPlans.lifeReadySA || 150000)) - summaryData.lthcTotalCombinedPremiumPaid) > 
                             ((selectedHealthPlans.lifeReadySA || 150000) - summaryData.totalHealthPremiumIfPaidAlone)
@@ -465,7 +465,7 @@ export const LthcReportPage = () => {
                                 )}
                             </p>
                         </div>
-                    )}
+                    )}*/}
                 </section>
 
                 {/* --- กราฟ และ ตาราง --- */}

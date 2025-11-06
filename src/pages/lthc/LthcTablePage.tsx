@@ -672,7 +672,7 @@ export default function LthcTablePage({ isReportMode }: { isReportMode?: boolean
                             </div>
                         )}
                     </div>
-                    {fundingSource !== 'none' && (
+                    {/*{fundingSource !== 'none' && (
                         <div className={`mt-6 p-4 rounded-lg text-center ${summaryValues.lthcNetBenefit > summaryValues.healthOnlyNetBenefit ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
                             <p className="text-lg font-semibold">
                                 {summaryValues.lthcNetBenefit > summaryValues.healthOnlyNetBenefit ? (
@@ -682,7 +682,7 @@ export default function LthcTablePage({ isReportMode }: { isReportMode?: boolean
                                 )}
                             </p>
                         </div>
-                    )}
+                    )}*/}
                 </section>
             )}
             {showTaxDeduction && taxSummaryValues && (
