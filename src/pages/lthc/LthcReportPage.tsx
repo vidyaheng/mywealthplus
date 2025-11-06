@@ -97,6 +97,18 @@ export const LthcReportPage = () => {
     pensionStartAge, pensionEndAge,
     } = useAppStore();
 
+    const getFundingDisplayName = () => {
+        switch(fundingSource) {
+            case 'iWealthy': return 'iWealthy';
+            case 'pension': return 'บำนาญ';
+            case 'hybrid': 
+                // ใช้ค่าจาก state ที่ถูกซิงค์มาแล้ว
+                const pensionName = manualPensionPlanType === 'pension8' ? 'บำนาญ 8' : 'บำนาญ 60';
+                return `iWealthy + ${pensionName}`;
+            default: return 'Funding';
+        }
+    };
+
     // 2. คำนวณ Metrics และข้อมูลสรุปที่ต้องการ
     const summaryData = useMemo(() => {
     if (!result || result.length === 0) return null;
@@ -406,7 +418,7 @@ export const LthcReportPage = () => {
                                 {/* กลุ่มเบี้ย */}
                                 <div className="bg-red-50 p-3 rounded-lg border border-red-200">
                                     <p className="text-xs text-gray-500 uppercase font-semibold mb-2">💰 เบี้ยที่จ่าย</p>
-                                    <p className="text-sm mb-1">• เบี้ยสุขภาพที่จ่ายเอง: <span className="font-semibold text-rose-600">{formatNum(summaryData.totalHealthPremiumIfPaidAlone - summaryData.totalWithdrawals)} บาท</span></p>
+                                    <p className="text-sm mb-1">• เบี้ยสุขภาพที่จ่ายเอง: <span className="font-semibold text-rose-600">{formatNum(summaryData.lthcHealthPremiumPaidByUser)} บาท</span></p>
                                     <p className="text-sm mb-1">• เบี้ย {fundingSource === 'iWealthy' ? 'iWealthy' : fundingSource === 'pension' ? 'บำนาญ' : 'Funding'}: <span className="font-semibold text-blue-600">{formatNum(summaryData.lthcTotalFundingPremium)} บาท</span></p>
                                     <p className="font-bold text-rose-600 text-xl mt-2 pt-2 border-t border-red-300">
                                         รวม: {formatNum(summaryData.lthcTotalCombinedPremiumPaid)} บาท
@@ -416,7 +428,7 @@ export const LthcReportPage = () => {
                                 {/* กลุ่มผลประโยชน์ */}
                                 <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
                                     <p className="text-xs text-gray-500 uppercase font-semibold mb-2">🎁 ผลประโยชน์รวม</p>
-                                    <p className="text-sm mb-1">• ผลประโยชน์จาก {fundingSource === 'iWealthy' ? 'iWealthy' : fundingSource === 'pension' ? 'บำนาญ' : 'Funding'}: <span className="font-semibold text-orange-600">{formatNum(summaryData.totalWithdrawals + (result[result.length - 1]?.iWealthyEoyAccountValue || 0))} บาท</span></p>
+                                    <p className="text-sm mb-1">• ผลประโยชน์จาก <span className="font-semibold text-blue-600">{getFundingDisplayName()}</span>: <span className="font-semibold text-orange-600">{formatNum(summaryData.totalWithdrawals + (result[result.length - 1]?.iWealthyEoyAccountValue || 0))} บาท</span></p>
                                     <p className="text-sm mb-1">• ทุนประกัน (Life Ready): <span className="font-semibold text-green-600">{formatNum(selectedHealthPlans.lifeReadySA || 150000)} บาท</span></p>
                                     <p className="font-bold text-purple-600 text-xl mt-2 pt-2 border-t border-purple-300">
                                         รวม: {formatNum((summaryData.totalWithdrawals + (result[result.length - 1]?.iWealthyEoyAccountValue || 0)) + (selectedHealthPlans.lifeReadySA || 150000))} บาท
@@ -481,9 +493,9 @@ export const LthcReportPage = () => {
                      <LthcTablePage isReportMode={true} />
                 </section>
 
-                <footer className="mt-10 pt-4 border-t border-slate-300 text-xs text-slate-500">
+                {/*<footer className="mt-10 pt-4 border-t border-slate-300 text-xs text-slate-500">
                     <p><b>ข้อจำกัดความรับผิดชอบ:</b> ...</p>
-                </footer>
+                </footer>*/}
             </div>
         </div>
     );

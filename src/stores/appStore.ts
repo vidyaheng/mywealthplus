@@ -469,12 +469,57 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     setExistingPolicyEntryAge: (arg) => set(state => ({ existingPolicyEntryAge: typeof arg === 'function' ? arg(state.existingPolicyEntryAge) : arg })),
     setFundingSource: (arg) => set(state => ({ fundingSource: typeof arg === 'function' ? arg(state.fundingSource) : arg })),
     setIWealthyMode: (arg) => set(state => ({ iWealthyMode: typeof arg === 'function' ? arg(state.iWealthyMode) : arg })),
-    setPensionMode: (arg) => set(state => ({ pensionMode: typeof arg === 'function' ? arg(state.pensionMode) : arg })),
+    setPensionMode: (newMode) => set(state => {
+        const modeValue = typeof newMode === 'function' ? newMode(state.pensionMode) : newMode;
+        
+        // ⭐ [FIX 3] ซิงค์ค่า planType ตามโหมดใหม่ที่ถูกเลือก
+        const newPlanType = modeValue === 'manual' 
+            ? state.manualPensionPlanType 
+            : state.autoPensionPlanType;
+            
+        return {
+            pensionMode: modeValue,
+            pensionFundingOptions: {
+                ...state.pensionFundingOptions,
+                planType: newPlanType, // อัปเดต planType ให้ตรงกับโหมดใหม่
+            },
+        };
+    }),
     setPensionFundingOptions: (arg) => set(state => ({ pensionFundingOptions: typeof arg === 'function' ? arg(state.pensionFundingOptions) : arg })),
-    setManualPensionPlanType: (arg) => set(state => ({ manualPensionPlanType: typeof arg === 'function' ? arg(state.manualPensionPlanType) : arg })),
+    setManualPensionPlanType: (newType) => set(state => {
+        const typeValue = typeof newType === 'function' ? newType(state.manualPensionPlanType) : newType;
+        
+        // ⭐ [FIX 1] ซิงค์ค่า planType ไปยัง pensionFundingOptions ถ้าอยู่ในโหมด manual
+        if (state.pensionMode === 'manual') {
+            return {
+                manualPensionPlanType: typeValue,
+                pensionFundingOptions: {
+                    ...state.pensionFundingOptions,
+                    planType: typeValue, // อัปเดต planType ที่ Table Page ใช้
+                },
+            };
+        }
+        
+        return { manualPensionPlanType: typeValue };
+    }),
     setPensionStartAge: (arg) => set(state => ({ pensionStartAge: typeof arg === 'function' ? arg(state.pensionStartAge) : arg })),
     setPensionEndAge: (arg) => set(state => ({ pensionEndAge: typeof arg === 'function' ? arg(state.pensionEndAge) : arg })),
-    setAutoPensionPlanType: (arg) => set(state => ({ autoPensionPlanType: typeof arg === 'function' ? arg(state.autoPensionPlanType) : arg })),
+    setAutoPensionPlanType: (newType) => set(state => {
+        const typeValue = typeof newType === 'function' ? newType(state.autoPensionPlanType) : newType;
+        
+        // ⭐ [FIX 2] ซิงค์ค่า planType ไปยัง pensionFundingOptions ถ้าอยู่ในโหมด automatic
+        if (state.pensionMode === 'automatic') {
+            return {
+                autoPensionPlanType: typeValue,
+                pensionFundingOptions: {
+                    ...state.pensionFundingOptions,
+                    planType: typeValue, // อัปเดต planType ที่ Table Page ใช้
+                },
+            };
+        }
+        
+        return { autoPensionPlanType: typeValue };
+    }),
     setAutoPensionPremium: (arg) => set(state => ({ autoPensionPremium: typeof arg === 'function' ? arg(state.autoPensionPremium) : arg })),
     setManualPensionPremium: (arg) => set(state => ({ manualPensionPremium: typeof arg === 'function' ? arg(state.manualPensionPremium) : arg })),
     setManualRpp: (arg) => set(state => ({ manualRpp: typeof arg === 'function' ? arg(state.manualRpp) : arg })),

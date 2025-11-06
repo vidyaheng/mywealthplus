@@ -52,11 +52,11 @@ export default function LthcTablePage({ isReportMode }: { isReportMode?: boolean
                 fundingDisplayName = '+ iWealthy';
                 break;
             case 'pension':
-                const pensionPlanName = pensionFundingOptions.planType === 'pension8' ? 'บำนาญ 8' : 'บำนาญ 60';
+                const pensionPlanName = pensionFundingOptions.planType === 'pension60' ? 'บำนาญ 60' : 'บำนาญ 8';
                 fundingDisplayName = `+ ${pensionPlanName}`;
                 break;
             case 'hybrid':
-                const hybridPensionName = pensionFundingOptions.planType === 'pension8' ? 'บำนาญ 8' : 'บำนาญ 60';
+                const hybridPensionName = pensionFundingOptions.planType === 'pension60' ? 'บำนาญ 60' : 'บำนาญ 8';
                 fundingDisplayName = `+ iWealthy + ${hybridPensionName}`;
                 break;
         }
@@ -653,8 +653,14 @@ export default function LthcTablePage({ isReportMode }: { isReportMode?: boolean
                                     <p className="text-sm mb-1">• ผลประโยชน์จาก {(() => {
                                         switch(fundingSource) {
                                             case 'iWealthy': return 'iWealthy';
+                                            
                                             case 'pension': return pensionFundingOptions.planType === 'pension8' ? 'บำนาญ 8' : 'บำนาญ 60';
-                                            case 'hybrid': return 'iWealthy + บำนาญ';
+                                            
+                                            case 'hybrid':
+                                                // ⭐ เพิ่ม Logic ตรวจสอบแผนบำนาญที่ถูกเลือก ⭐
+                                                const hybridPensionName = pensionFundingOptions.planType === 'pension8' ? 'บำนาญ 8' : 'บำนาญ 60';
+                                                return `iWealthy + ${hybridPensionName}`; // ใช้ Template Literal ในการต่อสตริง
+                                                
                                             default: return 'Funding';
                                         }
                                     })()}: <span className="font-semibold text-orange-600">{formatNum(summaryValues.lthcFundingBenefits)} บาท</span></p>
