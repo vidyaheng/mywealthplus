@@ -104,6 +104,7 @@ interface LthcState {
   solvedPensionPremium?: number;
   // controls
   lthcControls: any;
+  showFullPensionTerm: boolean;
   // --- Setters ---
   setPolicyholderEntryAge: Dispatch<SetStateAction<number>>;
   setPolicyholderGender: Dispatch<SetStateAction<Gender>>;
@@ -133,6 +134,7 @@ interface LthcState {
   loadLthcState: (data: any) => void;
   // controls
   setLthcControls: (controls: any) => void;
+  setShowFullPensionTerm: Dispatch<SetStateAction<boolean>>;
   // --- 🎨 ส่วนที่เพิ่มใหม่สำหรับฟีเจอร์ลดหย่อนภาษี ---
   isTaxDeductionEnabled: boolean;
   isTaxModalOpen: boolean;
@@ -439,6 +441,7 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     usedFirst100k: 0,
     taxDeductionEndAge: 98,
     lthcControls: getInitialControlsState(null),
+    showFullPensionTerm: false,
 
     handleTaxButtonClick: () => {
         const { isTaxDeductionEnabled } = get();
@@ -532,6 +535,7 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     setAutoRppRtuRatio: (arg) => set(state => ({ autoRppRtuRatio: typeof arg === 'function' ? arg(state.autoRppRtuRatio) : arg })),
     setSaReductionStrategy: (arg) => set(state => ({ saReductionStrategy: typeof arg === 'function' ? arg(state.saReductionStrategy) : arg })),
     setLthcControls: (controls) => set({ lthcControls: controls }),
+    setShowFullPensionTerm: (arg) => set(state => ({ showFullPensionTerm: typeof arg === 'function' ? arg(state.showFullPensionTerm) : arg })),
 
     runCalculation: async () => {
         // 1. เริ่มต้นกระบวนการ: ตั้งค่าสถานะกำลังโหลดและล้าง error/ผลลัพธ์เก่า

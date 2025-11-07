@@ -94,7 +94,7 @@ export const LthcReportPage = () => {
     iWealthyMode, manualRpp, manualRtu, manualInvestmentReturn, manualIWealthyPPT, manualWithdrawalStartAge,
     autoInvestmentReturn, autoIWealthyPPT, lthcControls, 
     pensionMode, manualPensionPlanType, manualPensionPremium: _manualPremium, autoPensionPlanType, autoPensionPremium: _autoPremium,
-    pensionStartAge, pensionEndAge,
+    pensionStartAge, pensionEndAge,showFullPensionTerm,
     } = useAppStore();
 
     const getFundingDisplayName = () => {
@@ -112,6 +112,18 @@ export const LthcReportPage = () => {
     // 2. คำนวณ Metrics และข้อมูลสรุปที่ต้องการ
     const summaryData = useMemo(() => {
     if (!result || result.length === 0) return null;
+
+    // 👇 [START FIX] Logic การจำกัดอายุสูงสุดสำหรับการคำนวณสรุปผล
+    let maxAgeForSummary = 99;
+    // หากเป็นแผนบำนาญ (pension) และยังไม่ได้ขยาย (showFullPensionTerm เป็น false)
+    if (fundingSource === 'pension' && !showFullPensionTerm) { 
+         maxAgeForSummary = 88; // จำกัดที่ 88 ปี
+    } else if (fundingSource === 'pension' && showFullPensionTerm) {
+         maxAgeForSummary = 99; // หากมีการขยาย ให้เป็น 99 (หรือไม่จำกัด)
+    }
+
+    // 💡 กรองข้อมูลที่จะนำมาสรุป (ใช้สำหรับคำนวณเบี้ยรวม ผลประโยชน์รวม)
+    const filteredResult = result.filter(row => row.age <= maxAgeForSummary);
 
     // คำนวณเบี้ยสุขภาพปีแรก
     const entryAgeForLr = (policyOriginMode === 'existingPolicy' && existingPolicyEntryAge) ? existingPolicyEntryAge : policyholderEntryAge;
@@ -134,7 +146,7 @@ export const LthcReportPage = () => {
     );
     const firstWithdrawalAge = firstWithdrawalRow?.age ?? policyholderEntryAge; // ใช้อายุเริ่มต้นเป็นค่า Default
 
-    result.forEach(row => {
+    filteredResult.forEach(row => {
         totalHealthPremiumIfPaidAlone += row.totalHealthPremium || 0;
         const fundIsActive = (row.iWealthyWithdrawal ?? 0) > 0 || (row.pensionPayout ?? 0) > 0;
         if (!fundIsActive) {
@@ -156,7 +168,7 @@ export const LthcReportPage = () => {
     });
     
     // เพิ่มมูลค่าบัญชีสุดท้าย
-    const lastRow = result[result.length - 1];
+    const lastRow = filteredResult[filteredResult.length - 1];
     if (fundingSource === 'pension' || fundingSource === 'hybrid') {
         lthcFundingBenefits += lastRow.pensionEOYCSV || 0;
     }
@@ -199,7 +211,7 @@ export const LthcReportPage = () => {
         firstWithdrawalAge,
         
     };
-}, [result, policyholderEntryAge, policyholderGender, selectedHealthPlans, policyOriginMode, existingPolicyEntryAge, fundingSource]);
+}, [result, policyholderEntryAge, policyholderGender, selectedHealthPlans, policyOriginMode, existingPolicyEntryAge, fundingSource, showFullPensionTerm]);
 
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const [chartImage, setChartImage] = useState<string | null>(null);
@@ -364,10 +376,9 @@ export const LthcReportPage = () => {
                             </div>
                         )}
                         
-                        {/* (สามารถเพิ่มเงื่อนไขสำหรับ Pension และ Hybrid ได้ที่นี่) */}
                     </div>
                 </section>
-                
+
                 {/* --- การวิเคราะห์เชิงเปรียบเทียบ --- */}
                 <section className="mt-6">
                     <h2 className="text-xl font-semibold text-green-800 border-l-4 border-green-800 pl-3 mb-3">การวิเคราะห์เชิงเปรียบเทียบ</h2>
@@ -479,6 +490,7 @@ export const LthcReportPage = () => {
                         </div>
                     )}*/}
                 </section>
+
 
                 {/* --- กราฟ และ ตาราง --- */}
                 <section className="mt-8 page-break-before">

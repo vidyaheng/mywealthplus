@@ -27,13 +27,15 @@ export default function LthcTablePage({ isReportMode }: { isReportMode?: boolean
         taxDeductionEndAge,
         handleTaxButtonClick,
         setTaxInputs,
-        closeTaxModal
+        closeTaxModal,
+        showFullPensionTerm, 
+        setShowFullPensionTerm
     } = useAppStore();
 
     const [isHealthDetailsExpanded, setIsHealthDetailsExpanded] = useState<boolean>(false);
     const [isIWealthyPremiumExpanded, setIsIWealthyPremiumExpanded] = useState<boolean>(false);
     const [isTotalDbExpanded, setIsTotalDbExpanded] = useState<boolean>(false);
-    const [showFullPensionTerm, setShowFullPensionTerm] = useState<boolean>(false);
+    //const [showFullPensionTerm, setShowFullPensionTerm] = useState<boolean>(false);
     // 💡 [FIXED] สถานะการขยายเบี้ย Hybrid
     const [isHybridPremiumExpanded, setIsHybridPremiumExpanded] = useState<boolean>(false);
     // 💡 [FIXED] สถานะการขยายมูลค่าเวนคืนรวม
@@ -604,7 +606,7 @@ export default function LthcTablePage({ isReportMode }: { isReportMode?: boolean
                         </div>
                     )}
             </div>
-            {summaryValues && (
+            {!isReportMode && summaryValues && (
                 <section className="mt-8 p-6 border-t-2 border-sky-600 bg-slate-50 rounded-lg shadow-lg">
                     <h2 className="text-xl font-semibold mb-4 text-slate-700">
                         สรุปผลประโยชน์ (ถึงอายุ {isTaxDeductionEnabled ? taxDeductionEndAge : (fundingSource === 'pension' && !showFullPensionTerm ? 88 : 99)} ปี):
@@ -691,7 +693,7 @@ export default function LthcTablePage({ isReportMode }: { isReportMode?: boolean
                     )}*/}
                 </section>
             )}
-            {showTaxDeduction && taxSummaryValues && (
+            {!isReportMode && showTaxDeduction && taxSummaryValues && (
                 <section className="mt-8 p-6 border-t-2 border-teal-600 bg-slate-50 rounded-lg shadow-lg">
                     <h2 className="text-xl font-semibold mb-4 text-slate-700">
                         สรุปผลประโยชน์ทางภาษี (ถึงอายุ {taxDeductionEndAge} ปี):
