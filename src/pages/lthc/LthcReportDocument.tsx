@@ -130,7 +130,11 @@ const styles = StyleSheet.create({
 // --- Helper Functions ---
 const formatDate = (date: Date) => date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
 const formatNum = (val: number | null | undefined) => val ? val.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '-';
-
+// ⭐ NEW HELPER: ฟังก์ชันกำหนดสีตามค่า
+const getBenefitColor = (netBenefit: number | null | undefined) => {
+    if (netBenefit === null || netBenefit === undefined || netBenefit === 0) return '#334155'; // สีกลางสำหรับ 0 หรือ -
+    return netBenefit < 0 ? '#dc2626' : '#2563eb'; // แดงสำหรับติดลบ, น้ำเงินสำหรับบวก
+};
 // --- Props Interface สำหรับ LTHC ---
 
 interface ControlsState {
@@ -162,6 +166,7 @@ interface LthcReportDocumentProps {
     autoPensionPlanType: string;
     pensionStartAge: number;
     pensionEndAge: number;
+    showFullPensionTerm: boolean;
     
 }
 
@@ -191,7 +196,7 @@ const PageFooter = ({ pageNumber, totalPages }: { pageNumber: number, totalPages
 );
 
 // --- ⭐ 3. ReportTable Component (ยกเครื่องใหม่ทั้งหมด) ---
-const ReportTable = ({ data, fundingSource }: { data: AnnualLTHCOutputRow[], fundingSource: string }) => {
+const ReportTable = ({ data, fundingSource, fundingDisplayName }: { data: AnnualLTHCOutputRow[], fundingSource: string, fundingDisplayName: string }) => {
     const showLthcCols = fundingSource !== 'none'; // แสดงคอลัมน์ LTHC สำหรับทุกแผนที่ไม่ใช่ 'none'
     const showIWealthyCols = fundingSource === 'iWealthy' || fundingSource === 'hybrid';
     const showPensionCols = fundingSource === 'pension' || fundingSource === 'hybrid';
@@ -205,7 +210,7 @@ const ReportTable = ({ data, fundingSource }: { data: AnnualLTHCOutputRow[], fun
                     <View style={[styles.tableColHeaderMain, styles.bgHealthPlan, { width: '26%', backgroundColor: '#f0f9ff' }]}><Text>แผนสุขภาพ (จ่ายเอง)</Text></View>
                     {showLthcCols && (
                         <View style={[styles.tableColHeaderMain, styles.bgLthcPlan, { width: '58%', backgroundColor: '#f0fdf4' }]}>
-                            <Text>แผน LTHC ({fundingSource === 'iWealthy' ? 'ใช้ iWealthy' : fundingSource === 'pension' ? 'ใช้บำนาญ' : 'Hybrid'})</Text>
+                            <Text>แผน LTHC ({fundingDisplayName})</Text>
                         </View>
                     )}
                 </View>
@@ -385,6 +390,7 @@ export const LthcReportDocument: React.FC<LthcReportDocumentProps> = (props) => 
         autoPensionPlanType,
         pensionStartAge,
         pensionEndAge,
+        showFullPensionTerm
     } = props;
 
     if (!result || !metrics) {
@@ -451,6 +457,39 @@ export const LthcReportDocument: React.FC<LthcReportDocumentProps> = (props) => 
     };
 }, [result, fundingSource, pensionMode, manualPensionPlanType, autoPensionPlanType, pensionStartAge, pensionEndAge]);
 
+    const dataToDisplay = useMemo(() => {
+        if (!result) return [];
+
+        let maxAge = 99;
+        // หากเป็นแผนบำนาญ (pension) หรือ Hybrid และยังไม่ได้ขยาย
+        if ((fundingSource === 'pension' || fundingSource === 'hybrid') && !showFullPensionTerm) {
+            maxAge = 88;
+        }
+
+        // หากเป็นแผนบำนาญ/Hybrid และมีการขยาย (showFullPensionTerm = true) จะใช้ 99
+        // หากเป็น iWealthy จะใช้ 99 เสมอ
+
+        return result.filter(row => row.age <= maxAge);
+    }, [result, fundingSource, showFullPensionTerm]);
+
+    const getFundingDisplayName = () => {
+        const pensionName = pensionMode === 'manual' ? manualPensionPlanType : autoPensionPlanType;
+        const pensionDisplay = pensionName === 'pension8' ? 'บำนาญ 8' : 'บำนาญ 60';
+        
+        switch(fundingSource) {
+            case 'iWealthy': 
+                return 'iWealthy';
+            case 'pension': 
+                return pensionDisplay; // บำนาญ 8 หรือ บำนาญ 60
+            case 'hybrid': 
+                return `Hybrid (iWealthy + ${pensionDisplay})`;
+            default: 
+                return 'Funding';
+        }
+    };
+    const fundingDisplayName = getFundingDisplayName();
+
+
 
     return (
         <Document author="Your Name" title={`LTHC Report - ${formatDate(new Date())}`}>
@@ -462,9 +501,23 @@ export const LthcReportDocument: React.FC<LthcReportDocumentProps> = (props) => 
                     <Text style={styles.sectionTitle}>บทสรุปสำหรับผู้เอาประกัน </Text>
                     <Text style={styles.summaryText}>
                         แผนLTHCนี้ออกแบบมาเพื่อบริหารจัดการค่าใช้จ่ายสุขภาพระยะยาวอย่างมีประสิทธิภาพโดยเปรียบเทียบค่าใช้จ่ายรวมตลอดสัญญาระหว่างการจ่ายเบี้ยสุขภาพด้วยตนเอง ทั้งหมดกับการใช้แผน LTHC 
-                        {fundingSource !== 'none' && metrics.lthcNetBenefit > metrics.healthOnlyNetBenefit && (
-                            <Text style={styles.bold}> ซึ่งผลการวิเคราะห์แสดงให้เห็นว่าแผน LTHC ช่วยให้ได้รับผลประโยชน์เพิ่มขึ้น {formatNum(metrics.lthcNetBenefit - metrics.healthOnlyNetBenefit)} บาท</Text>
-                        )}
+                        <Text style={styles.bold}>
+                            {'\n'}
+                            1. กรณีจ่ายเบี้ยสุขภาพเองทั้งหมด: ผลประโยชน์สุทธิคือ 
+                            <Text style={{ color: getBenefitColor(metrics.healthOnlyNetBenefit) }}>
+                                {formatNum(metrics.healthOnlyNetBenefit)} บาท 
+                            </Text>
+                            
+                            {fundingSource !== 'none' && (
+                                <>
+                                {'\n'}
+                                2. กรณีใช้แผน LTHC: ผลประโยชน์สุทธิคือ 
+                                <Text style={{ color: getBenefitColor(metrics.lthcNetBenefit) }}>
+                                    {formatNum(metrics.lthcNetBenefit)} บาท
+                                </Text>
+                                </>
+                            )}
+                        </Text>
                     </Text>
                 </View>
 
@@ -499,7 +552,7 @@ export const LthcReportDocument: React.FC<LthcReportDocumentProps> = (props) => 
                         {/* --- Column 2: Funding Plan --- */}
                         {fundingSource === 'iWealthy' && iWealthySummary && (
                             <View style={styles.planDetailsColumn}>
-                                <Text style={styles.planDetailsTitle}>สรุปแผนจัดหาทุน (iWealthy)</Text>
+                                <Text style={styles.planDetailsTitle}>สรุปแผน LTHC (iWealthy)</Text>
                                 <View style={styles.planDetailsRow}><Text style={styles.planDetailsLabel}>คุ้มครองชีวิตเริ่มต้น:</Text><Text style={styles.planDetailsValue}>{formatNum(iWealthySummary.initialSA)} บาท</Text></View>
                                 <View style={styles.planDetailsRow}><Text style={styles.planDetailsLabel}>เบี้ยประกัน (RPP+RTU):</Text><Text style={styles.planDetailsValue}>{formatNum(iWealthySummary.premiumPerYear)} บาท/ปี</Text></View>
                                 <View style={styles.planDetailsRow}><Text style={styles.planDetailsLabel}>ระยะเวลาชำระเบี้ย:</Text><Text style={styles.planDetailsValue}>{iWealthySummary.ppt} ปี</Text></View>
@@ -535,7 +588,7 @@ export const LthcReportDocument: React.FC<LthcReportDocumentProps> = (props) => 
 
                         {fundingSource === 'hybrid' && iWealthySummary && pensionSummary && (
                             <View style={styles.planDetailsColumn}>
-                                <Text style={styles.planDetailsTitle}>สรุปแผนจัดหาทุน (Hybrid: iWealthy + บำนาญ)</Text>
+                                <Text style={styles.planDetailsTitle}>สรุปแผนจัดหาทุน ({fundingDisplayName})</Text>
                                 
                                 {/* ส่วนบำนาญ (จำลองสีเขียว/teal) */}
                                 <View style={{padding: 6, backgroundColor: '#f0fdf4', borderWidth: 1, borderColor: '#dcfce7', borderRadius: 2, marginBottom: 5 }}>
@@ -637,7 +690,7 @@ export const LthcReportDocument: React.FC<LthcReportDocumentProps> = (props) => 
                                 <View style={{ backgroundColor: '#fef2f2', padding: 8, borderRadius: 4, borderWidth: 1, borderColor: '#fecaca', marginBottom: 8 }}>
                                     <Text style={{ fontSize: 8, color: '#6b7280', fontWeight: 'bold', marginBottom: 4 }}>เบี้ยที่จ่าย</Text>
                                     <Text style={{ fontSize: 8, marginBottom: 2 }}>• เบี้ยสุขภาพที่จ่ายเอง: <Text style={{ fontWeight: 'bold', color: '#dc2626' }}>{formatNum(metrics.lthcHealthPremiumPaidByUser)} บาท</Text></Text>
-                                    <Text style={{ fontSize: 8, marginBottom: 2 }}>• เบี้ย {fundingSource === 'iWealthy' ? 'iWealthy' : fundingSource === 'pension' ? 'บำนาญ' : 'Funding'}: <Text style={{ fontWeight: 'bold', color: '#2563eb' }}>{formatNum(metrics.lthcTotalFundingPremium)} บาท</Text></Text>
+                                    <Text style={{ fontSize: 8, marginBottom: 2 }}>• เบี้ย {fundingDisplayName}: <Text style={{ fontWeight: 'bold', color: '#2563eb' }}>{formatNum(metrics.lthcTotalFundingPremium)} บาท</Text></Text>
                                     <View style={{ borderTopWidth: 1, borderTopColor: '#fca5a5', paddingTop: 4, marginTop: 4 }}>
                                         <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#dc2626' }}>รวม: {formatNum(metrics.lthcTotalCombinedPremiumPaid)} บาท</Text>
                                     </View>
@@ -646,7 +699,7 @@ export const LthcReportDocument: React.FC<LthcReportDocumentProps> = (props) => 
                                 {/* กลุ่มผลประโยชน์ */}
                                 <View style={{ backgroundColor: '#faf5ff', padding: 8, borderRadius: 4, borderWidth: 1, borderColor: '#e9d5ff', marginBottom: 8 }}>
                                     <Text style={{ fontSize: 8, color: '#6b7280', fontWeight: 'bold', marginBottom: 4 }}>ผลประโยชน์รวม</Text>
-                                    <Text style={{ fontSize: 8, marginBottom: 2 }}>• ผลประโยชน์จาก {fundingSource === 'iWealthy' ? 'iWealthy' : fundingSource === 'pension' ? 'บำนาญ' : 'Funding'}: <Text style={{ fontWeight: 'bold', color: '#ea580c' }}>{formatNum(metrics.lthcFundingBenefits)} บาท</Text></Text>
+                                    <Text style={{ fontSize: 8, marginBottom: 2 }}>• ผลประโยชน์จาก {fundingDisplayName}: <Text style={{ fontWeight: 'bold', color: '#ea580c' }}>{formatNum(metrics.lthcFundingBenefits)} บาท</Text></Text>
                                     <Text style={{ fontSize: 8, marginBottom: 2 }}>• ทุนประกัน (Life Ready): <Text style={{ fontWeight: 'bold', color: '#16a34a' }}>{formatNum(metrics.lifeReadyMaturityBenefit)} บาท</Text></Text>
                                     <View style={{ borderTopWidth: 1, borderTopColor: '#d8b4fe', paddingTop: 4, marginTop: 4 }}>
                                         <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#9333ea' }}>รวม: {formatNum(metrics.lthcTotalBenefit)} บาท</Text>
@@ -675,7 +728,7 @@ export const LthcReportDocument: React.FC<LthcReportDocumentProps> = (props) => 
                     </View>
                     
                     {/* แสดงส่วนต่างผลประโยชน์ */}
-                    {fundingSource !== 'none' && (
+                    {/*{fundingSource !== 'none' && (
                         <View style={{
                             marginTop: 10,
                             padding: 10,
@@ -695,7 +748,7 @@ export const LthcReportDocument: React.FC<LthcReportDocumentProps> = (props) => 
                                 )}
                             </Text>
                         </View>
-                    )}
+                    )}*/}
                 </View>
             </Page>
             {chartImage && (
@@ -715,9 +768,9 @@ export const LthcReportDocument: React.FC<LthcReportDocumentProps> = (props) => 
                 <PageHeader />
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>ตารางเปรียบเทียบค่าใช้จ่ายรายปี</Text>
-                    <ReportTable data={result} fundingSource={fundingSource} />
+                    <ReportTable data={dataToDisplay} fundingSource={fundingSource} fundingDisplayName={fundingDisplayName} />
                 </View>
-                <PageFooter pageNumber={2} totalPages={2} />
+                <PageFooter pageNumber={chartImage ? 3 : 2} totalPages={chartImage ? 3 : 2} />
             </Page>
         </Document>
     );

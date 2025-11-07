@@ -569,7 +569,6 @@ export default function LthcTablePage({ isReportMode }: { isReportMode?: boolean
                                                         }`}>
                                                             {row.age < 60 ? formatNum(0) : formatNum(Math.round(hybridNetCashflow))}
                                                         </td>
-                                                        
                                                         {isTotalCsvExpanded && (
                                                             <>
                                                                 <td className="px-2 py-2 whitespace-nowrap text-right text-purple-600">{formatNum(row.pensionEOYCSV)}</td> {/* 12. มูลค่าเวนคืน (บำนาญ) */}
@@ -578,8 +577,7 @@ export default function LthcTablePage({ isReportMode }: { isReportMode?: boolean
                                                         )}
                                                         <td className="px-2 py-2 whitespace-nowrap text-right font-bold text-purple-700 bg-purple-50"> {/* 14. มูลค่าเวนคืนรวม */}
                                                             {formatNum(totalCsvValue)}
-                                                        </td>
-                                                        
+                                                        </td> 
                                                         {isTotalDbExpanded && (
                                                             <>
                                                                 <td className="px-2 py-2 whitespace-nowrap text-right">{formatNum(row.iWealthyEoyDeathBenefit)}</td> {/* 15. DB iW */}
@@ -587,7 +585,6 @@ export default function LthcTablePage({ isReportMode }: { isReportMode?: boolean
                                                             </>
                                                         )}
                                                         <td className="px-2 py-2 whitespace-nowrap text-right font-bold text-purple-700 bg-purple-100">{formatNum(row.totalCombinedDeathBenefit)}</td> {/* 17. คุ้มครองชีวิตรวม (สุดท้าย) */}
-                                                        
                                                     </>
                                                 )}
                                             </>

@@ -94,7 +94,7 @@ export const LthcReportPage = () => {
     iWealthyMode, manualRpp, manualRtu, manualInvestmentReturn, manualIWealthyPPT, manualWithdrawalStartAge,
     autoInvestmentReturn, autoIWealthyPPT, lthcControls, 
     pensionMode, manualPensionPlanType, manualPensionPremium: _manualPremium, autoPensionPlanType, autoPensionPremium: _autoPremium,
-    pensionStartAge, pensionEndAge,showFullPensionTerm,
+    pensionStartAge, pensionEndAge, showFullPensionTerm,
     } = useAppStore();
 
     const getFundingDisplayName = () => {
@@ -287,6 +287,7 @@ export const LthcReportPage = () => {
                                 autoPensionPlanType={autoPensionPlanType}
                                 pensionStartAge={pensionStartAge}
                                 pensionEndAge={pensionEndAge}
+                                showFullPensionTerm={showFullPensionTerm}
                             />
                         }
                         fileName={`LTHC-Report-${new Date().toISOString().slice(0,10)}.pdf`}
