@@ -1,10 +1,12 @@
 // allowpin.ts
 
-// 1. ดึงค่าจาก .env
-const envPins: string = import.meta.env.VITE_ALLOWED_PINS || "";
+// ตรวจสอบว่ามีค่าจาก Vite (หน้าบ้าน) หรือ Node.js (หลังบ้าน)
+const rawPins = 
+  (import.meta.env && import.meta.env.VITE_ALLOWED_PINS) || // สำหรับ React/Vite
+  (process && process.env && process.env.VITE_ALLOWED_PINS) || // สำหรับ Node.js (Backend)
+  "";
 
-// 2. ระบุ Type ให้ pin เป็น : string เพื่อแก้ error ts(7006)
-export const allowedPins: string[] = envPins
+export const allowedPins: string[] = rawPins
   .split(',')
-  .map((pin: string) => pin.trim()) // ใส่ : string ตรงนี้
+  .map((pin: string) => pin.trim())
   .filter((pin: string) => pin !== "");
