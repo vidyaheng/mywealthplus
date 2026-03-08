@@ -5,31 +5,27 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // --- ส่วนของเดิมที่คุณมีอยู่ ---
   plugins: [react(), tsconfigPaths()],
   resolve: {
     alias: {
-      // alias สำหรับ shadcn/ui
       '@': path.resolve(__dirname, './src'),
-      // --- [เพิ่ม] polyfill สำหรับ Buffer ---
       'buffer': 'buffer',
     },
   },
 
-  // --- [เพิ่ม] define object ที่จำเป็น ---
+  // แก้ไขส่วน define ให้รองรับการดึงค่า VITE_ALLOWED_PINS
   define: {
-    'process.env': {},
+    // แทนที่จะปล่อยว่าง ให้ระบุตัวแปรที่เราต้องการใช้ลงไปครับ
+    'process.env.VITE_ALLOWED_PINS': JSON.stringify(process.env.VITE_ALLOWED_PINS),
+    'process.env.VITE_ADMIN_PIN': JSON.stringify(process.env.VITE_ADMIN_PIN),
+    // คงส่วน global ไว้ตามเดิมของคุณ
     global: {},
   },
 
-  // --- ส่วนของ Proxy ที่มีอยู่แล้ว ---
   server: {
     proxy: {
-      // เมื่อมีการเรียก path ที่ขึ้นต้นด้วย /api
       '/api': {
-        // ให้ส่งต่อไปที่ backend server ของเราที่รันอยู่ที่ port 3001
         target: 'http://localhost:3001',
-        // จำเป็นสำหรับการเปลี่ยน host
         changeOrigin: true,
       },
     },
