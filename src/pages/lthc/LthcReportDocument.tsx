@@ -1,0 +1,777 @@
+import React, { useMemo } from 'react';
+import { Page, Text, View, Document, StyleSheet, Font, Image } from '@react-pdf/renderer';
+import type { AnnualLTHCOutputRow } from '@/hooks/useLthcTypes';
+
+// --- 1. ลงทะเบียนฟอนต์ (ใช้ของเดิมได้เลย) ---
+Font.register({
+    family: 'Sarabun',
+    fonts: [
+        { src: '/fonts/Sarabun-Regular.ttf', fontWeight: 'normal' },
+        { src: '/fonts/Sarabun-Bold.ttf', fontWeight: 'bold' },
+    ],
+});
+
+// --- ⭐ 2. Stylesheet (อัปเกรดใหม่ทั้งหมดสำหรับตารางที่ซับซ้อนขึ้น) ---
+const styles = StyleSheet.create({
+    // General Styles (เหมือนเดิม)
+    page: { fontFamily: 'Sarabun', fontSize: 8, padding: '20px', color: '#334155' },
+    bold: { fontWeight: 'bold' },
+    header: { marginBottom: 10, paddingBottom: 10 },
+    headerTitle: { fontSize: 16, fontWeight: 'bold', color: '#15803d' },
+    headerSubtitle: { fontSize: 11, color: '#475569' },
+    footer: { position: 'absolute', bottom: 10, left: 30, right: 30, textAlign: 'center', fontSize: 7, color: '#94a3b8' },
+    section: { marginBottom: 10 },
+    sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#166534', borderBottomWidth: 1.5, borderBottomColor: '#86efac', paddingBottom: 3, marginBottom: 5 },
+    
+    planDetailsContainer: {
+        flexDirection: 'row',
+        gap: 15,
+        backgroundColor: '#f8fafc',
+        padding: 12,
+        borderRadius: 4,
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+    },
+    planDetailsColumn: {
+        flex: 1, // ทำให้แต่ละคอลัมน์กว้างเท่ากัน
+        gap: 6, // ระยะห่างระหว่างบรรทัดในคอลัมน์
+    },
+    planDetailsTitle: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: '#334155',
+        marginBottom: 3,
+    },
+    planDetailsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    planDetailsLabel: {
+        color: '#475569',
+    },
+    planDetailsValue: {
+        fontWeight: 'bold',
+    },
+    planDetailsTotalRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        borderTopWidth: 1,
+        borderTopColor: '#e2e8f0',
+        paddingTop: 5,
+        marginTop: 3,
+        fontWeight: 'bold',
+    },
+
+    bgHealthPlan: { backgroundColor: '#e0f2fe' }, // สีฟ้าอ่อน
+    bgLthcPlan: { backgroundColor: '#f0fdf4' },   // สีเขียวอ่อน
+
+    // Table Styles (แก้ไขใหม่)
+    table: { width: '100%' },
+    tableRow: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#e2e8f0' },
+    // --- Header Styles ---
+    tableHeaderRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#94a3b8', backgroundColor: '#f1f5f9', fontWeight: 'bold' },
+    tableColHeader: { padding: 4, textAlign: 'center', borderRightWidth: 0.5, borderRightColor: '#cbd5e1' },
+    tableColHeaderMain: { padding: 4, textAlign: 'center', borderBottomWidth: 0.5, borderBottomColor: '#94a3b8' },
+    // --- Body Styles ---
+    tableCol: { padding: 4, textAlign: 'right', borderRightWidth: 0.5, borderRightColor: '#e2e8f0' },
+    colCenter: { textAlign: 'center' },
+    // --- Column Widths ---
+    colAge: { width: '8%' },
+    colHealthPremium: { width: '13%' },
+    colHealthDB: { width: '13%' },
+    colLthcHealthPremium: { width: '11%', backgroundColor: '#f0fdf4' },
+    colLthcIwPremium: { width: '11%', backgroundColor: '#f0f8ff' },
+    colLthcIwWithdrawal: { width: '11%', backgroundColor: '#f0f8ff' },
+    colLthcIwAV: { width: '11%', backgroundColor: '#f0f8ff' },
+    colLthcTotalDB: { width: '14%' },
+    
+    // ... (Styles อื่นๆ เหมือนเดิม) ...
+    summaryText: { lineHeight: 1.6, textAlign: 'justify' },
+    dataBox: { backgroundColor: '#f0fdf4', padding: '8px 10px', borderRadius: 4, borderWidth: 1, borderColor: '#dcfce7' },
+    dataGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+    dataGridItem: { width: '60%', padding: '4px 0' },
+    kpiContainer: { flexDirection: 'row', gap: 10 },
+    kpiCard: { backgroundColor: '#f8fafc', padding: 8, borderRadius: 4, borderWidth: 1, borderColor: '#e2e8f0', flexGrow: 1, flexBasis: '30%' },
+    kpiTitle: { fontSize: 9, color: '#64748b', marginBottom: 2 },
+    kpiValue: { fontSize: 16, fontWeight: 'bold', color: '#1e3a8a' },
+    kpiUnit: { fontSize: 10 },
+    kpiDescription: { fontSize: 8, color: '#64748b', marginTop: 2 },
+    chartImage: { width: '100%', height: 'auto', marginTop: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 4 },
+
+    legendContainer: {
+        display: 'flex',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: 12,
+        marginTop: 5,
+        padding: 5,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        borderRadius: 4,
+        backgroundColor: '#f8fafc'
+    },
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    legendColorBox: {
+        width: 10,
+        height: 10,
+        marginRight: 5,
+        borderRadius: 2,
+    },
+    legendText: {
+        fontSize: 8,
+        color: '#475569'
+    },
+});
+
+// --- Helper Functions ---
+const formatDate = (date: Date) => date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+const formatNum = (val: number | null | undefined) => val ? val.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '-';
+// ⭐ NEW HELPER: ฟังก์ชันกำหนดสีตามค่า
+const getBenefitColor = (netBenefit: number | null | undefined) => {
+    if (netBenefit === null || netBenefit === undefined || netBenefit === 0) return '#334155'; // สีกลางสำหรับ 0 หรือ -
+    return netBenefit < 0 ? '#dc2626' : '#2563eb'; // แดงสำหรับติดลบ, น้ำเงินสำหรับบวก
+};
+// --- Props Interface สำหรับ LTHC ---
+
+interface ControlsState {
+    showCumulativeHealthPremium: boolean;
+    showLthcCombinedPremium: boolean;
+    showLthcDeathBenefit: boolean;
+    showIWealthyAV: boolean;
+    showIWealthyWithdrawal: boolean;
+    showPensionAnnuity: boolean;
+}
+
+interface LthcReportDocumentProps {
+    result: AnnualLTHCOutputRow[] | null;
+    metrics: any;
+    chartImage: string | null;
+    fundingSource: string;
+    controls: ControlsState;
+    iWealthyMode: string;
+    manualRpp: number;
+    manualRtu: number;
+    manualInvestmentReturn: number;
+    autoInvestmentReturn: number;
+    manualIWealthyPPT: number;
+    autoIWealthyPPT: number;
+    manualWithdrawalStartAge: number; // เพิ่ม
+    selectedHealthPlans: any;
+    pensionMode: 'manual' | 'auto' | 'automatic';
+    manualPensionPlanType: string;
+    autoPensionPlanType: string;
+    pensionStartAge: number;
+    pensionEndAge: number;
+    showFullPensionTerm: boolean;
+    
+}
+
+// --- Reusable Components ---
+const PageHeader = () => (
+    <View style={styles.header}>
+        <Text style={styles.headerTitle}>รายงานสรุปผลประโยชน์ แผนสุขภาพระยะยาว (LTHC)</Text>
+        <Text style={styles.headerSubtitle}>จัดทำเพื่อประกอบการตัดสินใจวางแผนทางการเงิน </Text>
+    </View>
+);
+
+//const KPICard = ({ title, value, unit = '', description = '' }: { title: string, value: string | number, unit?: string, description?: string }) => (
+//    <View style={styles.kpiCard}>
+//        <Text style={styles.kpiTitle}>{title}</Text>
+//        <Text style={styles.kpiValue}>
+//            {value}
+//            <Text style={styles.kpiUnit}>{` ${unit}`}</Text>
+//        </Text>
+//        {description && <Text style={styles.kpiDescription}>{description}</Text>}
+//    </View>
+//);
+
+const PageFooter = ({ pageNumber, totalPages }: { pageNumber: number, totalPages: number }) => (
+    <Text style={styles.footer} fixed>
+        เอกสารฉบับนี้เพื่อประกอบการเสนอขายเท่านั้น | จัดทำ ณ วันที่ {formatDate(new Date())} | หน้า {pageNumber} / {totalPages}
+    </Text>
+);
+
+// --- ⭐ 3. ReportTable Component (ยกเครื่องใหม่ทั้งหมด) ---
+const ReportTable = ({ data, fundingSource, fundingDisplayName }: { data: AnnualLTHCOutputRow[], fundingSource: string, fundingDisplayName: string }) => {
+    const showLthcCols = fundingSource !== 'none'; // แสดงคอลัมน์ LTHC สำหรับทุกแผนที่ไม่ใช่ 'none'
+    const showIWealthyCols = fundingSource === 'iWealthy' || fundingSource === 'hybrid';
+    const showPensionCols = fundingSource === 'pension' || fundingSource === 'hybrid';
+
+    return (
+        <View style={styles.table}>
+            {/* --- Table Header --- */}
+            <View fixed>
+                <View style={styles.tableHeaderRow}>
+                    <View style={[styles.tableColHeaderMain, { width: '16%' }]}><Text>ข้อมูลรายปี</Text></View>
+                    <View style={[styles.tableColHeaderMain, styles.bgHealthPlan, { width: '26%', backgroundColor: '#f0f9ff' }]}><Text>แผนสุขภาพ (จ่ายเอง)</Text></View>
+                    {showLthcCols && (
+                        <View style={[styles.tableColHeaderMain, styles.bgLthcPlan, { width: '58%', backgroundColor: '#f0fdf4' }]}>
+                            <Text>แผน LTHC ({fundingDisplayName})</Text>
+                        </View>
+                    )}
+                </View>
+                <View style={styles.tableHeaderRow}>
+                    <View style={[styles.tableColHeader, styles.colAge]}><Text>ปีที่</Text></View>
+                    <View style={[styles.tableColHeader, styles.colAge]}><Text>อายุ</Text></View>
+                    <View style={[styles.tableColHeader, styles.colHealthPremium, styles.bgHealthPlan, { backgroundColor: '#f0f9ff' }]}><Text>เบี้ย</Text></View>
+                    <View style={[styles.tableColHeader, styles.colHealthDB, styles.bgHealthPlan, { backgroundColor: '#f0f9ff' }]}><Text>คุ้มครองชีวิต</Text></View>
+                    
+                    {showLthcCols && (
+                        <>
+                            <View style={[styles.tableColHeader, styles.colLthcHealthPremium, styles.bgLthcPlan]}><Text>เบี้ยสุขภาพ</Text></View>
+                            
+                            {/* ⭐ Logic สำหรับ Hybrid/Non-Hybrid ⭐ */}
+                            {fundingSource === 'hybrid' ? (
+                                <>
+                                    {/* 1. Hybrid: แสดงชื่อคอลัมน์แบบรวม */}
+                                    <View style={[styles.tableColHeader, styles.colLthcIwPremium, styles.bgLthcPlan]}><Text>เบี้ยรวม</Text></View>
+                                    <View style={[styles.tableColHeader, styles.colLthcIwWithdrawal, styles.bgLthcPlan]}><Text>เงินถอน/บำนาญ </Text></View>
+                                    <View style={[styles.tableColHeader, styles.colLthcIwAV, styles.bgLthcPlan]}><Text>มูลค่ารวม</Text></View>
+                                </>
+                            ) : (
+                                /* 2. โหมดเดี่ยว: แสดงชื่อคอลัมน์ตามแผน */
+                                <>
+                                    {showIWealthyCols && (
+                                        <>
+                                            <View style={[styles.tableColHeader, styles.colLthcIwPremium, styles.bgLthcPlan]}><Text>เบี้ย iW</Text></View>
+                                            <View style={[styles.tableColHeader, styles.colLthcIwWithdrawal, styles.bgLthcPlan]}><Text>เงินถอน iW</Text></View>
+                                            <View style={[styles.tableColHeader, styles.colLthcIwAV, styles.bgLthcPlan]}><Text>มูลค่า iW</Text></View>
+                                        </>
+                                    )}
+                                    {showPensionCols && (
+                                        <>
+                                            <View style={[styles.tableColHeader, styles.colLthcIwPremium, styles.bgLthcPlan]}><Text>เบี้ยบำนาญ </Text></View>
+                                            <View style={[styles.tableColHeader, styles.colLthcIwWithdrawal, styles.bgLthcPlan]}><Text>เงินบำนาญ </Text></View>
+                                            <View style={[styles.tableColHeader, styles.colLthcIwAV, styles.bgLthcPlan]}><Text>มูลค่าเวนคืน</Text></View>
+                                        </>
+                                    )}
+                                </>
+                            )}
+                            
+                            <View style={[styles.tableColHeader, styles.colLthcTotalDB, styles.bgLthcPlan]}><Text>คุ้มครองชีวิตรวม</Text></View>
+                        </>
+                    )}
+                </View>
+            </View>
+
+            {/* --- Table Body --- */}
+            {data.map((row) => {
+                const healthPremiumPaidByUser = row.age < 60 ? row.totalHealthPremium : 0;
+                
+                const combinedFundingPremium = (row.iWealthyTotalPremium ?? 0) + (row.pensionPremium ?? 0);
+                const combinedWithdrawalPayout = (row.iWealthyWithdrawal ?? 0) + (row.pensionPayout ?? 0);
+                const combinedAVCSV = (row.iWealthyEoyAccountValue ?? 0) + (row.pensionEOYCSV ?? 0);
+
+                return (
+                    <View style={styles.tableRow} key={row.policyYear} wrap={false}>
+                        {/* คอลัมน์ ปีที่, อายุ, แผนสุขภาพ (เดิม) */}
+                        <View style={[styles.tableCol, styles.colAge, styles.colCenter]}><Text>{row.policyYear}</Text></View>
+                        <View style={[styles.tableCol, styles.colAge, styles.colCenter, styles.bold]}><Text>{row.age}</Text></View>
+                        <View style={[styles.tableCol, styles.colHealthPremium, styles.bgHealthPlan]}><Text>{formatNum(row.totalHealthPremium)}</Text></View>
+                        <View style={[styles.tableCol, styles.colHealthDB, styles.bgHealthPlan]}><Text>{formatNum(row.lifeReadyDeathBenefit)}</Text></View>
+
+                        {/* --- ส่วน LTHC --- */}
+                        {showLthcCols && (
+                            <>
+                                {/* Col 1: เบี้ยสุขภาพ (จ่ายเองสำหรับ LTHC) */}
+                                <View style={[styles.tableCol, styles.colLthcHealthPremium, styles.bgLthcPlan]}><Text>{formatNum(healthPremiumPaidByUser)}</Text></View>
+
+                                {/* ⭐ A. Logic สำหรับโหมด Hybrid (แสดงผลรวม 3 คอลัมน์) ⭐ */}
+                                {fundingSource === 'hybrid' && (
+                                    <>
+                                        {/* Col 2: เบี้ย Funding รวม */}
+                                        <View style={[styles.tableCol, styles.colLthcIwPremium, styles.bgLthcPlan]}>
+                                            <Text>{formatNum(combinedFundingPremium)}</Text>
+                                        </View>
+                                        {/* Col 3: เงินถอน/บำนาญรวม */}
+                                        <View style={[styles.tableCol, styles.colLthcIwWithdrawal, styles.bgLthcPlan]}>
+                                            <Text>{formatNum(combinedWithdrawalPayout)}</Text>
+                                        </View>
+                                        {/* Col 4: มูลค่ารวม */}
+                                        <View style={[styles.tableCol, styles.colLthcIwAV, styles.bgLthcPlan]}>
+                                            <Text>{formatNum(combinedAVCSV)}</Text>
+                                        </View>
+                                    </>
+                                )}
+                                
+                                {/* ⭐ B. Logic สำหรับโหมดเดี่ยว (แสดงผลแยก 3 คอลัมน์) ⭐ */}
+                                {fundingSource !== 'hybrid' && (
+                                    <>
+                                        {showIWealthyCols && (
+                                            <>
+                                                <View style={[styles.tableCol, styles.colLthcIwPremium, styles.bgLthcPlan]}><Text>{formatNum(row.iWealthyTotalPremium ?? 0)}</Text></View>
+                                                <View style={[styles.tableCol, styles.colLthcIwWithdrawal, styles.bgLthcPlan]}><Text>{formatNum(row.iWealthyWithdrawal ?? 0)}</Text></View>
+                                                <View style={[styles.tableCol, styles.colLthcIwAV, styles.bgLthcPlan]}><Text>{formatNum(row.iWealthyEoyAccountValue ?? 0)}</Text></View>
+                                            </>
+                                        )}
+                                        {showPensionCols && (
+                                            <>
+                                                <View style={[styles.tableCol, styles.colLthcIwPremium, styles.bgLthcPlan]}><Text>{formatNum(row.pensionPremium ?? 0)}</Text></View>
+                                                <View style={[styles.tableCol, styles.colLthcIwWithdrawal, styles.bgLthcPlan]}><Text>{formatNum(row.pensionPayout ?? 0)}</Text></View>
+                                                <View style={[styles.tableCol, styles.colLthcIwAV, styles.bgLthcPlan]}><Text>{formatNum(row.pensionEOYCSV ?? 0)}</Text></View>
+                                            </>
+                                        )}
+                                    </>
+                                )}
+
+                                {/* Col 5: คุ้มครองชีวิตรวม (อยู่สุดท้าย) */}
+                                <View style={[styles.tableCol, styles.colLthcTotalDB, styles.bold, styles.bgLthcPlan]}><Text>{formatNum(row.totalCombinedDeathBenefit)}</Text></View>
+                            </>
+                        )}
+                    </View>
+                )
+            })}
+        </View>
+    );
+};
+
+const lineColors = {
+    healthPremiumAlone: "#ff7300",
+    lthcCombinedPremium: "#387908",
+    lthcHealthPaidByUser: "#eab308",
+    iWealthyPremium: "#22c55e",
+    pensionPremium: "#14b8a6",
+    healthDeathBenefit: "#f97316",
+    lthcDeathBenefit: "#8b5cf6",
+    iWealthyAV: "#16a34a",
+    pensionCSV: "#10b981",
+    iWealthyWithdrawal: '#3b82f6',
+    pensionAnnuity: '#d946ef',
+    hybridTotalWithdrawal: '#84cc16'
+};
+
+const LegendItem = ({ color, text }: { color: string, text: string }) => (
+    <View style={styles.legendItem}>
+        <View style={[styles.legendColorBox, { backgroundColor: color }]} />
+        <Text style={styles.legendText}>{text}</Text>
+    </View>
+);
+
+const ChartLegend = ({ fundingSource, controls }: { fundingSource: string, controls: any }) => {
+    const showIWealthy = fundingSource === 'iWealthy' || fundingSource === 'hybrid';
+    const showPension = fundingSource === 'pension' || fundingSource === 'hybrid';
+
+    if (!controls) return null;
+
+    return (
+        <View style={styles.legendContainer}>
+            {controls.showPremiums && controls.showHealthPremiumAlone && <LegendItem color={lineColors.healthPremiumAlone} text="เบี้ยสุขภาพ (จ่ายเอง)" />}
+            {controls.showPremiums && controls.showLthcCombinedPremium && <LegendItem color={lineColors.lthcCombinedPremium} text="เบี้ย LTHC (รวม)" />}
+            {controls.showPremiums && controls.showLthcHealthPaidByUser && <LegendItem color={lineColors.lthcHealthPaidByUser} text="เบี้ยสุขภาพ (ในแผน LTHC)" />}
+            
+            {controls.showPremiums && showIWealthy && controls.showIWealthyPremium && <LegendItem color={lineColors.iWealthyPremium} text="เบี้ย iWealthy" />}
+            {controls.showPremiums && showPension && controls.showPensionPremium && <LegendItem color={lineColors.pensionPremium} text="เบี้ยบำนาญ" />}
+            
+            {controls.showDeathBenefits && controls.showHealthDeathBenefit && <LegendItem color={lineColors.healthDeathBenefit} text="คุ้มครองชีวิตแผนสุขภาพ" />}
+            {controls.showDeathBenefits && controls.showLthcDeathBenefit && <LegendItem color={lineColors.lthcDeathBenefit} text="คุ้มครองชีวิต LTHC" />}
+            
+            {controls.showAccountValue && showIWealthy && controls.showIWealthyAV && <LegendItem color={lineColors.iWealthyAV} text="มูลค่า iWealthy" />}
+            {controls.showAccountValue && showPension && controls.showPensionCSV && <LegendItem color={lineColors.pensionCSV} text="มูลค่าเวนคืนบำนาญ" />}
+
+            {controls.showAccountValue && showIWealthy && controls.showIWealthyWithdrawal && <LegendItem color={lineColors.iWealthyWithdrawal} text="เงินถอน iWealthy" />}
+            {controls.showAccountValue && showPension && controls.showPensionAnnuity && <LegendItem color={lineColors.pensionAnnuity} text="เงินบำนาญ" />}
+            {controls.showAccountValue && fundingSource === 'hybrid' && controls.showHybridWithdrawal && <LegendItem color={lineColors.hybridTotalWithdrawal} text="เงินถอนรวม (Hybrid)" />}
+        </View>
+    );
+};
+
+// --- Main Document Component for LTHC ---
+export const LthcReportDocument: React.FC<LthcReportDocumentProps> = (props) => {
+    const { 
+        result, metrics, chartImage, fundingSource, iWealthyMode, manualRpp, manualRtu,
+        manualInvestmentReturn, autoInvestmentReturn, manualIWealthyPPT, autoIWealthyPPT, manualWithdrawalStartAge,
+        selectedHealthPlans, controls,
+        pensionMode,
+        manualPensionPlanType,
+        autoPensionPlanType,
+        pensionStartAge,
+        pensionEndAge,
+        showFullPensionTerm
+    } = props;
+
+    if (!result || !metrics) {
+        return <Document><Page><Text>ไม่มีข้อมูล</Text></Page></Document>;
+    }
+
+    // --- ✅ 3. สร้าง Logic การสร้างข้อความไว้ในนี้เลย ---
+
+    const firstYearPremiums = useMemo(() => {
+        if (!result) return null;
+        // ดึงเบี้ยปีแรกจาก row แรกของผลลัพธ์
+        const firstRow = result[0];
+        return {
+            lr: firstRow.lifeReadyPremium,
+            ihu: firstRow.iHealthyUltraPremium,
+            meb: firstRow.mebPremium,
+            total: firstRow.totalHealthPremium,
+        };
+    }, [result]);
+
+    const iWealthySummary = useMemo(() => {
+        // 1. ตรวจสอบว่ามี result และมีแถวแรกหรือไม่
+        if (!result || !result[0] || (fundingSource !== 'iWealthy' && fundingSource !== 'hybrid')) return null;
+
+        // 2. ⭐ ประกาศตัวแปร 'firstRow' ที่นี่ ⭐
+        const firstRow = result[0]; 
+
+        // 3. ใช้ firstRow เพื่อดึงค่าที่เหลือ
+        const initialSA = firstRow.iWealthyEoyDeathBenefit ?? 0;
+        const premiumPerYear = iWealthyMode === 'manual' 
+            ? (manualRpp + manualRtu) 
+            : (firstRow.iWealthyTotalPremium ?? 0); // ถูกต้อง
+        
+        const ppt = iWealthyMode === 'manual' ? manualIWealthyPPT : autoIWealthyPPT;
+        const returnRate = iWealthyMode === 'manual' ? manualInvestmentReturn : autoInvestmentReturn;
+        const withdrawalStartAge = iWealthyMode === 'manual' ? manualWithdrawalStartAge : 'ตามแผน';
+        
+        // ที่เหลือ
+        const totalWithdrawals = result.reduce((sum: number, row: AnnualLTHCOutputRow) => sum + (row.iWealthyWithdrawal || 0), 0);
+
+        const totalPremiumPaid = premiumPerYear * ppt;
+
+        return { initialSA, premiumPerYear, totalPremiumPaid, ppt, returnRate, withdrawalStartAge, totalWithdrawals };
+    }, [
+        result, fundingSource, iWealthyMode, 
+        manualRpp, manualRtu, manualIWealthyPPT, 
+        autoIWealthyPPT, manualInvestmentReturn, 
+        autoInvestmentReturn, manualWithdrawalStartAge
+    ]);
+
+    const pensionSummary = useMemo(() => {
+        if (!result || (fundingSource !== 'pension' && fundingSource !== 'hybrid')) return null;
+        //const firstRow = result[0];
+        const totalPremium = result.reduce((sum: number, row: AnnualLTHCOutputRow) => sum + (row.pensionPremium || 0), 0); // ⭐ คำนวณเบี้ยรวม
+        const totalPayout = result.reduce((sum: number, row: AnnualLTHCOutputRow) => sum + (row.pensionPayout || 0), 0);
+        const planType = pensionMode === 'manual' ? manualPensionPlanType : autoPensionPlanType;
+
+        return { 
+        totalPremium, 
+        totalPayout, 
+        planType, // ⭐ เพิ่ม: ชื่อแบบประกัน
+        pensionStartAge, // ⭐ เพิ่ม: อายุเริ่มต้น
+        pensionEndAge, // ⭐ เพิ่ม: อายุสิ้นสุด
+    };
+}, [result, fundingSource, pensionMode, manualPensionPlanType, autoPensionPlanType, pensionStartAge, pensionEndAge]);
+
+    const dataToDisplay = useMemo(() => {
+        if (!result) return [];
+
+        let maxAge = 99;
+        // หากเป็นแผนบำนาญ (pension) หรือ Hybrid และยังไม่ได้ขยาย
+        if ((fundingSource === 'pension' || fundingSource === 'hybrid') && !showFullPensionTerm) {
+            maxAge = 88;
+        }
+
+        // หากเป็นแผนบำนาญ/Hybrid และมีการขยาย (showFullPensionTerm = true) จะใช้ 99
+        // หากเป็น iWealthy จะใช้ 99 เสมอ
+
+        return result.filter(row => row.age <= maxAge);
+    }, [result, fundingSource, showFullPensionTerm]);
+
+    const getFundingDisplayName = () => {
+        const pensionName = pensionMode === 'manual' ? manualPensionPlanType : autoPensionPlanType;
+        const pensionDisplay = pensionName === 'pension8' ? 'บำนาญ 8' : 'บำนาญ 60';
+        
+        switch(fundingSource) {
+            case 'iWealthy': 
+                return 'iWealthy';
+            case 'pension': 
+                return pensionDisplay; // บำนาญ 8 หรือ บำนาญ 60
+            case 'hybrid': 
+                return `Hybrid (iWealthy + ${pensionDisplay})`;
+            default: 
+                return 'Funding';
+        }
+    };
+    const fundingDisplayName = getFundingDisplayName();
+
+
+
+    return (
+        <Document author="Your Name" title={`LTHC Report - ${formatDate(new Date())}`}>
+            {/* Page 1: Summary & KPIs */}
+            <Page size="A4" style={styles.page}>
+                <PageHeader />
+                
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>บทสรุปสำหรับผู้เอาประกัน </Text>
+                    <Text style={styles.summaryText}>
+                        แผนLTHCนี้ออกแบบมาเพื่อบริหารจัดการค่าใช้จ่ายสุขภาพระยะยาวอย่างมีประสิทธิภาพโดยเปรียบเทียบค่าใช้จ่ายรวมตลอดสัญญาระหว่างการจ่ายเบี้ยสุขภาพด้วยตนเอง ทั้งหมดกับการใช้แผน LTHC 
+                        <Text style={styles.bold}>
+                            {'\n'}
+                            1. กรณีจ่ายเบี้ยสุขภาพเองทั้งหมด: ผลประโยชน์สุทธิคือ 
+                            <Text style={{ color: getBenefitColor(metrics.healthOnlyNetBenefit) }}>
+                                {formatNum(metrics.healthOnlyNetBenefit)} บาท 
+                            </Text>
+                            
+                            {fundingSource !== 'none' && (
+                                <>
+                                {'\n'}
+                                2. กรณีใช้แผน LTHC: ผลประโยชน์สุทธิคือ 
+                                <Text style={{ color: getBenefitColor(metrics.lthcNetBenefit) }}>
+                                    {formatNum(metrics.lthcNetBenefit)} บาท
+                                </Text>
+                                </>
+                            )}
+                        </Text>
+                    </Text>
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>ข้อมูลเบื้องต้นของแผน</Text>
+                    <View style={styles.planDetailsContainer}>
+                        {/* --- Column 1: Health Plan --- */}
+                        <View style={styles.planDetailsColumn}>
+                            <Text style={styles.planDetailsTitle}>สรุปแผนความคุ้มครองสุขภาพ</Text>
+                            <View style={styles.planDetailsRow}>
+                                <Text style={styles.planDetailsLabel}>สัญญาหลัก LifeReady:</Text>
+                                <Text style={styles.planDetailsValue}>{formatNum(firstYearPremiums?.lr)} บาท/ปี</Text>
+                            </View>
+                            {selectedHealthPlans.iHealthyUltraPlan && (
+                                <View style={styles.planDetailsRow}>
+                                    <Text style={styles.planDetailsLabel}>iHealthy Ultra ({selectedHealthPlans.iHealthyUltraPlan}):</Text>
+                                    <Text style={styles.planDetailsValue}>{formatNum(firstYearPremiums?.ihu)} บาท/ปี</Text>
+                                </View>
+                            )}
+                            {selectedHealthPlans.mebPlan && (
+                                <View style={styles.planDetailsRow}>
+                                    <Text style={styles.planDetailsLabel}>MEB (ค่าชดเชย {selectedHealthPlans.mebPlan}):</Text>
+                                    <Text style={styles.planDetailsValue}>{formatNum(firstYearPremiums?.meb)} บาท/ปี</Text>
+                                </View>
+                            )}
+                            <View style={styles.planDetailsTotalRow}>
+                                <Text>เบี้ยสุขภาพรวมปีแรก:</Text>
+                                <Text>{formatNum(firstYearPremiums?.total)} บาท</Text>
+                            </View>
+                        </View>
+
+                        {/* --- Column 2: Funding Plan --- */}
+                        {fundingSource === 'iWealthy' && iWealthySummary && (
+                            <View style={styles.planDetailsColumn}>
+                                <Text style={styles.planDetailsTitle}>สรุปแผน LTHC (iWealthy)</Text>
+                                <View style={styles.planDetailsRow}><Text style={styles.planDetailsLabel}>คุ้มครองชีวิตเริ่มต้น:</Text><Text style={styles.planDetailsValue}>{formatNum(iWealthySummary.initialSA)} บาท</Text></View>
+                                <View style={styles.planDetailsRow}><Text style={styles.planDetailsLabel}>เบี้ยประกัน (RPP+RTU):</Text><Text style={styles.planDetailsValue}>{formatNum(iWealthySummary.premiumPerYear)} บาท/ปี</Text></View>
+                                <View style={styles.planDetailsRow}><Text style={styles.planDetailsLabel}>ระยะเวลาชำระเบี้ย:</Text><Text style={styles.planDetailsValue}>{iWealthySummary.ppt} ปี</Text></View>
+                                <View style={styles.planDetailsRow}><Text style={styles.planDetailsLabel}>ผลตอบแทนคาดหวัง:</Text><Text style={styles.planDetailsValue}>{iWealthySummary.returnRate} %</Text></View>
+                                <View style={styles.planDetailsRow}><Text style={styles.planDetailsLabel}>เริ่มถอนเพื่อจ่ายเบี้ยอายุ:</Text><Text style={styles.planDetailsValue}>{iWealthySummary.withdrawalStartAge}</Text></View>
+                                <View style={styles.planDetailsTotalRow}><Text>รวมถอนจาก iWealthy:</Text><Text>{formatNum(iWealthySummary.totalWithdrawals)} บาท</Text></View>
+                            </View>
+                        )}
+
+                        {fundingSource === 'pension' && pensionSummary && (
+                            <View style={styles.planDetailsColumn}>
+                                <Text style={styles.planDetailsTitle}>สรุปแผนจัดหาทุน (บำนาญ)</Text>
+                                
+                                <View style={styles.planDetailsRow}>
+                                    <Text style={styles.planDetailsLabel}>แบบประกัน:</Text>
+                                    <Text style={styles.planDetailsValue}>{pensionSummary.planType}</Text>
+                                </View>
+                                <View style={styles.planDetailsRow}>
+                                    <Text style={styles.planDetailsLabel}>เบี้ยประกันบำนาญ (รวม):</Text>
+                                    <Text style={styles.planDetailsValue}>{formatNum(pensionSummary.totalPremium)} บาท</Text>
+                                </View>
+                                <View style={styles.planDetailsRow}>
+                                    <Text style={styles.planDetailsLabel}>รับเงินบำนาญช่วงอายุ:</Text>
+                                    <Text style={styles.planDetailsValue}>{pensionSummary.pensionStartAge} - {pensionSummary.pensionEndAge} ปี</Text>
+                                </View>
+
+                                <View style={styles.planDetailsTotalRow}>
+                                    <Text>รวมเงินบำนาญที่ได้รับ:</Text>
+                                    <Text>{formatNum(pensionSummary.totalPayout)} บาท</Text>
+                                </View>
+                            </View>
+                        )}
+
+                        {fundingSource === 'hybrid' && iWealthySummary && pensionSummary && (
+                            <View style={styles.planDetailsColumn}>
+                                <Text style={styles.planDetailsTitle}>สรุปแผนจัดหาทุน ({fundingDisplayName})</Text>
+                                
+                                {/* ส่วนบำนาญ (จำลองสีเขียว/teal) */}
+                                <View style={{padding: 6, backgroundColor: '#f0fdf4', borderWidth: 1, borderColor: '#dcfce7', borderRadius: 2, marginBottom: 5 }}>
+                                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#047857', borderBottomWidth: 1, borderBottomColor: '#a7f3d0', paddingBottom: 3 }}>ส่วนบำนาญ:</Text>
+                                    <View style={{ gap: 2 }}>
+                                        <View style={styles.planDetailsRow}>
+                                            <Text style={styles.planDetailsLabel}>แบบประกัน:</Text>
+                                            <Text style={styles.planDetailsValue}>{pensionSummary.planType}</Text>
+                                        </View>
+                                        <View style={styles.planDetailsRow}>
+                                            <Text style={styles.planDetailsLabel}>รวมเบี้ยบำนาญ:</Text>
+                                            <Text style={styles.planDetailsValue}>{formatNum(pensionSummary.totalPremium)} บาท</Text>
+                                        </View>
+                                        <View style={styles.planDetailsRow}>
+                                            <Text style={styles.planDetailsLabel}>รวมเงินบำนาญที่ได้รับ:</Text>
+                                            <Text style={styles.planDetailsValue}>{formatNum(pensionSummary.totalPayout)} บาท</Text>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                {/* ส่วน iWealthy (จำลองสีฟ้า/blue) */}
+                                <View style={{padding: 6, backgroundColor: '#eff6ff', borderWidth: 1, borderColor: '#bfdbfe', borderRadius: 2 }}>
+                                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#2563eb', borderBottomWidth: 1, borderBottomColor: '#93c5fd', paddingBottom: 3 }}>ส่วน iWealthy:</Text>
+                                    <View style={{ gap: 2 }}>
+                                        <View style={styles.planDetailsRow}>
+                                            <Text style={styles.planDetailsLabel}>ผลตอบแทนคาดหวัง:</Text>
+                                            <Text style={styles.planDetailsValue}>{iWealthySummary.returnRate} %</Text>
+                                        </View>
+                                        <View style={styles.planDetailsRow}>
+                                            <Text style={styles.planDetailsLabel}>รวมเบี้ย iWealthy:</Text>
+                                            <Text style={styles.planDetailsValue}>{formatNum(iWealthySummary.totalPremiumPaid)} บาท</Text>
+                                        </View>
+                                        <View style={styles.planDetailsRow}>
+                                            <Text style={styles.planDetailsLabel}>รวมถอนจาก iWealthy:</Text>
+                                            <Text style={styles.planDetailsValue}>{formatNum(iWealthySummary.totalWithdrawals)} บาท</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                                
+                                {/* รวมเบี้ย Funding ทั้งหมด */}
+                                <View style={styles.planDetailsTotalRow}>
+                                    <Text>รวมเบี้ย Funding ทั้งหมด:</Text>
+                                    {/* ใช้ totalPremiumPaid (iW รวม) + totalPremium (บำนาญรวม) */}
+                                    <Text>{formatNum(iWealthySummary.totalPremiumPaid + pensionSummary.totalPremium)} บาท</Text> 
+                                </View>
+                            </View>
+                        )}
+                    </View>
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>การวิเคราะห์เชิงเปรียบเทียบ</Text>
+                    
+                    <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+                        {/* กรณีที่ 1: จ่ายเบี้ยสุขภาพเองทั้งหมด */}
+                        <View style={{ flex: 1, backgroundColor: '#ffffff', padding: 10, borderRadius: 4, borderWidth: 1, borderColor: '#e5e7eb' }}>
+                            <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#4b5563', marginBottom: 8 }}>1. กรณีจ่ายเบี้ยสุขภาพเองทั้งหมด:</Text>
+                            
+                            {/* กลุ่มเบี้ย */}
+                            <View style={{ backgroundColor: '#fef2f2', padding: 8, borderRadius: 4, borderWidth: 1, borderColor: '#fecaca', marginBottom: 8 }}>
+                                <Text style={{ fontSize: 8, color: '#6b7280', fontWeight: 'bold', marginBottom: 4 }}>เบี้ยที่จ่าย</Text>
+                                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#dc2626' }}>{formatNum(metrics.totalHealthPremiumIfPaidAlone)} บาท</Text>
+                            </View>
+                            
+                            {/* กลุ่มผลประโยชน์ */}
+                            <View style={{ backgroundColor: '#faf5ff', padding: 8, borderRadius: 4, borderWidth: 1, borderColor: '#e9d5ff', marginBottom: 8 }}>
+                                <Text style={{ fontSize: 8, color: '#6b7280', fontWeight: 'bold', marginBottom: 4 }}>ผลประโยชน์รวม</Text>
+                                <Text style={{ fontSize: 8, marginBottom: 2 }}>• ทุนประกัน (Life Ready): <Text style={{ fontWeight: 'bold', color: '#16a34a' }}>{formatNum(metrics.lifeReadyMaturityBenefit)} บาท</Text></Text>
+                                <View style={{ borderTopWidth: 1, borderTopColor: '#d8b4fe', paddingTop: 4, marginTop: 4 }}>
+                                    <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#9333ea' }}>รวม: {formatNum(metrics.healthOnlyTotalBenefit)} บาท</Text>
+                                </View>
+                            </View>
+                            
+                            {/* ผลประโยชน์สุทธิ */}
+                            <View style={{ 
+                                backgroundColor: metrics.healthOnlyNetBenefit >= 0 ? '#f0fdf4' : '#fef2f2',
+                                padding: 8,
+                                borderRadius: 4,
+                                borderWidth: 2,
+                                borderColor: metrics.healthOnlyNetBenefit >= 0 ? '#86efac' : '#fca5a5'
+                            }}>
+                                <Text style={{ fontSize: 8, color: '#6b7280', fontWeight: 'bold', marginBottom: 4 }}>ผลประโยชน์สุทธิ</Text>
+                                <Text style={{ 
+                                    fontSize: 18,
+                                    fontWeight: 'bold',
+                                    color: metrics.healthOnlyNetBenefit >= 0 ? '#16a34a' : '#dc2626'
+                                }}>
+                                    {metrics.healthOnlyNetBenefit >= 0 ? '+' : ''}{formatNum(metrics.healthOnlyNetBenefit)} บาท
+                                </Text>
+                            </View>
+                        </View>
+                        
+                        {/* กรณีที่ 2: ใช้แผน LTHC */}
+                        {fundingSource !== 'none' && (
+                            <View style={{ flex: 1, backgroundColor: '#ffffff', padding: 10, borderRadius: 4, borderWidth: 1, borderColor: '#e5e7eb' }}>
+                                <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#4b5563', marginBottom: 8 }}>2. กรณีใช้แผน LTHC:</Text>
+                                
+                                {/* กลุ่มเบี้ย */}
+                                <View style={{ backgroundColor: '#fef2f2', padding: 8, borderRadius: 4, borderWidth: 1, borderColor: '#fecaca', marginBottom: 8 }}>
+                                    <Text style={{ fontSize: 8, color: '#6b7280', fontWeight: 'bold', marginBottom: 4 }}>เบี้ยที่จ่าย</Text>
+                                    <Text style={{ fontSize: 8, marginBottom: 2 }}>• เบี้ยสุขภาพที่จ่ายเอง: <Text style={{ fontWeight: 'bold', color: '#dc2626' }}>{formatNum(metrics.lthcHealthPremiumPaidByUser)} บาท</Text></Text>
+                                    <Text style={{ fontSize: 8, marginBottom: 2 }}>• เบี้ย {fundingDisplayName}: <Text style={{ fontWeight: 'bold', color: '#2563eb' }}>{formatNum(metrics.lthcTotalFundingPremium)} บาท</Text></Text>
+                                    <View style={{ borderTopWidth: 1, borderTopColor: '#fca5a5', paddingTop: 4, marginTop: 4 }}>
+                                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#dc2626' }}>รวม: {formatNum(metrics.lthcTotalCombinedPremiumPaid)} บาท</Text>
+                                    </View>
+                                </View>
+                                
+                                {/* กลุ่มผลประโยชน์ */}
+                                <View style={{ backgroundColor: '#faf5ff', padding: 8, borderRadius: 4, borderWidth: 1, borderColor: '#e9d5ff', marginBottom: 8 }}>
+                                    <Text style={{ fontSize: 8, color: '#6b7280', fontWeight: 'bold', marginBottom: 4 }}>ผลประโยชน์รวม</Text>
+                                    <Text style={{ fontSize: 8, marginBottom: 2 }}>• ผลประโยชน์จาก {fundingDisplayName}: <Text style={{ fontWeight: 'bold', color: '#ea580c' }}>{formatNum(metrics.lthcFundingBenefits)} บาท</Text></Text>
+                                    <Text style={{ fontSize: 8, marginBottom: 2 }}>• ทุนประกัน (Life Ready): <Text style={{ fontWeight: 'bold', color: '#16a34a' }}>{formatNum(metrics.lifeReadyMaturityBenefit)} บาท</Text></Text>
+                                    <View style={{ borderTopWidth: 1, borderTopColor: '#d8b4fe', paddingTop: 4, marginTop: 4 }}>
+                                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#9333ea' }}>รวม: {formatNum(metrics.lthcTotalBenefit)} บาท</Text>
+                                    </View>
+                                </View>
+                                
+                                {/* ผลประโยชน์สุทธิ */}
+                                <View style={{ 
+                                    backgroundColor: metrics.lthcNetBenefit >= 0 ? '#f0fdf4' : '#fef2f2',
+                                    padding: 8,
+                                    borderRadius: 4,
+                                    borderWidth: 2,
+                                    borderColor: metrics.lthcNetBenefit >= 0 ? '#86efac' : '#fca5a5'
+                                }}>
+                                    <Text style={{ fontSize: 8, color: '#6b7280', fontWeight: 'bold', marginBottom: 4 }}>ผลประโยชน์สุทธิ</Text>
+                                    <Text style={{ 
+                                        fontSize: 18,
+                                        fontWeight: 'bold',
+                                        color: metrics.lthcNetBenefit >= 0 ? '#16a34a' : '#dc2626'
+                                    }}>
+                                        {metrics.lthcNetBenefit >= 0 ? '+' : ''}{formatNum(metrics.lthcNetBenefit)} บาท
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+                    </View>
+                    
+                    {/* แสดงส่วนต่างผลประโยชน์ */}
+                    {/*{fundingSource !== 'none' && (
+                        <View style={{
+                            marginTop: 10,
+                            padding: 10,
+                            borderRadius: 4,
+                            backgroundColor: metrics.lthcNetBenefit > metrics.healthOnlyNetBenefit ? '#dcfce7' : '#fef3c7',
+                            textAlign: 'center'
+                        }}>
+                            <Text style={{ 
+                                fontSize: 11,
+                                fontWeight: 'bold',
+                                color: metrics.lthcNetBenefit > metrics.healthOnlyNetBenefit ? '#166534' : '#92400e'
+                            }}>
+                                {metrics.lthcNetBenefit > metrics.healthOnlyNetBenefit ? (
+                                    `คุณได้รับผลประโยชน์เพิ่มขึ้น ${formatNum(metrics.lthcNetBenefit - metrics.healthOnlyNetBenefit)} บาท เมื่อใช้แผน LTHC!`
+                                ) : (
+                                    `ผลประโยชน์สุทธิจากแผน LTHC: ${formatNum(metrics.lthcNetBenefit)} บาท`
+                                )}
+                            </Text>
+                        </View>
+                    )}*/}
+                </View>
+            </Page>
+            {chartImage && (
+                <Page size="A4" style={styles.page}>
+                    <PageHeader />  {/* ✅ ใส่ได้เลยครับ */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>กราฟเปรียบเทียบผลประโยชน์</Text>
+                        <Image src={chartImage} style={styles.chartImage} />
+                        <ChartLegend fundingSource={fundingSource} controls={controls} />
+                    </View>
+                    <PageFooter pageNumber={2} totalPages={3} />
+                </Page>
+            )}
+
+            {/* Page 2: Table */}
+            <Page size="A4" style={styles.page}>
+                <PageHeader />
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>ตารางเปรียบเทียบค่าใช้จ่ายรายปี</Text>
+                    <ReportTable data={dataToDisplay} fundingSource={fundingSource} fundingDisplayName={fundingDisplayName} />
+                </View>
+                <PageFooter pageNumber={chartImage ? 3 : 2} totalPages={chartImage ? 3 : 2} />
+            </Page>
+        </Document>
+    );
+};
