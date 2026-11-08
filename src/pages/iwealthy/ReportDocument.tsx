@@ -188,6 +188,14 @@ const styles = StyleSheet.create({
   colPremium: { width: '26%' },
   colCashValue: { width: '25%' },
   colDeathBenefit: { width: '25%' },
+  // Six-column layout is used only when at least one annual withdrawal is positive.
+  // 9 + 9 + 22 + 20 + 20 + 20 = 100% (the original five-column layout is unchanged).
+  colYearWithWithdrawal: { width: '9%' },
+  colAgeWithWithdrawal: { width: '9%' },
+  colPremiumWithWithdrawal: { width: '22%' },
+  colWithdrawal: { width: '20%' },
+  colCashValueWithWithdrawal: { width: '20%' },
+  colDeathBenefitWithWithdrawal: { width: '20%' },
   lastCol: { borderRightWidth: 0 },
   
   // Chart Image
@@ -265,32 +273,44 @@ const KPICard = ({ title, value, unit = '', description = '' }: { title: string,
 );
 
 // --- [ปรับปรุง] ReportTable Component ---
-const ReportTable = ({ data }: { data: AnnualCalculationOutputRow[] }) => (
-    <View style={styles.table}>
-        {/* Table Header */}
-        <View style={styles.tableRow} fixed>
-            <View style={[styles.tableColHeader, styles.colYear, { borderTopWidth: 1, borderTopColor: '#e2e8f0' }]}><Text>ปีที่</Text></View>
-            <View style={[styles.tableColHeader, styles.colAge, { borderTopWidth: 1, borderTopColor: '#e2e8f0' }]}><Text>อายุ</Text></View>
-            {/* 1. เปลี่ยนหัวตาราง */}
-            <View style={[styles.tableColHeader, styles.colPremium, { borderTopWidth: 1, borderTopColor: '#e2e8f0' }]}><Text>เบี้ยประกันรายปี</Text></View>
-            <View style={[styles.tableColHeader, styles.colCashValue, { borderTopWidth: 1, borderTopColor: '#e2e8f0' }]}><Text>มูลค่าเวนคืน</Text></View>
-            <View style={[styles.tableColHeader, styles.colDeathBenefit, { borderTopWidth: 1, borderTopColor: '#e2e8f0' }]}><Text>ความคุ้มครองชีวิต</Text></View>
-        </View>
+const ReportTable = ({ data }: { data: AnnualCalculationOutputRow[] }) => {
+    const hasWithdrawals = data.some((row) => Number(row.withdrawalYear) > 0);
+    const yearStyle = hasWithdrawals ? styles.colYearWithWithdrawal : styles.colYear;
+    const ageStyle = hasWithdrawals ? styles.colAgeWithWithdrawal : styles.colAge;
+    const premiumStyle = hasWithdrawals ? styles.colPremiumWithWithdrawal : styles.colPremium;
+    const cashValueStyle = hasWithdrawals ? styles.colCashValueWithWithdrawal : styles.colCashValue;
+    const deathBenefitStyle = hasWithdrawals ? styles.colDeathBenefitWithWithdrawal : styles.colDeathBenefit;
 
-        {/* Table Body */}
-        {data.map((row: AnnualCalculationOutputRow) => (
-            <View style={styles.tableRow} key={row.policyYear} wrap={false}>
-                 <View style={[styles.tableCol, styles.colYear]}><Text>{row.policyYear}</Text></View>
-                 <View style={[styles.tableCol, styles.colAge]}><Text>{row.age}</Text></View>
-                 {/* 2. แสดงเบี้ยประกันของปีนั้นๆ (ต้องมี totalPremiumYear ใน object ของ data) */}
-                 <View style={[styles.tableCol, styles.colPremium]}><Text>{formatNum(row.totalPremiumYear)}</Text></View>
-                 <View style={[styles.tableCol, styles.colCashValue]}><Text>{formatNum(row.eoyCashSurrenderValue)}</Text></View>
-                 <View style={[styles.tableCol, styles.colDeathBenefit]}><Text>{formatNum(row.eoyDeathBenefit)}</Text></View>
+    return (
+        <View style={styles.table}>
+            {/* Table Header */}
+            <View style={styles.tableRow} fixed>
+                <View style={[styles.tableColHeader, yearStyle, { borderTopWidth: 1, borderTopColor: '#e2e8f0' }]}><Text>ปีที่</Text></View>
+                <View style={[styles.tableColHeader, ageStyle, { borderTopWidth: 1, borderTopColor: '#e2e8f0' }]}><Text>อายุ</Text></View>
+                <View style={[styles.tableColHeader, premiumStyle, { borderTopWidth: 1, borderTopColor: '#e2e8f0' }]}><Text>เบี้ยประกันรายปี</Text></View>
+                {hasWithdrawals && (
+                    <View style={[styles.tableColHeader, styles.colWithdrawal, { borderTopWidth: 1, borderTopColor: '#e2e8f0' }]}><Text>เงินถอน (บาท)</Text></View>
+                )}
+                <View style={[styles.tableColHeader, cashValueStyle, { borderTopWidth: 1, borderTopColor: '#e2e8f0' }]}><Text>มูลค่าเวนคืน</Text></View>
+                <View style={[styles.tableColHeader, deathBenefitStyle, { borderTopWidth: 1, borderTopColor: '#e2e8f0' }]}><Text>ความคุ้มครองชีวิต</Text></View>
             </View>
-        ))}
-    </View>
-);
 
+            {/* Table Body */}
+            {data.map((row: AnnualCalculationOutputRow) => (
+                <View style={styles.tableRow} key={row.policyYear} wrap={false}>
+                    <View style={[styles.tableCol, yearStyle]}><Text>{row.policyYear}</Text></View>
+                    <View style={[styles.tableCol, ageStyle]}><Text>{row.age}</Text></View>
+                    <View style={[styles.tableCol, premiumStyle]}><Text>{formatNum(row.totalPremiumYear)}</Text></View>
+                    {hasWithdrawals && (
+                        <View style={[styles.tableCol, styles.colWithdrawal]}><Text>{formatNum(row.withdrawalYear)}</Text></View>
+                    )}
+                    <View style={[styles.tableCol, cashValueStyle]}><Text>{formatNum(row.eoyCashSurrenderValue)}</Text></View>
+                    <View style={[styles.tableCol, deathBenefitStyle]}><Text>{formatNum(row.eoyDeathBenefit)}</Text></View>
+                </View>
+            ))}
+        </View>
+    );
+};
 
 // --- Main Document Component ---
 export const ReportDocument: React.FC<ReportDocumentProps> = (props) => {
