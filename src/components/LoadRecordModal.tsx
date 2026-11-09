@@ -94,12 +94,13 @@ export default function LoadRecordModal() {
           alert(`ยังไม่รองรับการโหลดข้อมูลสำหรับโปรเจกต์ "${projectName}"`);
         }
         
+        // Keep the modal open if validation throws; no partial store mutation.
         closeLoadModal();
       } else {
         setError(data.error || 'Failed to load selected record.');
       }
     } catch (e) {
-      setError('Could not connect to the server.');
+      setError(e instanceof Error ? e.message : 'Could not connect to the server.');
     } finally {
       setIsLoading(false);
     }
