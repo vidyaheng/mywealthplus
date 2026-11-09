@@ -141,3 +141,12 @@ export function deserializeIWealthyPlan(value: unknown): PlanningData {
     iWealthyAdditionalInvestments: validatedArray<AddInvestmentRecord>(value, 'iWealthyAdditionalInvestments', validateInvestment),
   };
 }
+
+// The old Save payload omitted four controls. Their historical values cannot
+// be inferred from the record; overwriting must require explicit user consent.
+export function hasMissingIWealthyControls(value: unknown): boolean {
+  if (!object(value)) return true;
+  return ['iWealthyPausePeriods', 'iWealthyWithdrawalPlan',
+    'iWealthyFrequencyChanges', 'iWealthyAdditionalInvestments',
+    'iWealthyInvestmentReturn'].some((key) => value[key] === undefined);
+}
