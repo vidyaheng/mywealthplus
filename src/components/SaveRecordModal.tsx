@@ -32,7 +32,7 @@ export default function SaveRecordModal() {
   const {
     // State สำหรับควบคุม Modal และ User
     isSaveModalOpen, closeSaveModal,
-    pin, activeRecordId, activeRecordName,
+    pin, activeRecordId,
     savedRecords, setSavedRecords,
     
     // States ของ iWealthy
