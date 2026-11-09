@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { serializeIWealthyPlan, deserializeIWealthyPlan } from '../src/lib/iWealthyRecord.ts';
+import { serializeIWealthyPlan, deserializeIWealthyPlan, parseIWealthyRecordEnvelope, hasMissingIWealthyControls } from '../src/lib/iWealthyRecord.ts';
 
 const plan = {
   iWealthyAge: 35, iWealthyGender: 'female', iWealthyPaymentFrequency: 'annual',
@@ -68,4 +68,66 @@ test('Create and overwrite share dataToSave; cross-project overwrite guard exist
   assert.match(s,/method: 'POST'[\s\S]*?data: dataToSave/);
   assert.match(s,/record\.projectName === projectName/);
   for(const route of ['/lthc','/ci','/retire']) assert.ok(s.includes("path.startsWith('"+route+"')"));
+});
+
+test('UI modal record shapes: pause, reduction, withdrawal, frequency, investment with optional fields', () => {
+  const ui = {...plan,
+    iWealthyPausePeriods:[{id:'ui-pause',startAge:39,endAge:40,type:'age',isAutoAdjusted:false}],
+    iWealthySumInsuredReductions:[{id:'ui-reduce',age:46,newSumInsured:3600000}],
+    iWealthyWithdrawalPlan:[{id:'ui-withdraw',type:'single',amount:125000,startAge:57,endAge:57,refType:'age'}],
+    iWealthyFrequencyChanges:[{id:'ui-frequency',startAge:42,endAge:44,frequency:'quarterly',type:'age'}],
+    iWealthyAdditionalInvestments:[{id:'ui-invest',type:'single',amount:210000,startAge:41,endAge:41,refType:'age'}],
+  };
+  assert.deepEqual(roundtrip(ui),ui);
+  for(const frequency of ['monthly','quarterly','semi-annual','annual']) {
+    const changed = {...ui,iWealthyPaymentFrequency:frequency,
+      iWealthyFrequencyChanges:[{...ui.iWealthyFrequencyChanges[0],frequency}]};
+    assert.deepEqual(roundtrip(changed),changed,frequency);
+  }
+});
+test('historical optional fields and year reference types remain compatible', () => {
+  const historical = {...plan,
+    iWealthyPausePeriods:[{startAge:45,endAge:47,type:'year',startPolicyYear:12,endPolicyYear:14,isAutoAdjusted:true}],
+    iWealthySumInsuredReductions:[{age:52,newSumInsured:2500000}],
+    iWealthyFrequencyChanges:[{startAge:48,endAge:50,frequency:'semi-annual'}],
+    iWealthyAdditionalInvestments:[{type:'annual',amount:50000,startAge:45,endAge:48}],
+  };
+  assert.deepEqual(roundtrip(historical),historical);
+});
+test('server Save/Load envelope preserves record id, name and full plan', () => {
+  const saved=JSON.parse(JSON.stringify(serializeIWealthyPlan(plan)));
+  const serverRecord={_id:'synthetic-id-a',recordName:'Synthetic A',projectName:'iWealthy',data:saved};
+  assert.deepEqual(parseIWealthyRecordEnvelope(serverRecord),{
+    plan,activeRecordId:'synthetic-id-a',activeRecordName:'Synthetic A'
+  });
+  assert.throws(()=>parseIWealthyRecordEnvelope({...serverRecord,projectName:'CI'}));
+  assert.throws(()=>parseIWealthyRecordEnvelope({...serverRecord,data:{...saved,iWealthyPausePeriods:null}}));
+});
+test('legacy metadata triggers overwrite warning; new and explicit empty do not', () => {
+  const modern=serializeIWealthyPlan(plan);
+  assert.equal(hasMissingIWealthyControls(modern),false);
+  assert.equal(hasMissingIWealthyControls({...modern,iWealthyPausePeriods:[]}),false);
+  const legacy={age:35,gender:'male',paymentFrequency:'annual',rpp:100000,rtu:0,
+    sumInsured:6000000,sumInsuredReductions:[]};
+  assert.equal(hasMissingIWealthyControls(legacy),true);
+});
+test('purple indicators correspond only to five loaded array lengths', () => {
+  const restored=roundtrip(plan);
+  const flags=['iWealthyPausePeriods','iWealthySumInsuredReductions','iWealthyWithdrawalPlan',
+    'iWealthyFrequencyChanges','iWealthyAdditionalInvestments'].map(key=>restored[key].length>0);
+  assert.deepEqual(flags,[true,true,true,true,true]);
+  const blank=roundtrip({...plan,iWealthyPausePeriods:[],iWealthySumInsuredReductions:[],
+    iWealthyWithdrawalPlan:[],iWealthyFrequencyChanges:[],iWealthyAdditionalInvestments:[]});
+  assert.deepEqual(flags.map((_,i)=>Object.values(blank).filter(Array.isArray)[i].length>0),
+    [false,false,false,false,false]);
+});
+test('store and modals use shared envelope; overwrite confirms legacy data and guards record project', () => {
+  const store=readFileSync(new URL('../src/stores/appStore.ts',import.meta.url),'utf8');
+  const save=readFileSync(new URL('../src/components/SaveRecordModal.tsx',import.meta.url),'utf8');
+  const load=readFileSync(new URL('../src/components/LoadRecordModal.tsx',import.meta.url),'utf8');
+  assert.match(store,/parseIWealthyRecordEnvelope\(fullRecord\)/);
+  assert.match(save,/hasMissingIWealthyControls\(existing\.record\.data\)/);
+  assert.match(save,/existing\.record\.projectName !== projectName/);
+  assert.match(save,/record\.projectName === projectName/);
+  assert.match(load,/loadIWealthyState\(data\.record\)/);
 });
