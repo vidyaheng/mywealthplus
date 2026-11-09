@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import type { Dispatch, SetStateAction } from 'react';
 import debounce from 'lodash.debounce';
+import { parseIWealthyRecordEnvelope } from '../lib/iWealthyRecord';
 
 // --- TYPE & FUNCTION IMPORTS ---
 
@@ -979,23 +980,28 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     },
     savedRecords: [],
     setSavedRecords: (records) => set({ savedRecords: records }),
-    loadIWealthyState: (fullRecord) => { // เปลี่ยนชื่อ parameter ให้นสื่อความหมาย
-    const recordData = fullRecord.data; // ดึงข้อมูลโปรเจกต์จาก .data
-
-    // อัปเดต State ต่างๆ ของฟอร์ม
-    set({
-        iWealthyAge: recordData.age,
-        iWealthyGender: recordData.gender,
-        iWealthyPaymentFrequency: recordData.paymentFrequency,
-        iWealthyRpp: recordData.rpp,
-        iWealthyRtu: recordData.rtu,
-        iWealthySumInsured: recordData.sumInsured,
-        iWealthySumInsuredReductions: recordData.sumInsuredReductions || [],
-        
-        // ✨ ส่วนสำคัญ: set activeRecordId จาก _id ของ fullRecord
-        activeRecordId: fullRecord._id, 
-        activeRecordName: fullRecord.recordName 
-    });
+    loadIWealthyState: (fullRecord) => {
+      // Parse the entire server envelope and plan before any store mutation.
+      const { plan, activeRecordId, activeRecordName } =
+        parseIWealthyRecordEnvelope(fullRecord);
+      set({
+        ...plan,
+        activeRecordId,
+        activeRecordName,
+        iWealthyReductionsNeedReview: false,
+        // Previous plan's calculated outputs must not contaminate the loaded plan.
+        // Recalculation remains an explicit user action; financial logic unchanged.
+        iWealthyResult: null,
+        iWealthyMetrics: null,
+        investmentOnlyMIRR: null,
+        investmentOnlyROI: null,
+        investmentOnlyPI: null,
+        annualMIRRData: null,
+        initialDB: null,
+        maxDB: null,
+        iWealthyIsLoading: false,
+        iWealthyError: null,
+      });
     },
     // ===================================================================
     // SECTION 3: iWealthy UI State & Actions

@@ -75,7 +75,11 @@ export default function LoadRecordModal() {
       });
       const data = await res.json();
       if (data.success) {
-        // --- ✅ Logic ใหม่ที่ฉลาดขึ้น ---
+        // Reject a server envelope that does not match the selected listing.
+        if (!data.record || data.record._id !== record._id ||
+            data.record.projectName !== record.projectName) {
+          throw new Error('ข้อมูลรายการที่โหลดไม่ตรงกับรายการที่เลือก');
+        }
         const recordData = data.record.data;
         const projectName = data.record.projectName;
 
@@ -94,12 +98,13 @@ export default function LoadRecordModal() {
           alert(`ยังไม่รองรับการโหลดข้อมูลสำหรับโปรเจกต์ "${projectName}"`);
         }
         
+        // Keep the modal open if validation throws; no partial store mutation.
         closeLoadModal();
       } else {
         setError(data.error || 'Failed to load selected record.');
       }
     } catch (e) {
-      setError('Could not connect to the server.');
+      setError(e instanceof Error ? e.message : 'Could not connect to the server.');
     } finally {
       setIsLoading(false);
     }
