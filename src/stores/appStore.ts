@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import type { Dispatch, SetStateAction } from 'react';
 import debounce from 'lodash.debounce';
+import { deserializeIWealthyPlan } from '../lib/iWealthyRecord';
 
 // --- TYPE & FUNCTION IMPORTS ---
 
@@ -979,23 +980,33 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     },
     savedRecords: [],
     setSavedRecords: (records) => set({ savedRecords: records }),
-    loadIWealthyState: (fullRecord) => { // เปลี่ยนชื่อ parameter ให้นสื่อความหมาย
-    const recordData = fullRecord.data; // ดึงข้อมูลโปรเจกต์จาก .data
-
-    // อัปเดต State ต่างๆ ของฟอร์ม
-    set({
-        iWealthyAge: recordData.age,
-        iWealthyGender: recordData.gender,
-        iWealthyPaymentFrequency: recordData.paymentFrequency,
-        iWealthyRpp: recordData.rpp,
-        iWealthyRtu: recordData.rtu,
-        iWealthySumInsured: recordData.sumInsured,
-        iWealthySumInsuredReductions: recordData.sumInsuredReductions || [],
-        
-        // ✨ ส่วนสำคัญ: set activeRecordId จาก _id ของ fullRecord
-        activeRecordId: fullRecord._id, 
-        activeRecordName: fullRecord.recordName 
-    });
+    loadIWealthyState: (fullRecord) => {
+      // Validate the envelope and every saved planning dataset before changing
+      // any store state. Invalid records must not partially overwrite Plan A.
+      if (!fullRecord || fullRecord.projectName !== 'iWealthy' ||
+          typeof fullRecord._id !== 'string' || fullRecord._id.length === 0 ||
+          typeof fullRecord.recordName !== 'string') {
+        throw new Error('รายการที่โหลดไม่ใช่แผน iWealthy ที่ถูกต้อง');
+      }
+      const plan = deserializeIWealthyPlan(fullRecord.data);
+      set({
+        ...plan,
+        activeRecordId: fullRecord._id,
+        activeRecordName: fullRecord.recordName,
+        iWealthyReductionsNeedReview: false,
+        // Previous plan's calculated outputs must not contaminate the loaded plan.
+        // Recalculation remains an explicit user action; financial logic unchanged.
+        iWealthyResult: null,
+        iWealthyMetrics: null,
+        investmentOnlyMIRR: null,
+        investmentOnlyROI: null,
+        investmentOnlyPI: null,
+        annualMIRRData: null,
+        initialDB: null,
+        maxDB: null,
+        iWealthyIsLoading: false,
+        iWealthyError: null,
+      });
     },
     // ===================================================================
     // SECTION 3: iWealthy UI State & Actions
