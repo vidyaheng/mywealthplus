@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAppStore, SavedRecord } from '../stores/appStore';
 import { calculateLifeCoverage } from '../lib/calculations';
+import { serializeIWealthyPlan } from '../lib/iWealthyRecord';
 import { FaShieldAlt, FaHeartbeat, FaBrain, FaFileAlt } from 'react-icons/fa';
 
 // ตัวช่วยสำหรับจัดการ Style ของแต่ละโปรเจกต์
@@ -36,6 +37,8 @@ export default function SaveRecordModal() {
     
     // States ของ iWealthy
     iWealthyAge, iWealthyGender, iWealthyPaymentFrequency, iWealthyRpp, iWealthyRtu, iWealthySumInsured, iWealthySumInsuredReductions,
+    iWealthyPausePeriods, iWealthyWithdrawalPlan, iWealthyFrequencyChanges,
+    iWealthyAdditionalInvestments, iWealthyInvestmentReturn,
     
     // States ของ LTHC
     policyholderEntryAge, policyholderGender, selectedHealthPlans, 
@@ -77,11 +80,16 @@ export default function SaveRecordModal() {
     if (path.startsWith('/iwealthy')) {
       return {
         projectName: 'iWealthy',
-        dataToSave: { 
-            age: iWealthyAge, gender: iWealthyGender, paymentFrequency: iWealthyPaymentFrequency,
-            rpp: iWealthyRpp, rtu: iWealthyRtu, sumInsured: iWealthySumInsured,
+        dataToSave: {
+            ...serializeIWealthyPlan({
+              iWealthyAge, iWealthyGender, iWealthyPaymentFrequency,
+              iWealthyRpp, iWealthyRtu, iWealthySumInsured,
+              iWealthyInvestmentReturn, iWealthyPausePeriods, iWealthySumInsuredReductions,
+              iWealthyWithdrawalPlan, iWealthyFrequencyChanges, iWealthyAdditionalInvestments,
+            }),
+            // Preserve the old key for older consumers, without changing the calculation.
             sumInsuredReductions: iWealthySumInsuredReductions,
-            lifeCoverage: calculateLifeCoverage(iWealthySumInsured), 
+            lifeCoverage: calculateLifeCoverage(iWealthySumInsured),
             totalAnnualPremium: (iWealthyRpp || 0) + (iWealthyRtu || 0)
         }
       };
@@ -142,6 +150,8 @@ export default function SaveRecordModal() {
     location.pathname, 
     // Dependency array ต้องมี state ทั้งหมดที่ใช้ในการ save
     iWealthyAge, iWealthyGender, iWealthyPaymentFrequency, iWealthyRpp, iWealthyRtu, iWealthySumInsured, iWealthySumInsuredReductions,
+    iWealthyPausePeriods, iWealthyWithdrawalPlan, iWealthyFrequencyChanges,
+    iWealthyAdditionalInvestments, iWealthyInvestmentReturn,
     policyholderEntryAge, policyholderGender, selectedHealthPlans, policyOriginMode, existingPolicyEntryAge, fundingSource, iWealthyMode, pensionMode, pensionFundingOptions, manualPensionPremium, manualRpp, manualRtu, manualInvestmentReturn, manualIWealthyPPT, manualWithdrawalStartAge, autoInvestmentReturn, autoIWealthyPPT, autoRppRtuRatio, saReductionStrategy,
     ciPlanningAge, ciGender, ciPolicyOriginMode, ciExistingEntryAge, ciPlanSelections, ciUseIWealthy, ciIWealthyMode, ciManualRpp, ciManualRtu, ciManualInvReturn, ciManualPpt, ciManualWithdrawalStartAge, ciAutoInvReturn, ciAutoPpt, ciAutoRppRtuRatio, ciAutoWithdrawalStartAge, ciUseCustomWithdrawalAge,
     retirementPlanningAge, retirementGender, retirementDesiredAge,
@@ -192,6 +202,12 @@ export default function SaveRecordModal() {
     try {
         let response;
         const idToUpdate = selectedIdToOverwrite;
+        // Reject an overwrite of another planner's record.
+        if (idToUpdate && !savedRecords.some((record) =>
+          record._id === idToUpdate && record.projectName === projectName
+        )) {
+          throw new Error('ไม่สามารถบันทึกทับรายการของแผนประเภทอื่นได้');
+        }
 
         if (idToUpdate) {
           // UPDATE (บันทึกทับ)
@@ -217,7 +233,7 @@ export default function SaveRecordModal() {
             setError(result.error || 'Failed to save data.');
         }
     } catch (e) {
-        setError('Could not connect to the server.');
+        setError(e instanceof Error ? e.message : 'Could not connect to the server.');
     } finally {
         setIsLoading(false);
     }
@@ -255,7 +271,7 @@ export default function SaveRecordModal() {
           {!isLoading && savedRecords.length === 0 && <p className="text-sm text-gray-400 text-center py-4">ไม่พบรายการที่เคยบันทึกไว้</p>}
           
           {/* 👇👇👇 นี่คือส่วน JSX ที่เราคัดลอกและปรับปรุงมาจาก LoadRecordModal 👇👇👇 */}
-          {!isLoading && savedRecords.map(record => {
+          {!isLoading && savedRecords.filter(record => record.projectName === projectName).map(record => {
             const style = projectStyles[record.projectName as keyof typeof projectStyles] || projectStyles.default;
             const isSelected = selectedIdToOverwrite === record._id;
 
