@@ -150,3 +150,17 @@ export function hasMissingIWealthyControls(value: unknown): boolean {
     'iWealthyFrequencyChanges', 'iWealthyAdditionalInvestments',
     'iWealthyInvestmentReturn'].some((key) => value[key] === undefined);
 }
+
+export function parseIWealthyRecordEnvelope(value: unknown): {
+  plan: ReturnType<typeof deserializeIWealthyPlan>;
+  activeRecordId: string;
+  activeRecordName: string;
+} {
+  if (!object(value) || value.projectName !== 'iWealthy' ||
+      !string(value._id) || value._id.length === 0 ||
+      !string(value.recordName)) {
+    throw new Error('รายการที่โหลดไม่ใช่แผน iWealthy ที่ถูกต้อง');
+  }
+  const plan = deserializeIWealthyPlan(value.data);
+  return { plan, activeRecordId: value._id, activeRecordName: value.recordName };
+}
