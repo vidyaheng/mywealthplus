@@ -130,4 +130,6 @@ test('store and modals use shared envelope; overwrite confirms legacy data and g
   assert.match(save,/existing\.record\.projectName !== projectName/);
   assert.match(save,/record\.projectName === projectName/);
   assert.match(load,/loadIWealthyState\(data\.record\)/);
+  assert.match(load,/data\.record\._id !== record\._id/);
+  assert.match(load,/data\.record\.projectName !== record\.projectName/);
 });
