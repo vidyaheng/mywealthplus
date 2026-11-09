@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import type { Dispatch, SetStateAction } from 'react';
 import debounce from 'lodash.debounce';
-import { deserializeIWealthyPlan } from '../lib/iWealthyRecord';
+import { parseIWealthyRecordEnvelope } from '../lib/iWealthyRecord';
 
 // --- TYPE & FUNCTION IMPORTS ---
 
@@ -981,18 +981,13 @@ export const useAppStore = create<LthcState & IWealthyState & IWealthyUIState & 
     savedRecords: [],
     setSavedRecords: (records) => set({ savedRecords: records }),
     loadIWealthyState: (fullRecord) => {
-      // Validate the envelope and every saved planning dataset before changing
-      // any store state. Invalid records must not partially overwrite Plan A.
-      if (!fullRecord || fullRecord.projectName !== 'iWealthy' ||
-          typeof fullRecord._id !== 'string' || fullRecord._id.length === 0 ||
-          typeof fullRecord.recordName !== 'string') {
-        throw new Error('รายการที่โหลดไม่ใช่แผน iWealthy ที่ถูกต้อง');
-      }
-      const plan = deserializeIWealthyPlan(fullRecord.data);
+      // Parse the entire server envelope and plan before any store mutation.
+      const { plan, activeRecordId, activeRecordName } =
+        parseIWealthyRecordEnvelope(fullRecord);
       set({
         ...plan,
-        activeRecordId: fullRecord._id,
-        activeRecordName: fullRecord.recordName,
+        activeRecordId,
+        activeRecordName,
         iWealthyReductionsNeedReview: false,
         // Previous plan's calculated outputs must not contaminate the loaded plan.
         // Recalculation remains an explicit user action; financial logic unchanged.
