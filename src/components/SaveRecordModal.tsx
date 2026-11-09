@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAppStore, SavedRecord } from '../stores/appStore';
 import { calculateLifeCoverage } from '../lib/calculations';
-import { serializeIWealthyPlan } from '../lib/iWealthyRecord';
+import { hasMissingIWealthyControls, serializeIWealthyPlan } from '../lib/iWealthyRecord';
 import { FaShieldAlt, FaHeartbeat, FaBrain, FaFileAlt } from 'react-icons/fa';
 
 // ตัวช่วยสำหรับจัดการ Style ของแต่ละโปรเจกต์
@@ -166,30 +166,41 @@ export default function SaveRecordModal() {
 
   // --- 3. Effect สำหรับดึงรายการไฟล์เก่าและตั้งค่าเริ่มต้นเมื่อ Modal เปิด ---
   useEffect(() => {
-    if (isSaveModalOpen && pin) {
-      setIsLoading(true);
-      setError(null);
-      
-      const fetchRecords = async () => {
-        try {
-          const res = await fetch(`/api/records/${pin}`);
-          const data = await res.json();
-          if (data.success) {
-            setSavedRecords(data.records);
-          }
-        } catch (e) {
-          setError('Could not fetch records list.');
-        } finally {
-            setIsLoading(false);
+    if (!isSaveModalOpen || !pin) return;
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+    // Never preselect the record ID/name from a different planner while fetching.
+    setSelectedIdToOverwrite(null);
+    setRecordNameInput('');
+
+    const fetchRecords = async () => {
+      try {
+        const res = await fetch(`/api/records/${pin}`);
+        if (!res.ok) throw new Error('Could not fetch records list.');
+        const data = await res.json();
+        if (!data.success || !Array.isArray(data.records)) {
+          throw new Error('Could not fetch records list.');
         }
-      };
-      
-      fetchRecords();
-      setRecordNameInput(activeRecordName || '');
-      setSelectedIdToOverwrite(activeRecordId);
-    }
-  }, [isSaveModalOpen, pin, activeRecordName, activeRecordId, setSavedRecords]);
-  
+        if (cancelled) return;
+        const records: SavedRecord[] = data.records;
+        setSavedRecords(records);
+        const activeRecord = records.find((record) =>
+          record._id === activeRecordId && record.projectName === projectName
+        );
+        setSelectedIdToOverwrite(activeRecord?._id ?? null);
+        setRecordNameInput(activeRecord?.recordName ?? '');
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Could not fetch records list.');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    void fetchRecords();
+    return () => { cancelled = true; };
+  }, [isSaveModalOpen, pin, projectName, activeRecordId, setSavedRecords]);
+
   // --- 4. Logic การยืนยันการบันทึก ---
   const handleConfirm = async () => {
     if (!recordNameInput.trim()) {
@@ -210,6 +221,24 @@ export default function SaveRecordModal() {
         }
 
         if (idToUpdate) {
+          // Recheck the exact record before PUT, and warn about historical data
+          // that was never persisted by old versions of iWealthy.
+          const existingResponse = await fetch(`/api/record/${idToUpdate}`, {
+            headers: { 'x-user-pin': pin! },
+          });
+          if (!existingResponse.ok) {
+            throw new Error('ไม่สามารถตรวจสอบรายการเดิมก่อนบันทึกทับได้');
+          }
+          const existing = await existingResponse.json();
+          if (!existing.success || existing.record?._id !== idToUpdate ||
+              existing.record.projectName !== projectName) {
+            throw new Error('รายการเดิมไม่ตรงกับประเภทแผนที่กำลังบันทึก');
+          }
+          if (projectName === 'iWealthy' &&
+              hasMissingIWealthyControls(existing.record.data) &&
+              !window.confirm('รายการเดิมถูกสร้างด้วยระบบที่อาจไม่ได้บันทึกข้อมูลการวางแผนครบทั้ง 5 ส่วน ข้อมูลส่วนที่หายไปไม่สามารถกู้คืนได้ การบันทึกทับจะใช้ข้อมูลที่ตั้งค่าอยู่ในปัจจุบัน ต้องการดำเนินการต่อหรือไม่?')) {
+            return;
+          }
           // UPDATE (บันทึกทับ)
           response = await fetch(`/api/record/${idToUpdate}`, {
             method: 'PUT',
@@ -268,7 +297,7 @@ export default function SaveRecordModal() {
         <div className="max-h-60 overflow-y-auto border rounded p-2 space-y-2 bg-gray-50">
           <p className="text-xs text-gray-500 mb-2 px-1">หรือเลือกรายการเดิมเพื่อบันทึกทับ:</p>
           {isLoading && <p className="text-sm text-gray-500 text-center py-4">Loading list...</p>}
-          {!isLoading && savedRecords.length === 0 && <p className="text-sm text-gray-400 text-center py-4">ไม่พบรายการที่เคยบันทึกไว้</p>}
+          {!isLoading && savedRecords.filter(record => record.projectName === projectName).length === 0 && <p className="text-sm text-gray-400 text-center py-4">ไม่พบรายการที่เคยบันทึกไว้</p>}
           
           {/* 👇👇👇 นี่คือส่วน JSX ที่เราคัดลอกและปรับปรุงมาจาก LoadRecordModal 👇👇👇 */}
           {!isLoading && savedRecords.filter(record => record.projectName === projectName).map(record => {
