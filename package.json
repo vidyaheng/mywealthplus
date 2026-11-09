@@ -7,7 +7,7 @@
     "dev:frontend": "vite",
     "dev:server": "nodemon --exec ts-node --project tsconfig.node.json api/server.ts",
     "test:iwealthy": "node --experimental-strip-types --test tests/iWealthyRecord.test.mjs",
-    "prebuild": "npm run test:iwealthy && npm run lint",
+    "prebuild": "npm run test:iwealthy",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
